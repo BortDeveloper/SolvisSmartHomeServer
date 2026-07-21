@@ -598,6 +598,18 @@
 	</simpleType>
 
 	<complexType name="Mqtt">
+		<sequence>
+			<element name="Ssl" type="tns:Ssl" minOccurs="0"
+				maxOccurs="1">
+				<annotation>
+					<documentation>
+						Optional: TLS/mTLS fuer die Broker-Verbindung
+						(Fork-Ergaenzung). Ohne dieses Element verbindet der
+						Client unverschluesselt.
+					</documentation>
+				</annotation>
+			</element>
+		</sequence>
 		<attribute name="enable" type="boolean" use="required">
 			<annotation>
 				<documentation>
@@ -674,6 +686,41 @@
 			<pattern value='[0-2]'></pattern>
 		</restriction>
 	</simpleType>
+
+	<complexType name="Ssl">
+		<annotation>
+			<documentation>
+				TLS/mTLS-Konfiguration der MQTT-Broker-Verbindung
+				(Fork-Ergaenzung). Die Datei-Pfade verweisen auf PEM-Dateien;
+				der private Schluessel muss im PKCS#8-Format vorliegen
+				(-----BEGIN PRIVATE KEY-----).
+			</documentation>
+		</annotation>
+		<attribute name="enable" type="boolean" use="required">
+			<annotation>
+				<documentation>Aktiviert TLS/mTLS fuer die Broker-Verbindung.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="caFilePath" type="string" use="optional">
+			<annotation>
+				<documentation>PEM des CA-Zertifikats (Vertrauensanker des
+					Brokers).</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="clientCrtFilePath" type="string" use="optional">
+			<annotation>
+				<documentation>PEM des Client-Zertifikats (fuer mTLS).
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="clientKeyFilePath" type="string" use="optional">
+			<annotation>
+				<documentation>PEM des privaten Client-Schluessels im
+					PKCS#8-Format (fuer mTLS).</documentation>
+			</annotation>
+		</attribute>
+	</complexType>
 
 	<simpleType name="Url">
 		<restriction base="anyURI">

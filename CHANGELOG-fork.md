@@ -8,6 +8,44 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## MQTT über TLS/mTLS nativ implementiert
+
+Ziel: Der Server verbindet sich direkt mit einem mTLS-gehärteten Broker, ohne
+den Umweg über einen lokalen Klartext-Broker + Bridge.
+
+- **Ursache:** Das Gerüst für TLS war vorhanden (Config-Element `<Ssl>` mit
+  `caFilePath`/`clientCrtFilePath`/`clientKeyFilePath`, Verdrahtung in
+  `MqttThread` via `options.setSocketFactory(...)`), aber
+  `Ssl.getSocketFactory()` war ein **Stub** (`// TODO not yet implemented`,
+  Rückgabe `null`). Zusätzlich fehlte das `<Ssl>`-Element im Schema
+  `base.xsd`, sodass eine `<Ssl>`-Konfiguration die (zur Laufzeit in
+  `BaseControlFileReader` durchgeführte) XSD-Validierung nicht bestanden hätte.
+- **Anpassung:**
+  - `Ssl.getSocketFactory()` **implementiert**: baut aus den PEM-Dateien einen
+    `SSLContext` (TrustStore aus dem CA-Zertifikat, KeyStore aus
+    Client-Zertifikatskette + privatem Schlüssel) und liefert dessen
+    `SSLSocketFactory`. Der private Schlüssel wird im **PKCS#8**-Format
+    erwartet (`-----BEGIN PRIVATE KEY-----`), Algorithmus (RSA/EC/DSA) wird
+    automatisch erkannt; PKCS#1-Schlüssel werden mit klarer Fehlermeldung
+    abgelehnt. Neue statische Factory `Ssl.create(...)` für programmatische
+    Nutzung/Tests; `isEnabled()`-Getter.
+  - `MqttThread`: Aufrufstelle abgesichert — bei aktiviertem TLS
+    (`ssl.isEnabled()`) und Fehler in der Zertifikats-/Schlüsselkonfiguration
+    wird die Verbindung **abgebrochen** statt still unverschlüsselt
+    fortzufahren.
+  - `base.xsd`: `<Ssl>`-Kindelement im `Mqtt`-Typ ergänzt und neuen
+    `Ssl`-complexType (Attribute `enable`, `caFilePath`, `clientCrtFilePath`,
+    `clientKeyFilePath`) definiert. Rückwärtskompatibel (`minOccurs="0"`).
+- **Konfigurationsbeispiel** (in `base.xml`, innerhalb `<Mqtt …>`):
+  ```xml
+  <Mqtt enable="true" brokerUrl="broker.example" port="8883" …>
+      <Ssl enable="true"
+           caFilePath="/data/ssl/ca.crt"
+           clientCrtFilePath="/data/ssl/client.crt"
+           clientKeyFilePath="/data/ssl/client.key" />
+  </Mqtt>
+  ```
+
 ## Build unter aktueller JDK/JRE (JDK 21) lauffähig gemacht
 
 Ziel: `ant` (Default-Target `Build complete`) baut das Uber-Jar

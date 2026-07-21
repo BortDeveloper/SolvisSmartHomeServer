@@ -7,6 +7,9 @@
 
 package de.sgollmer.solvismax.connection.mqtt;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+
 import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -44,9 +47,17 @@ public class MqttThread extends Helper.Runnable {
 				}
 				options.setAutomaticReconnect(true);
 				options.setCleanSession(false);
-				if (this.mqtt.ssl != null) {
-					SSLSocketFactory sslSocketFactory = this.mqtt.ssl.getSocketFactory();
-					options.setSocketFactory(sslSocketFactory);
+				if (this.mqtt.ssl != null && this.mqtt.ssl.isEnabled()) {
+					try {
+						SSLSocketFactory sslSocketFactory = this.mqtt.ssl.getSocketFactory();
+						options.setSocketFactory(sslSocketFactory);
+					} catch (GeneralSecurityException | IOException e) {
+						// Bei aktiviertem TLS niemals unverschluesselt weiterverbinden.
+						logger.error("TLS/SSL configuration for MQTT failed, connection aborted: "
+								+ e.getMessage(), e);
+						this.abort = true;
+						return;
+					}
 				}
 				MqttData lastWill = this.mqtt.getLastWill();
 				String topic = lastWill.getTopic(this.mqtt);

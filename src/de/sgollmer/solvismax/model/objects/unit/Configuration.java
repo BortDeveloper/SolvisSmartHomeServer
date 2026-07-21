@@ -32,6 +32,17 @@ public class Configuration {
 		this.extensions = extensions;
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). Auch dies ist ein reiner Wert-Typ: die
+	 * {@code SolvisDescription} wird erst beim Maskenaufbau (Laufzeit) gebraucht,
+	 * nicht zur Konstruktion.
+	 */
+	public static Configuration of(final String solvisType, final String mainHeating, final Integer heaterCircuits,
+			final String solarType, final Collection<String> extensions) {
+		return new Configuration(solvisType, mainHeating, heaterCircuits, solarType, extensions);
+	}
+
 	public long getConfigurationMask(final SolvisDescription description) {
 		long mask = 0L;
 		Configurations configurations = description.getConfigurations();

@@ -55,11 +55,13 @@ account/url + Intervall-/Verzögerungs-`_ms`-Werte + Flags), `Features`.
 `<Channel>` mit `fix`/`offset`/`powerOnDelay_s`).
 
 ✅ **gesichert:** Der base.xml-DTO-Baum ist damit **vollständig für den im
-Template real befüllten Inhalt**. ⚠️ **Nicht modelliert (im Template leer/
-auskommentiert, keine Fixture-Daten):** `Unit/Extensions`, `Unit/Urls`,
+Template real befüllten Inhalt**. ✅ **Auch die im Template leeren Zweige sind
+inzwischen modelliert und verifiziert** (`Unit/Urls`, `Unit/Extensions`,
 `Unit/IgnoredChannels`, `Unit/ChannelAssignments`, `Unit/Durations`,
-`Unit/Configuration` — sie sind erst mit einer Fixture, die sie befüllt,
-sinnvoll dual-parse-bar.✅ **Parser-Inkonsistenz korrigiert:** Das Attribut heißt in **base.xsd UND
+`Unit/Configuration`): die Fixture `testFiles/xml/base-extended.xml` befüllt
+sie real und der Dual-Parse-Test vergleicht gegen die Domänen-Getter
+(`getUrls`, `isChannelIgnored`-Verhalten, `getDuration`,
+`getChannelAssignment`, Configuration-Kommentar).✅ **Parser-Inkonsistenz korrigiert:** Das Attribut heißt in **base.xsd UND
 base.xml** `forceUpdateAfterFastChangingIntervals`, der `Unit.Creator`-`case`
 hatte aber einen **Tippfehler** (`forceUpdateInFastChangingAfterIntervals`) —
 der konfigurierte Wert wurde nie gelesen (Default griff). **Korrigiert**
@@ -318,13 +320,16 @@ nach der Validierung erneut ohne Schema, JAXB unmarshallt ohne Schema).
   Features `InteractiveGUIAccess`/`OnlyMeasurements` — eine Validierungsregel
   außerhalb der XSD (für den Reader-Umstieg relevant).
 
-⚠️ **Notiert (nicht Default-bezogen):** (a) Das Alternativ-Attribut
+✅ **Nachgezogen (ehemals notierte Restpunkte):** (a) Das Alternativ-Attribut
 `defaultReadMeasurementsInterval_ms` (bereits in ms, deprecated-Pfad des
-Creators) ist im DTO noch nicht gebunden. (b) Die XSD-Doku behauptet für
-`resetErrorDelayTime_ms` „Default: 5min" — der Code defaultet tatsächlich auf
-`0` (= sofortiges Reset); Doku-Inkonsistenz im Upstream. (c) Fehlt das ganze
-`<Iobroker>`-Element, ersetzt es der alte Parser durch eine Default-Instanz —
-dieser **Element**-Default gehört beim Reader-Umstieg in die Sicht.
+Creators) ist gebunden; `Mapper.measurementsIntervalMs` löst beide Formen auf
+(Sekunden-Form gewinnt bei Doppelung; fehlen beide, wirft die Sicht wie der
+alte Parser) — dual-parse-belegt über `base-extended.xml`. (b) Die
+XSD-Doku-Inkonsistenz bei `resetErrorDelayTime_ms` („Default: 5min" vs. real
+`0`) ist in der base.xsd korrigiert (an die Implementierung angeglichen, als
+Fork-Korrektur markiert). (c) Der `<Iobroker>`-**Element**-Default liegt jetzt
+in `Mapper.toIoBroker` (fehlendes Element → Default-Instanz; `IoBroker.of` +
+Getter ergänzt) — dual-parse-belegt an Template und Minimal-Fixture.
 
 **Noch am Aggregat** (eigene Sichten folgen): `getFeatures` (ErrorState,
 EquipmentOnOff, Solvis, HumanAccess, ExceptionMail), `getConfiguration`
@@ -358,7 +363,30 @@ Sicht-Interface-Muster:
   DTO-Weg (`Features.of`); ChannelOption-Liste charakterisiert (7 Optionen,
   ×1000, Default −1).
 
-⚠️ **Offen bei Features:** Die XSD erlaubt alternativ **benannte Elemente**
-(`<ClockTuning>true</ClockTuning>` statt `<Feature id="ClockTuning" …/>`); das
-DTO bindet bisher nur die `<Feature>`-Form (Template nutzt nur diese). Vor dem
-Reader-Umstieg binden oder Alt-Form deprecaten.
+✅ **Feature-Alt-Form gebunden:** Die XSD erlaubt alternativ **benannte
+Elemente** (`<ClockTuning>true</ClockTuning>`); das DTO bindet jetzt beide
+Formen, `Mapper.featuresToMap` führt sie zusammen (bei — praktisch nicht
+vorkommender — Doppelung derselben Id gewinnt die benannte Form; der alte
+Parser entschied nach Dokumentreihenfolge). Dual-parse-belegt über
+`base-extended.xml` (benannte + generische Form gemischt).
+
+### Restliche Aggregat-Zweige als Wert-Typen (✅ komplett, grün)
+
+Nach demselben Schnitt wie Features/ChannelOptions sind nun **alle**
+Unit-Kindzweige aus dem DTO konstruierbar:
+
+- **Urls** → `Mapper.toUrls` (kanonische Liste), **IgnoredChannels** →
+  `Mapper.toIgnoredChannels` (kompilierte `Pattern`, ungültige → XmlException
+  wie der Creator), **Durations** → `Duration.of`/`AllDurations.of` +
+  `Mapper.toDurations` (Dubletten: geloggt, letzter gewinnt), **Assignments** →
+  `Mapper.toChannelAssignments` (Map über Assignment-Id, Dubletten →
+  XmlException; die von der base.xsd nicht erlaubten Creator-Felder
+  alias/booleanValue/Configuration bleiben null), **Configuration** →
+  `Configuration.of` + `Mapper.toConfiguration` (inkl. Extensions; `solarType`
+  ist in der base.xsd nicht deklariert — toter Creator-Pfad → null).
+- **passwordCrypt-Ableitung vereinheitlicht:** `Mapper.toCryptAes` ist die
+  gemeinsame Sicht für Mqtt/Unit/ExceptionMail (Fehlschlag am Objekt abfragbar,
+  Reaktion beim Aufrufer); `toMqtt`/`connectionConfig` nutzen sie.
+- Damit sind **alle Bausteine für den `base.xml`-Reader-Umstieg vorhanden**:
+  jeder Zweig ist gebunden, jeder Wert-Typ konstruierbar, Defaults und
+  Validierungsregeln gespiegelt.

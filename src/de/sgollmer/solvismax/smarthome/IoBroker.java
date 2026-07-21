@@ -38,6 +38,23 @@ public class IoBroker {
 		this.javascriptInterface = Constants.IoBroker.DEFAULT_JAVASCRIPT_INTERFACE;
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). Der Element-Default (fehlendes {@code <Iobroker>} →
+	 * Default-Interfaces) liegt in {@code Mapper.toIoBroker}.
+	 */
+	public static IoBroker of(final String mqttInterface, final String javascriptInterface) {
+		return new IoBroker(mqttInterface, javascriptInterface);
+	}
+
+	public String getMqttInterface() {
+		return this.mqttInterface;
+	}
+
+	public String getJavascriptInterface() {
+		return this.javascriptInterface;
+	}
+
 	public void writeObjectList(final Instances instances) throws IOException {
 
 		Writer writer = null;

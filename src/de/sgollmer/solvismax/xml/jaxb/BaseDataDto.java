@@ -89,8 +89,12 @@ public class BaseDataDto {
 		public int reheatingNotRequiredActiveTime_ms = Constants.Defaults.REHEATING_NOT_REQUIRED_ACTIVE_TIME;
 		@XmlAttribute(name = "delayAfterSwitchingOnEnable") public boolean delayAfterSwitchingOnEnable;
 		// Rohwert in Sekunden — die Domäne rechnet nach Millisekunden um; diese
-		// Ableitung liefert Mapper.measurementsIntervalMs (Weg B: abgeleitete Sicht).
-		@XmlAttribute(name = "measurementsInterval_s") public int measurementsInterval_s;
+		// Ableitung liefert Mapper.measurementsIntervalMs (Weg B: abgeleitete
+		// Sicht). Integer: Alternativ erlaubt das Schema das (deprecated, bereits
+		// in ms vorliegende) Attribut defaultReadMeasurementsInterval_ms — die
+		// Aufloesung beider Formen liegt im Mapper.
+		@XmlAttribute(name = "measurementsInterval_s") public Integer measurementsInterval_s;
+		@XmlAttribute(name = "defaultReadMeasurementsInterval_ms") public Integer defaultReadMeasurementsInterval_ms;
 		// Integer statt int: Fehlt das Attribut, faellt der Wert auf
 		// measurementsInterval_s zurueck (Creator-Semantik) — der Fallback braucht
 		// die Unterscheidung "nicht gesetzt" (null) und liegt in
@@ -106,6 +110,82 @@ public class BaseDataDto {
 
 		@XmlElement(name = "ChannelOptions")
 		public ChannelOptionsDto channelOptions;
+
+		@XmlElement(name = "Urls")
+		public UrlsDto urls;
+
+		@XmlElement(name = "IgnoredChannels")
+		public IgnoredChannelsDto ignoredChannels;
+
+		@XmlElement(name = "ChannelAssignments")
+		public ChannelAssignmentsDto channelAssignments;
+
+		@XmlElement(name = "Durations")
+		public DurationsDto durations;
+
+		@XmlElement(name = "Extensions")
+		public ExtensionsDto extensions;
+	}
+
+	/** JAXB-Bean für {@code <Urls>} — Liste von {@code <Url>Text</Url>}-Elementen. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class UrlsDto {
+		@XmlElement(name = "Url")
+		public List<String> url;
+	}
+
+	/** JAXB-Bean für {@code <IgnoredChannels>} — Liste von {@code <RegEx>Muster</RegEx>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class IgnoredChannelsDto {
+		@XmlElement(name = "RegEx")
+		public List<String> regEx;
+	}
+
+	/** JAXB-Bean für {@code <ChannelAssignments>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ChannelAssignmentsDto {
+		@XmlElement(name = "Assignment")
+		public List<AssignmentDto> assignment;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Assignment id name [unit]/>}. Die base.xsd erlaubt
+	 * nur diese drei Attribute; die weiteren vom alten Creator gelesenen Felder
+	 * (alias, booleanValue, Configuration-Kind) sind in XSD-validen base.xml
+	 * nicht möglich und daher bewusst nicht gebunden.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class AssignmentDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "name") public String name;
+		@XmlAttribute(name = "unit") public String unit;
+	}
+
+	/** JAXB-Bean für {@code <Durations>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class DurationsDto {
+		@XmlElement(name = "Duration")
+		public List<DurationDto> duration;
+	}
+
+	/** JAXB-Bean für {@code <Duration id time_ms/>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class DurationDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "time_ms") public int time_ms;
+	}
+
+	/** JAXB-Bean für {@code <Extensions>} (Anlagen-Erweiterungen der Unit). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ExtensionsDto {
+		@XmlElement(name = "Extension")
+		public List<ExtensionDto> extension;
+	}
+
+	/** JAXB-Bean für {@code <Extension id="..."/>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ExtensionDto {
+		@XmlAttribute(name = "id") public String id;
 	}
 
 	/** JAXB-Bean für {@code <ChannelOptions>} (Sammlung von {@code <Channel>}). */
@@ -134,11 +214,32 @@ public class BaseDataDto {
 		@XmlAttribute(name = "powerOnDelay_s") public Integer powerOnDelay_s;
 	}
 
-	/** JAXB-Bean für {@code <Features>}. */
+	/**
+	 * JAXB-Bean für {@code <Features>}. Das Schema erlaubt zwei Formen: die
+	 * generische ({@code <Feature id="..." value="..."/>}) und <b>benannte
+	 * Elemente</b> ({@code <ClockTuning>true</ClockTuning>}, Alt-Form). Beide
+	 * sind gebunden; {@code Mapper.featuresToMap} führt sie zusammen (benannte
+	 * Form überschreibt bei — praktisch nicht vorkommender — Doppelung dieselbe
+	 * Id; der alte Parser entschied dort nach Dokumentreihenfolge).
+	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class FeaturesDto {
 		@XmlElement(name = "Feature")
 		public List<FeatureDto> feature;
+
+		@XmlElement(name = "ClockTuning") public Boolean clockTuning;
+		@XmlElement(name = "EquipmentTimeSynchronisation") public Boolean equipmentTimeSynchronisation;
+		@XmlElement(name = "UpdateAfterUserAccess") public Boolean updateAfterUserAccess;
+		@XmlElement(name = "DetectServiceAccess") public Boolean detectServiceAccess;
+		@XmlElement(name = "EndOfUserInterventionDetectionThroughScreenSaver")
+		public Boolean endOfUserInterventionDetectionThroughScreenSaver;
+		@XmlElement(name = "PowerOffIsServiceAccess") public Boolean powerOffIsServiceAccess;
+		@XmlElement(name = "SendMailOnError") public Boolean sendMailOnError;
+		@XmlElement(name = "SendMailOnErrorsCleared") public Boolean sendMailOnErrorsCleared;
+		@XmlElement(name = "ClearErrorMessageAfterMail") public Boolean clearErrorMessageAfterMail;
+		@XmlElement(name = "OnlyMeasurements") public Boolean onlyMeasurements;
+		@XmlElement(name = "InteractiveGUIAccess") public Boolean interactiveGUIAccess;
+		@XmlElement(name = "Admin") public Boolean admin;
 	}
 
 	/** JAXB-Bean für {@code <Feature id="..." value="..."/>}. */

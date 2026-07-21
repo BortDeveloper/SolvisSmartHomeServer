@@ -40,6 +40,7 @@ class DualParseBaseTest {
 
 	private static final String TEMPLATE = "rsc/de/sgollmer/solvismax/data/base.xml";
 	private static final String MINIMAL = "testFiles/xml/base-minimal.xml";
+	private static final String EXTENDED = "testFiles/xml/base-extended.xml";
 
 	private void assumeTemplate() {
 		Assumptions.assumeTrue(new File(TEMPLATE).isFile(), "Vorlage fehlt: " + TEMPLATE);
@@ -501,6 +502,96 @@ class DualParseBaseTest {
 		assertEquals(alt.getMqtt().isEnable(), gemappt.isEnable());
 		assertEquals(alt.getMqtt().getTopicPrefix(), gemappt.getTopicPrefix());
 		assertEquals(alt.getMqtt().getSmartHomeId(), gemappt.getSmartHomeId());
+	}
+
+	/**
+	 * <b>Erweiterte Fixture — die bisher unbefüllten Unit-Kindzweige:</b> Urls,
+	 * Extensions (via Configuration), benannte Feature-Alt-Form
+	 * ({@code <ClockTuning>true</ClockTuning>}), IgnoredChannels,
+	 * ChannelAssignments, Durations sowie die deprecated ms-Form
+	 * {@code defaultReadMeasurementsInterval_ms}. Alle Zweige werden dual-parse-
+	 * verglichen — über die Domänen-Getter, wo vorhanden, sonst über die
+	 * Fach-Semantik (isChannelIgnored-Verhalten, Configuration-Kommentar).
+	 */
+	@Test
+	void erweiterteZweigeAusDomaeneUndDtoIdentisch() throws Exception {
+		Assumptions.assumeTrue(new File(EXTENDED).isFile(), "Fixture fehlt: " + EXTENDED);
+		final BaseData alt = new BaseControlFileReader(EXTENDED).read();
+		assertNotNull(alt, "alter Parser muss die erweiterte Fixture akzeptieren (XSD-valide)");
+		final BaseDataDto neu = JaxbBaseReader.read(EXTENDED);
+
+		final Unit u = alt.getUnits().getUnits().iterator().next();
+		final BaseDataDto.UnitDto ud = neu.units.unit.get(0);
+
+		// Urls (Text-Content-Elemente)
+		assertEquals(new java.util.ArrayList<>(u.getUrls()), Mapper.toUrls(ud.urls));
+		assertEquals(2, Mapper.toUrls(ud.urls).size());
+
+		// IgnoredChannels: Verhaltensvergleich der kompilierten Muster
+		final java.util.List<java.util.regex.Pattern> muster = Mapper.toIgnoredChannels(ud.ignoredChannels);
+		for (final String kanal : new String[] { "P1.Pumpe", "X99Test", "S10.Aussentemperatur" }) {
+			final boolean ausDto = muster.stream().anyMatch(p -> p.matcher(kanal).matches());
+			assertEquals(u.isChannelIgnored(kanal), ausDto, "isChannelIgnored weicht ab: " + kanal);
+		}
+		org.junit.jupiter.api.Assertions.assertTrue(u.isChannelIgnored("P1.Pumpe"),
+				"Fixture-Muster P1\\..* muss greifen");
+
+		// Durations (Wert-Typ via Factories)
+		final de.sgollmer.solvismax.model.objects.AllDurations durations = Mapper.toDurations(ud.durations);
+		assertEquals(u.getDuration("Standard").getTime_ms(), durations.get("Standard").getTime_ms());
+		assertEquals(u.getDuration("Long").getTime_ms(), durations.get("Long").getTime_ms());
+		assertNull(durations.get("ValueChange"));
+
+		// ChannelAssignments (Map, Schluessel = Assignment-Id)
+		final java.util.Map<String, de.sgollmer.solvismax.model.objects.ChannelAssignment> assignments =
+				Mapper.toChannelAssignments(ud.channelAssignments);
+		final de.sgollmer.solvismax.model.objects.ChannelAssignment altA1 = u.getChannelAssignment("A1");
+		assertNotNull(altA1);
+		assertEquals(altA1.getChannelName(), assignments.get("A1").getChannelName());
+		assertEquals(altA1.getUnit(), assignments.get("A1").getUnit());
+		assertEquals(u.getChannelAssignment("A2").getChannelName(), assignments.get("A2").getChannelName());
+
+		// Configuration inkl. Extensions: Kommentar-Sicht vergleicht Typ,
+		// Heizung, Kreise und Extensions in einem Schritt.
+		assertEquals(u.getComment(), Mapper.toConfiguration(ud).getComment());
+
+		// Mess-Intervall ueber die deprecated ms-Form (kein measurementsInterval_s)
+		assertNull(ud.measurementsInterval_s);
+		assertEquals(u.getMeasurementsInterval_ms(), Mapper.measurementsIntervalMs(ud));
+		assertEquals(10_000, Mapper.measurementsIntervalMs(ud));
+		assertEquals(u.getMeasurementsIntervalFast_ms(), Mapper.measurementsIntervalFastMs(ud));
+
+		// Benannte Feature-Alt-Form: ClockTuning=true neben generischem Feature.
+		final de.sgollmer.solvismax.model.objects.unit.Features features = Mapper.toFeatures(ud.features);
+		org.junit.jupiter.api.Assertions.assertTrue(features.isClockTuning(), "Alt-Form gebunden");
+		assertEquals(u.getFeatures().isClockTuning(), features.isClockTuning());
+		assertEquals(u.getFeatures().isInteractiveGUIAccess(), features.isInteractiveGUIAccess());
+		assertEquals(u.getFeatures().getMap(), features.getMap());
+	}
+
+	/**
+	 * IoBroker als Wert-Typ (Weg B): identische Interfaces aus Domäne und DTO —
+	 * und der <b>Element-Default</b> (fehlendes {@code <Iobroker>} in der
+	 * Minimal-Fixture → Default-Interfaces) verhält sich wie beim alten Parser.
+	 */
+	@Test
+	void ioBrokerAusDomaeneUndDtoIdentischInklusiveElementDefault() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+		final de.sgollmer.solvismax.smarthome.IoBroker ausDto = Mapper.toIoBroker(neu.iobroker);
+		assertEquals(alt.getIoBroker().getMqttInterface(), ausDto.getMqttInterface());
+		assertEquals(alt.getIoBroker().getJavascriptInterface(), ausDto.getJavascriptInterface());
+
+		// Minimal-Fixture: <Iobroker> fehlt -> beide Parser liefern die Defaults.
+		Assumptions.assumeTrue(new File(MINIMAL).isFile(), "Fixture fehlt: " + MINIMAL);
+		final BaseData altMin = new BaseControlFileReader(MINIMAL).read();
+		final BaseDataDto neuMin = JaxbBaseReader.read(MINIMAL);
+		assertNull(neuMin.iobroker, "Element fehlt in der Fixture");
+		final de.sgollmer.solvismax.smarthome.IoBroker defaultDto = Mapper.toIoBroker(neuMin.iobroker);
+		assertEquals(altMin.getIoBroker().getMqttInterface(), defaultDto.getMqttInterface());
+		assertEquals(altMin.getIoBroker().getJavascriptInterface(), defaultDto.getJavascriptInterface());
+		assertEquals("mqtt-client.0", defaultDto.getMqttInterface());
 	}
 
 	private static boolean dtoFeature(final BaseDataDto.UnitDto unit, final String id) {

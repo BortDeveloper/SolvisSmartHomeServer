@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import de.sgollmer.solvismax.ExecutionConfig;
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
@@ -12,6 +14,8 @@ import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.crypt.Ssl;
 import de.sgollmer.solvismax.error.CryptException;
+import de.sgollmer.solvismax.model.objects.AllDurations;
+import de.sgollmer.solvismax.model.objects.ChannelAssignment;
 import de.sgollmer.solvismax.model.objects.unit.AllChannelOptions;
 import de.sgollmer.solvismax.model.objects.unit.Features;
 import de.sgollmer.solvismax.model.objects.unit.UnitConfig;
@@ -75,12 +79,36 @@ public final class Mapper {
 	 */
 	public static Map<String, Boolean> featuresToMap(final BaseDataDto.FeaturesDto features) {
 		final Map<String, Boolean> map = new LinkedHashMap<>();
-		if (features != null && features.feature != null) {
-			for (final BaseDataDto.FeatureDto feature : features.feature) {
-				map.put(feature.id, feature.value);
+		if (features != null) {
+			if (features.feature != null) {
+				for (final BaseDataDto.FeatureDto feature : features.feature) {
+					map.put(feature.id, feature.value);
+				}
 			}
+			// Benannte Alt-Form (<ClockTuning>true</ClockTuning>) — gleiche Map-
+			// Schluessel wie die generische Form; bei (praktisch nicht
+			// vorkommender) Doppelung gewinnt hier die benannte Form.
+			putIfSet(map, "ClockTuning", features.clockTuning);
+			putIfSet(map, "EquipmentTimeSynchronisation", features.equipmentTimeSynchronisation);
+			putIfSet(map, "UpdateAfterUserAccess", features.updateAfterUserAccess);
+			putIfSet(map, "DetectServiceAccess", features.detectServiceAccess);
+			putIfSet(map, "EndOfUserInterventionDetectionThroughScreenSaver",
+					features.endOfUserInterventionDetectionThroughScreenSaver);
+			putIfSet(map, "PowerOffIsServiceAccess", features.powerOffIsServiceAccess);
+			putIfSet(map, "SendMailOnError", features.sendMailOnError);
+			putIfSet(map, "SendMailOnErrorsCleared", features.sendMailOnErrorsCleared);
+			putIfSet(map, "ClearErrorMessageAfterMail", features.clearErrorMessageAfterMail);
+			putIfSet(map, "OnlyMeasurements", features.onlyMeasurements);
+			putIfSet(map, "InteractiveGUIAccess", features.interactiveGUIAccess);
+			putIfSet(map, "Admin", features.admin);
 		}
 		return java.util.Collections.unmodifiableMap(map);
+	}
+
+	private static void putIfSet(final Map<String, Boolean> map, final String id, final Boolean value) {
+		if (value != null) {
+			map.put(id, value);
+		}
 	}
 
 	/**
@@ -90,11 +118,21 @@ public final class Mapper {
 	 * <p>
 	 * Weg B (DTOs als Config-Modell): Die Einheitenumrechnung (×1000) — die der
 	 * alte Parser inline vornahm — wird hier als explizite, testbare Sicht-Methode
-	 * auf dem DTO bereitgestellt, statt sie in die Bindung zu ziehen.
+	 * auf dem DTO bereitgestellt, statt sie in die Bindung zu ziehen. Alternativ
+	 * erlaubt das Schema das deprecated, bereits in ms vorliegende Attribut
+	 * {@code defaultReadMeasurementsInterval_ms}; sind beide gesetzt, gewinnt die
+	 * nicht-deprecated Sekunden-Form. Fehlen beide, wirft die Sicht — der alte
+	 * Parser lehnte solche Dateien mit {@code XmlException} ab.
 	 * </p>
 	 */
 	public static int measurementsIntervalMs(final BaseDataDto.UnitDto unit) {
-		return unit.measurementsInterval_s * 1000;
+		if (unit.measurementsInterval_s != null) {
+			return unit.measurementsInterval_s * 1000;
+		}
+		if (unit.defaultReadMeasurementsInterval_ms != null) {
+			return unit.defaultReadMeasurementsInterval_ms;
+		}
+		throw new IllegalStateException("<defaultMeasurementsInterval_s> is missing in base.xml");
 	}
 
 	/**
@@ -175,14 +213,7 @@ public final class Mapper {
 	 * </p>
 	 */
 	public static MqttConnectionConfig connectionConfig(final BaseDataDto.MqttDto dto) {
-		final CryptAes passwordCrypt = new CryptAes();
-		if (dto.passwordCrypt != null) {
-			try {
-				passwordCrypt.decrypt(dto.passwordCrypt);
-			} catch (final CryptException e) {
-				// Wie der alte Parser: ungueltiges passwordCrypt bleibt ungesetzt.
-			}
-		}
+		final CryptAes passwordCrypt = toCryptAes(dto.passwordCrypt);
 		final Ssl ssl = toSsl(dto.ssl);
 		return new MqttConnectionConfig() {
 			@Override
@@ -330,10 +361,10 @@ public final class Mapper {
 	 * </p>
 	 */
 	public static int measurementsIntervalFastMs(final BaseDataDto.UnitDto unit) {
-		final int fast_s = unit.measurementsIntervalFast_s != null
-				? unit.measurementsIntervalFast_s
-				: unit.measurementsInterval_s;
-		return fast_s * 1000;
+		if (unit.measurementsIntervalFast_s != null) {
+			return unit.measurementsIntervalFast_s * 1000;
+		}
+		return measurementsIntervalMs(unit);
 	}
 
 	/**
@@ -360,6 +391,118 @@ public final class Mapper {
 			default:
 				return null;
 		}
+	}
+
+	/**
+	 * Abgeleitete Sicht: entschlüsselt ein {@code passwordCrypt}-Attribut in eine
+	 * {@link CryptAes} — die gemeinsame Ableitung für Mqtt, Unit und
+	 * ExceptionMail (alle drei Creators taten dasselbe inline). Schlägt die
+	 * Entschlüsselung fehl, bleibt das Passwort ungesetzt; der Fehler ist am
+	 * Objekt abfragbar ({@code getException()}) — die konsumentenspezifische
+	 * Reaktion (MQTT deaktivieren, Mail deaktivieren, Fehler loggen) liegt beim
+	 * jeweiligen Aufrufer.
+	 */
+	public static CryptAes toCryptAes(final String passwordCrypt) {
+		final CryptAes crypt = new CryptAes();
+		if (passwordCrypt != null) {
+			try {
+				crypt.decrypt(passwordCrypt);
+			} catch (final CryptException e) {
+				// Zustand am Objekt (getException()); Reaktion beim Aufrufer.
+			}
+		}
+		return crypt;
+	}
+
+	/**
+	 * Baut den Wert-Typ {@link de.sgollmer.solvismax.smarthome.IoBroker} aus dem
+	 * DTO (Weg B). <b>Element-Default:</b> Fehlt das ganze {@code <Iobroker>}-
+	 * Element ({@code dto == null}), entsteht — wie beim alten Parser — eine
+	 * Default-Instanz mit den Standard-Interfaces.
+	 */
+	public static de.sgollmer.solvismax.smarthome.IoBroker toIoBroker(final BaseDataDto.IobrokerDto dto) {
+		if (dto == null) {
+			return new de.sgollmer.solvismax.smarthome.IoBroker();
+		}
+		return de.sgollmer.solvismax.smarthome.IoBroker.of(dto.mqttInterface, dto.javascriptInterface);
+	}
+
+	/** Kanonische Sicht: {@code <Urls>}-Liste (leer, wenn Element fehlt). */
+	public static List<String> toUrls(final BaseDataDto.UrlsDto dto) {
+		if (dto == null || dto.url == null) {
+			return java.util.Collections.emptyList();
+		}
+		return java.util.Collections.unmodifiableList(dto.url);
+	}
+
+	/**
+	 * Abgeleitete Sicht: {@code <IgnoredChannels>}-RegEx-Liste als kompilierte
+	 * {@link Pattern} (Creator-Semantik: ungültige Ausdrücke → XmlException).
+	 */
+	public static List<Pattern> toIgnoredChannels(final BaseDataDto.IgnoredChannelsDto dto) throws XmlException {
+		final List<Pattern> patterns = new ArrayList<>();
+		if (dto != null && dto.regEx != null) {
+			for (final String regEx : dto.regEx) {
+				try {
+					patterns.add(Pattern.compile(regEx));
+				} catch (final PatternSyntaxException e) {
+					throw new XmlException("Regular expression error on expression: " + regEx);
+				}
+			}
+		}
+		return patterns;
+	}
+
+	/** Baut den Wert-Typ {@link AllDurations} aus dem DTO (via Factories). */
+	public static AllDurations toDurations(final BaseDataDto.DurationsDto dto) {
+		final List<de.sgollmer.solvismax.model.objects.Duration> durations = new ArrayList<>();
+		if (dto != null && dto.duration != null) {
+			for (final BaseDataDto.DurationDto d : dto.duration) {
+				durations.add(de.sgollmer.solvismax.model.objects.Duration.of(d.id, d.time_ms));
+			}
+		}
+		return AllDurations.of(durations);
+	}
+
+	/**
+	 * Bildet die {@code <ChannelAssignments>} auf die Domänen-Map
+	 * ({@code Assignment-Id → ChannelAssignment}) ab. Wie beim alten Parser:
+	 * Schlüssel ist {@code getName()} (= die Id), Dubletten sind ein Fehler.
+	 * Die von der base.xsd nicht erlaubten Creator-Felder (alias, booleanValue,
+	 * Configuration) bleiben {@code null}.
+	 */
+	public static Map<String, ChannelAssignment> toChannelAssignments(final BaseDataDto.ChannelAssignmentsDto dto)
+			throws XmlException {
+		if (dto == null || dto.assignment == null) {
+			return null; // wie der Creator: kein Element -> null-Map
+		}
+		final Map<String, ChannelAssignment> assignments = new LinkedHashMap<>();
+		for (final BaseDataDto.AssignmentDto a : dto.assignment) {
+			final ChannelAssignment assignment = new ChannelAssignment(a.id, a.name, null, a.unit, null, null);
+			final ChannelAssignment former = assignments.put(assignment.getName(), assignment);
+			if (former != null) {
+				throw new XmlException("base.xml error, <" + assignment.getName() + "> isn't unique.");
+			}
+		}
+		return assignments;
+	}
+
+	/**
+	 * Baut den Wert-Typ {@link de.sgollmer.solvismax.model.objects.unit.Configuration}
+	 * aus den Unit-Attributen + {@code <Extensions>} (Weg B). {@code solarType}
+	 * ist in der base.xsd nicht deklariert (toter Creator-Pfad) → {@code null}.
+	 */
+	public static de.sgollmer.solvismax.model.objects.unit.Configuration toConfiguration(
+			final BaseDataDto.UnitDto unit) {
+		List<String> extensions = null;
+		if (unit.extensions != null && unit.extensions.extension != null) {
+			extensions = new ArrayList<>();
+			for (final BaseDataDto.ExtensionDto e : unit.extensions.extension) {
+				extensions.add(e.id);
+			}
+		}
+		return de.sgollmer.solvismax.model.objects.unit.Configuration.of(unit.type, unit.mainHeating,
+				unit.heatingCircuits, null, extensions);
 	}
 
 	/**
@@ -436,16 +579,9 @@ public final class Mapper {
 		if (dto == null) {
 			return null;
 		}
-		final CryptAes passwordCrypt = new CryptAes();
-		boolean enable = dto.enable;
-		if (dto.passwordCrypt != null) {
-			try {
-				passwordCrypt.decrypt(dto.passwordCrypt);
-			} catch (final CryptException e) {
-				// Wie der alte Parser: ungültiges passwordCrypt -> MQTT aus.
-				enable = false;
-			}
-		}
+		final CryptAes passwordCrypt = toCryptAes(dto.passwordCrypt);
+		// Wie der alte Parser: ungültiges passwordCrypt -> MQTT aus.
+		final boolean enable = dto.enable && passwordCrypt.getException() == null;
 		return Mqtt.of(enable, dto.brokerUrl, dto.port, dto.userName, passwordCrypt, dto.topicPrefix,
 				dto.idPrefix, dto.smartHomeId, dto.publishQoS, dto.subscribeQoS, toSsl(dto.ssl));
 	}

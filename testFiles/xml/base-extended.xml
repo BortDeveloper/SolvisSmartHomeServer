@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Erweiterte Fixture fuer den Dual-Parse-Test der bisher nicht befuellten
+     Unit-Kindzweige: Urls, Extensions, benannte Feature-Alt-Form,
+     IgnoredChannels, ChannelAssignments, Durations - sowie die deprecated
+     ms-Form defaultReadMeasurementsInterval_ms (statt measurementsInterval_s). -->
+<tns:BaseData xmlns:tns="http://www.example.org/control">
+	<tns:ExecutionData timeZone="Europe/Berlin" port="10735"
+		echoInhibitTime_ms="2000" />
+	<tns:Units>
+		<tns:Unit id="extendedUnit" type="SolvisMax6PurSolo"
+			mainHeating="OelBW" heatingCircuits="2" account="account"
+			defaultAverageCount="12" measurementHysteresisFactor="4"
+			defaultReadMeasurementsInterval_ms="10000"
+			forcedUpdateInterval_ms="0" bufferedInterval_ms="0"
+			watchDogTime_ms="30000" releaseBlockingAfterUserAccess_ms="60000"
+			delayAfterSwitchingOnEnable="false"
+			ignoredFrameThicknesScreenSaver="3">
+			<tns:Urls>
+				<tns:Url>192.168.0.10</tns:Url>
+				<tns:Url>10.0.0.5</tns:Url>
+			</tns:Urls>
+			<tns:Extensions>
+				<tns:Extension id="Festbrennstoff" />
+			</tns:Extensions>
+			<tns:Features>
+				<!-- benannte Alt-Form neben der generischen Feature-Form -->
+				<tns:ClockTuning>true</tns:ClockTuning>
+				<tns:Feature id="InteractiveGUIAccess" value="true" />
+			</tns:Features>
+			<tns:IgnoredChannels>
+				<tns:RegEx>P1\..*</tns:RegEx>
+				<tns:RegEx>X99.*</tns:RegEx>
+			</tns:IgnoredChannels>
+			<tns:ChannelAssignments>
+				<tns:Assignment id="A1" name="Kanal1" unit="°C" />
+				<tns:Assignment id="A2" name="Kanal2" />
+			</tns:ChannelAssignments>
+			<tns:Durations>
+				<tns:Duration id="Standard" time_ms="100" />
+				<tns:Duration id="Long" time_ms="2000" />
+			</tns:Durations>
+		</tns:Unit>
+	</tns:Units>
+</tns:BaseData>

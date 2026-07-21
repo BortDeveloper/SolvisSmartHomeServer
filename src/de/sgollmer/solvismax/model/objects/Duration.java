@@ -15,6 +15,11 @@ public class Duration {
 		this.time_ms = time_ms;
 	}
 
+	/** Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md 3.3, Weg B). */
+	public static Duration of(final String id, final int time_ms) {
+		return new Duration(id, time_ms);
+	}
+
 	/**
 	 * @return the id
 	 */

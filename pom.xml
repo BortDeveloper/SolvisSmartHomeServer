@@ -9,9 +9,8 @@
     * IDE- und CI-unabhaengig reproduzierbar,
     * Uber-Jar via maven-shade-plugin (ersetzt den zipgroupfileset-Trick).
 
-  Java-Sprachniveau bleibt in dieser Phase bewusst bei 8 (wie der Ant-Build),
-  um die Build-Migration von der spaeteren Anhebung auf Java 17 zu trennen
-  (eine Aenderung nach der anderen). Siehe MODERNISIERUNG.md.
+  Java-Sprachniveau: aktuelle LTS-Baseline 17 (siehe maven.compiler.release);
+  der erzeugte Bytecode laeuft auf Java 17 und 21. Siehe MODERNISIERUNG.md.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -33,8 +32,9 @@
   </description>
 
   <properties>
-    <!-- Phase 1: Sprachniveau wie im Ant-Build (8). Anhebung auf 17 spaeter. -->
-    <maven.compiler.release>8</maven.compiler.release>
+    <!-- Sprachniveau: aktuelle LTS-Baseline 17 (Bytecode laeuft auf 17 und 21).
+         Ermoeglicht moderne Sprachmittel (Records, switch-Expressions, var). -->
+    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j.version>2.0.16</slf4j.version>
     <logback.version>1.5.12</logback.version>

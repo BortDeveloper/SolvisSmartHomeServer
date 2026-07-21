@@ -30,6 +30,12 @@ public class BaseDataDto {
 	@XmlElement(name = "Mqtt")
 	public MqttDto mqtt;
 
+	@XmlElement(name = "ExceptionMail")
+	public ExceptionMailDto exceptionMail;
+
+	@XmlElement(name = "Iobroker")
+	public IobrokerDto iobroker;
+
 	/** JAXB-Bean für {@code <ExecutionData>}. */
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class ExecutionDataDto {
@@ -62,6 +68,18 @@ public class BaseDataDto {
 		@XmlAttribute(name = "watchDogTime_ms") public int watchDogTime_ms;
 		@XmlAttribute(name = "fwLth2_21_02A") public boolean fwLth2_21_02A;
 		@XmlAttribute(name = "ignoredFrameThicknesScreenSaver") public int ignoredFrameThicknesScreenSaver;
+		// Weitere Intervall-/Verzoegerungsattribute (Domaene liefert sie 1:1,
+		// keine Einheitenumrechnung -> direkt dual-parse-vergleichbar).
+		@XmlAttribute(name = "forcedUpdateInterval_ms") public int forcedUpdateInterval_ms;
+		@XmlAttribute(name = "doubleUpdateInterval_ms") public int doubleUpdateInterval_ms;
+		@XmlAttribute(name = "bufferedInterval_ms") public int bufferedInterval_ms;
+		@XmlAttribute(name = "releaseBlockingAfterUserAccess_ms") public int releaseBlockingAfterUserAccess_ms;
+		@XmlAttribute(name = "releaseBlockingAfterServiceAccess_ms") public int releaseBlockingAfterServiceAccess_ms;
+		@XmlAttribute(name = "reheatingNotRequiredActiveTime_ms") public int reheatingNotRequiredActiveTime_ms;
+		@XmlAttribute(name = "delayAfterSwitchingOnEnable") public boolean delayAfterSwitchingOnEnable;
+		// Hinweis: measurementsInterval_s (Sekunden) wird von der Domaene nach
+		// _ms umgerechnet und resetErrorDelayTime_ms hat keinen Getter -> beide
+		// werden spaeter ueber den Mapper bzw. Charakterisierung abgesichert.
 
 		@XmlElement(name = "Features")
 		public FeaturesDto features;
@@ -106,5 +124,53 @@ public class BaseDataDto {
 		@XmlAttribute(name = "caFilePath") public String caFilePath;
 		@XmlAttribute(name = "clientCrtFilePath") public String clientCrtFilePath;
 		@XmlAttribute(name = "clientKeyFilePath") public String clientKeyFilePath;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <ExceptionMail>} (Fehler-Benachrichtigung per Mail).
+	 *
+	 * <p>
+	 * Die Domänenklasse {@code mail.ExceptionMail} legt diese Werte nicht über
+	 * Getter offen; die JAXB-Bindung wird daher per <em>Charakterisierung</em>
+	 * gegen die Vorlagenwerte abgesichert (statt Dual-Parse gegen die Domäne).
+	 * {@code passwordCrypt} wird — wie beim {@code Mqtt} — als roher String
+	 * gebunden; die Entschlüsselung ist eine spätere Mapper-Ableitung.
+	 * </p>
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ExceptionMailDto {
+		@XmlAttribute(name = "name") public String name;
+		@XmlAttribute(name = "from") public String from;
+		@XmlAttribute(name = "passwordCrypt") public String passwordCrypt;
+		@XmlAttribute(name = "securityType") public String securityType;
+		@XmlAttribute(name = "provider") public String provider;
+		@XmlAttribute(name = "port") public int port;
+
+		@XmlElement(name = "Recipients")
+		public RecipientsDto recipients;
+	}
+
+	/** JAXB-Bean für {@code <Recipients>} (Sammlung von {@code <Recipient>}). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class RecipientsDto {
+		@XmlElement(name = "Recipient")
+		public List<RecipientDto> recipient;
+	}
+
+	/** JAXB-Bean für {@code <Recipient name="..." address="..." type="..."/>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class RecipientDto {
+		@XmlAttribute(name = "name") public String name;
+		@XmlAttribute(name = "address") public String address;
+		/** {@code TO|CC|BCC} — als String gebunden; das Enum-Mapping ist eine
+		 *  spätere Mapper-Ableitung (kanonisch binden + explizit ableiten). */
+		@XmlAttribute(name = "type") public String type;
+	}
+
+	/** JAXB-Bean für {@code <Iobroker>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class IobrokerDto {
+		@XmlAttribute(name = "mqttInterface") public String mqttInterface;
+		@XmlAttribute(name = "javascriptInterface") public String javascriptInterface;
 	}
 }

@@ -72,6 +72,15 @@ class DualParseBaseTest {
 		assertEquals(u.getWatchDogTime_ms(), ud.watchDogTime_ms);
 		assertEquals(u.isFwLth2_21_02A(), ud.fwLth2_21_02A);
 		assertEquals(u.getIgnoredFrameThicknesScreenSaver(), ud.ignoredFrameThicknesScreenSaver);
+
+		// Weitere Intervall-/Verzögerungsattribute (1:1, keine Umrechnung).
+		assertEquals(u.getForcedUpdateInterval_ms(), ud.forcedUpdateInterval_ms);
+		assertEquals(u.getDoubleUpdateInterval_ms(), ud.doubleUpdateInterval_ms);
+		assertEquals(u.getBufferedInterval_ms(), ud.bufferedInterval_ms);
+		assertEquals(u.getReleaseBlockingAfterUserAccess_ms(), ud.releaseBlockingAfterUserAccess_ms);
+		assertEquals(u.getReleaseBlockingAfterServiceAccess_ms(), ud.releaseBlockingAfterServiceAccess_ms);
+		assertEquals(u.getReheatingNotRequiredActiveTime_ms(), ud.reheatingNotRequiredActiveTime_ms);
+		assertEquals(u.isDelayAfterSwitchingOnEnable(), ud.delayAfterSwitchingOnEnable);
 	}
 
 	@Test
@@ -92,6 +101,31 @@ class DualParseBaseTest {
 				dtoFeature(ud, "SendMailOnErrorsCleared"));
 		assertEquals(u.getFeatures().get("InteractiveGUIAccess", true),
 				dtoFeature(ud, "InteractiveGUIAccess"));
+	}
+
+	/**
+	 * Charakterisierung von {@code <ExceptionMail>} und {@code <Iobroker>}: Die
+	 * Domäne legt diese Werte nicht über Getter offen, daher wird die
+	 * JAXB-Bindung gegen die bekannten Vorlagenwerte geprüft (statt Dual-Parse
+	 * gegen die Domäne). Sichert ab, dass JAXB diese Elemente korrekt einliest.
+	 */
+	@Test
+	void exceptionMailUndIobrokerGebunden() throws Exception {
+		assumeTemplate();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		assertNotNull(neu.exceptionMail);
+		assertEquals("Vorname Nachname", neu.exceptionMail.name);
+		assertEquals("securesmtp.t-online.de", neu.exceptionMail.provider);
+		assertEquals("TLS", neu.exceptionMail.securityType);
+		assertEquals(5870, neu.exceptionMail.port);
+		assertNotNull(neu.exceptionMail.recipients);
+		assertEquals(2, neu.exceptionMail.recipients.recipient.size());
+		assertEquals("TO", neu.exceptionMail.recipients.recipient.get(0).type);
+
+		assertNotNull(neu.iobroker);
+		assertEquals("mqtt-client.0", neu.iobroker.mqttInterface);
+		assertEquals("javascript.0", neu.iobroker.javascriptInterface);
 	}
 
 	private static boolean dtoFeature(final BaseDataDto.UnitDto unit, final String id) {

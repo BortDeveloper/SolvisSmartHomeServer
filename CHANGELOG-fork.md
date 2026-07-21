@@ -8,7 +8,36 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## log4j auf aktuelle Version 2.26.1 gehoben
+
+Ziel: statt der (im vorigen Schritt aus dem Bundle ausgeschlossenen)
+verwundbaren `log4j 2.13.2` eine **aktuelle, gepatchte** Version einsetzen.
+
+- **Anpassung:**
+  - `lib/log4j-api-2.13.2.jar` und `lib/log4j-core-2.13.2.jar` durch
+    **2.26.1** ersetzt (aus Maven Central, SHA-1-geprüft). 2.26.1 ist die
+    aktuelle stabile Version der 2.x-Reihe; **3.x** ist noch Beta und ein
+    Major-Umbau (nicht drop-in — der Code nutzt
+    `org.apache.logging.log4j.core.config.*`), daher bewusst nicht.
+  - Da 2.26.1 nicht mehr von Log4Shell betroffen ist, entfällt der
+    Sicherheitsgrund für den Bundle-Ausschluss: In `build.xml` (Target
+    `Build complete`) wurde `excludes="log4j-*.jar"` wieder **entfernt** —
+    log4j ist damit aktuell **und** wieder im Uber-Jar (einsatzbereit für den
+    optionalen Log4j2-Backend). Aktiver Logger bleibt tinylog.
+  - `build-user.xml`: Versionsverweise (Compile-Classpath + `createLog4jJar`)
+    auf 2.26.1 gehoben.
+- **Verifikation (2026-07-21, `ransible`/OpenJDK 21):** `ant clean && ant` →
+  BUILD SUCCESSFUL; im Jar ist log4j **2.26.1** enthalten
+  (`Implementation-Version` in `META-INF/…/log4j-core/pom.properties` bzw.
+  Klassenpräsenz), Laufzeit-Smoke `--string-to-crypt` weiterhin ok.
+
 ## Log4Shell-Altlast aus dem Uber-Jar entfernt
+
+> **Hinweis:** Dieser Schritt (Ausschluss aus dem Bundle) wurde durch die
+> Versionsanhebung oben **überholt** — die Altlast ist jetzt durch die aktuelle
+> Version 2.26.1 ersetzt und wieder im Bundle. Der Abschnitt bleibt zur
+> Nachvollziehbarkeit erhalten.
+
 
 Ziel: Die für Log4Shell (CVE-2021-44228) anfällige `log4j-core 2.13.2` nicht
 mehr ausliefern.

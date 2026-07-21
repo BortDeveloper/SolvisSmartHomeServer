@@ -46,6 +46,17 @@ den Umweg über einen lokalen Klartext-Broker + Bridge.
   </Mqtt>
   ```
 
+### Verifikation mTLS (2026-07-21)
+
+Self-contained getestet auf `ransible` (OpenJDK 21): Wegwerf-PKI (Test-CA,
+Server- und Client-Zertifikat mit PKCS#8-Key), ein lokaler
+`openssl s_server … -Verify 1` mit **Client-Zertifikats-Pflicht**, und der neue
+Code als Client (`Ssl.create(...).getSocketFactory()` → `SSLSocket` →
+`startHandshake()`). Ergebnis: **`HANDSHAKE_OK`**, ausgehandelte Cipher-Suite
+`TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384`. Da der Server ein Client-Zertifikat
+erzwang, belegt der erfolgreiche Handshake beide Richtungen (Server- **und**
+Client-Authentisierung).
+
 ## Build unter aktueller JDK/JRE (JDK 21) lauffähig gemacht
 
 Ziel: `ant` (Default-Target `Build complete`) baut das Uber-Jar

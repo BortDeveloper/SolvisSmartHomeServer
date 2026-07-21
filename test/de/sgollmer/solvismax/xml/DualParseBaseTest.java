@@ -11,9 +11,11 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import de.sgollmer.solvismax.BaseData;
+import de.sgollmer.solvismax.connection.mqtt.Mqtt;
 import de.sgollmer.solvismax.model.objects.unit.Unit;
 import de.sgollmer.solvismax.xml.jaxb.BaseDataDto;
 import de.sgollmer.solvismax.xml.jaxb.JaxbBaseReader;
+import de.sgollmer.solvismax.xml.jaxb.Mapper;
 
 /**
  * <b>Dual-Parse-Differenztest</b> für {@code base.xml}: dieselbe Datei wird mit
@@ -126,6 +128,25 @@ class DualParseBaseTest {
 		assertNotNull(neu.iobroker);
 		assertEquals("mqtt-client.0", neu.iobroker.mqttInterface);
 		assertEquals("javascript.0", neu.iobroker.javascriptInterface);
+	}
+
+	/**
+	 * Voller DTO→Domäne-Mapper am Mqtt-Teilbaum: {@code Mapper.toMqtt} baut aus
+	 * dem DTO ein echtes Domänen-{@link Mqtt} (inkl. {@code passwordCrypt}-
+	 * Entschlüsselung und {@code Ssl}-Abbildung). Das Ergebnis muss dem des alten
+	 * Parsers entsprechen — hier über die von der Domäne offengelegten Getter.
+	 */
+	@Test
+	void mqttMapperErgibtDomaeneWieAlterParser() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final Mqtt gemappt = Mapper.toMqtt(neu.mqtt);
+		assertNotNull(gemappt);
+		assertEquals(alt.getMqtt().isEnable(), gemappt.isEnable());
+		assertEquals(alt.getMqtt().getTopicPrefix(), gemappt.getTopicPrefix());
+		assertEquals(alt.getMqtt().getSmartHomeId(), gemappt.getSmartHomeId());
 	}
 
 	private static boolean dtoFeature(final BaseDataDto.UnitDto unit, final String id) {

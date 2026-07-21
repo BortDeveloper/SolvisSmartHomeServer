@@ -84,6 +84,20 @@ public class Mqtt {
 		LoggerFactory.setLogger("de.sgollmer.solvismax.connection.mqtt.Logger");
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3). Bewusst schlank: sie stellt nur den (bisher privaten) Konstruktor
+	 * bereit; die Interpretationslogik (z. B. {@code passwordCrypt}
+	 * entschlüsseln, MQTT bei Fehler deaktivieren) liegt im Mapper, nicht hier.
+	 * So bleibt die Domänenklasse frei von JAXB-/DTO-Wissen.
+	 */
+	public static Mqtt of(final boolean enable, final String brokerUrl, final int port, final String userName,
+			final CryptAes passwordCrypt, final String topicPrefix, final String idPrefix, final String smartHomeId,
+			final int publishQoS, final int subscribeQoS, final Ssl ssl) {
+		return new Mqtt(enable, brokerUrl, port, userName, passwordCrypt, topicPrefix, idPrefix, smartHomeId,
+				publishQoS, subscribeQoS, ssl);
+	}
+
 	public static class Creator extends CreatorByXML<Mqtt> {
 
 		private boolean enable = false;

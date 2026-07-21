@@ -3,6 +3,11 @@ package de.sgollmer.solvismax.xml.jaxb;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import de.sgollmer.solvismax.connection.mqtt.Mqtt;
+import de.sgollmer.solvismax.crypt.CryptAes;
+import de.sgollmer.solvismax.crypt.Ssl;
+import de.sgollmer.solvismax.error.CryptException;
+
 /**
  * Überführt die kanonisch von JAXB gebundenen {@link BaseDataDto DTO-Strukturen}
  * in die von der Anwendung genutzten <b>abgeleiteten Sichten</b> — die zweite
@@ -67,5 +72,48 @@ public final class Mapper {
 			}
 		}
 		return java.util.Collections.unmodifiableMap(map);
+	}
+
+	/**
+	 * Bildet die kanonisch gebundene {@code <Ssl>}-Struktur auf das Domänenobjekt
+	 * {@link Ssl} ab (mTLS-Konfiguration). {@code null}, wenn kein Ssl-Element
+	 * vorhanden ist.
+	 */
+	public static Ssl toSsl(final BaseDataDto.SslDto dto) {
+		if (dto == null) {
+			return null;
+		}
+		return Ssl.create(dto.enable, dto.caFilePath, dto.clientCrtFilePath, dto.clientKeyFilePath);
+	}
+
+	/**
+	 * Bildet die kanonisch gebundene {@code <Mqtt>}-Struktur auf das
+	 * Domänenobjekt {@link Mqtt} ab.
+	 *
+	 * <p>
+	 * Beispiel für „kanonisch binden + explizit ableiten": {@code passwordCrypt}
+	 * wird von JAXB als roher String gebunden; hier erfolgt — sichtbar und
+	 * testbar — die Entschlüsselung in {@link CryptAes}. Schlägt sie fehl, wird
+	 * MQTT deaktiviert; das reproduziert exakt das Verhalten des bisherigen
+	 * Parsers (der Creator fing {@code CryptException} und setzte
+	 * {@code enable=false}).
+	 * </p>
+	 */
+	public static Mqtt toMqtt(final BaseDataDto.MqttDto dto) {
+		if (dto == null) {
+			return null;
+		}
+		final CryptAes passwordCrypt = new CryptAes();
+		boolean enable = dto.enable;
+		if (dto.passwordCrypt != null) {
+			try {
+				passwordCrypt.decrypt(dto.passwordCrypt);
+			} catch (final CryptException e) {
+				// Wie der alte Parser: ungültiges passwordCrypt -> MQTT aus.
+				enable = false;
+			}
+		}
+		return Mqtt.of(enable, dto.brokerUrl, dto.port, dto.userName, passwordCrypt, dto.topicPrefix,
+				dto.idPrefix, dto.smartHomeId, dto.publishQoS, dto.subscribeQoS, toSsl(dto.ssl));
 	}
 }

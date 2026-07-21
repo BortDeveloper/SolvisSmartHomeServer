@@ -161,7 +161,7 @@ public class Server {
 			} catch (IOException e) {
 				logger.info("IOException occured. Cause:", e);
 				/**
-				 * Im Falle einer fehlerhaften Datenübertragung wird die Verbindung getrennt.
+				 * Im Falle einer fehlerhaften DatenÃ¼bertragung wird die Verbindung getrennt.
 				 * Der Client sollte sie wieder aufbauen, falls er noch existiert
 				 */
 				this.close();
@@ -283,7 +283,7 @@ public class Server {
 		for (Iterator<Client> it = clients.iterator(); it.hasNext();) {
 			Client client = it.next();
 			client.abort();
-			it.remove(); // Wird durch client.abort gelöscht
+			it.remove(); // Wird durch client.abort gelÃ¶scht
 		}
 		this.serverThread.abort();
 	}

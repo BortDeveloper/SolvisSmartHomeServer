@@ -462,7 +462,7 @@ public class Screen extends AbstractScreen implements Comparable<AbstractScreen>
 	}
 
 	/**
-	 * current muss angelernt sein, Nur für den Lern-Modus!!!!!!!
+	 * current muss angelernt sein, Nur fÃ¼r den Lern-Modus!!!!!!!
 	 * 
 	 * @param solvis
 	 * @param screen

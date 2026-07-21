@@ -121,7 +121,7 @@ public class Main {
 				boolean found = true;
 
 				switch (command) {
-					case "string-to-crypt": // Einen String verschlüsseln
+					case "string-to-crypt": // Einen String verschlÃ¼sseln
 						if (value == null) {
 							System.err.println("To less arguments!");
 							System.exit(Constants.ExitCodes.ARGUMENT_FAIL);
@@ -135,7 +135,7 @@ public class Main {
 							System.exit(Constants.ExitCodes.CRYPTION_FAIL);
 						}
 						break;
-					case "create-task-xml": // Eine Steuerfile für den Windows-Task-Manager erstellen
+					case "create-task-xml": // Eine Steuerfile fÃ¼r den Windows-Task-Manager erstellen
 						if (value == null) {
 							System.err.println("To less arguments!");
 							System.exit(Constants.ExitCodes.ARGUMENT_FAIL);

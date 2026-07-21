@@ -270,7 +270,7 @@ public class IoBroker {
 		writer.append("        // Initialen Wert aus Solvis in die kombinierte Objekt schreiben:\n");
 		writer.append("        setState(combined, getState(solvisread).val, true);\n\n");
 
-		writer.append("        // Wert wurde durch Solvis ge‰ndert:\n");
+		writer.append("        // Wert wurde durch Solvis ge√§ndert:\n");
 		writer.append("        on({id: solvisread}, function(obj) {\n");
 
 		writer.append("            var val = obj.state ? obj.state.val : '';\n");
@@ -281,7 +281,7 @@ public class IoBroker {
 
 		writer.append("       });\n\n");
 
-		writer.append("        // Wert wird durch ioBroker ge‰ndert\n");
+		writer.append("        // Wert wird durch ioBroker ge√§ndert\n");
 		writer.append("        on({id: combined, change: 'ne'}, function(obj) {\n");
 		writer.append("            setState(solviswrite, (obj.state ? (obj.state.val === true ?"
 				+ " 1 : (obj.state.val === false ? 0 : obj.state.val)) : ''), false);\n");

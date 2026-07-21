@@ -285,7 +285,7 @@ public class Ocr extends MyImage {
 	}
 
 	public char toChar() {
-		// - Erkennung von 4, geschlossene Struktur obere Hälfte, waagerechtes
+		// - Erkennung von 4, geschlossene Struktur obere HÃ¤lfte, waagerechtes
 		// Maximum 3/4 * Breite, nahe Mitte
 
 		if (this.getHeight() == 0 || this.getWidth() == 0) {
@@ -318,23 +318,23 @@ public class Ocr extends MyImage {
 				if (this.getHeight() > this.getWidth() * 5 / 4) {
 					return '0';
 				} else {
-					return '°';
+					return 'Â°';
 				}
 			} else {
 				// - Erkennung von 8, zwei geschlossene Strukturen
 				return '8';
 			}
 		} else if (upper.closedStructure) {
-			// - Erkennung von 9, geschlossene Struktur obere Hälfte
+			// - Erkennung von 9, geschlossene Struktur obere HÃ¤lfte
 			return '9';
 		} else if (lower.closedStructure) {
-			// - Erkennung von 6, geschlossene Struktur untere Hälfte
+			// - Erkennung von 6, geschlossene Struktur untere HÃ¤lfte
 			return '6';
 		}
 
 		AnalyseResult middle = this.analyse(new Coordinate(this.getWidth() / 2, this.getHeight() / 2));
 		if (middle.closedStructure) {
-			return '°';
+			return 'Â°';
 		}
 
 		if (this.maximaY[0].getValue() == this.getWidth() && this.maximaX[0].getValue() < (this.getWidth() + 1) / 2) {
@@ -350,7 +350,7 @@ public class Ocr extends MyImage {
 		if (this.maximaY[0].getValue() == this.getWidth() && this.maximaX[0].getValue() == this.getHeight()
 				&& this.maximaX[0].getCoord() > this.getWidth() / 3
 				&& this.maximaX[0].getCoord() < this.getWidth() * 2 / 3) {
-			// - Erkennung von +, senkrechtes Maximum = Höhe, waagerechtes
+			// - Erkennung von +, senkrechtes Maximum = HÃ¶he, waagerechtes
 			// maximum = Breite
 			return '+';
 		}
@@ -404,7 +404,7 @@ public class Ocr extends MyImage {
 
 		if (this.getHistogramY().get(0) > this.getWidth() * 2 / 3) {
 			// - Erkennung von 5, Waagerechtes Maximum oben, 2. Maximum
-			// ausgeprägt Mitte
+			// ausgeprÃ¤gt Mitte
 			return '5';
 		}
 

@@ -325,14 +325,14 @@ public class ScreenSaver {
 				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner 2 V1 Artefakte.bmp"), //
 				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1.bmp"), //
 				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 2.bmp"), //
-				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 2 auﬂerhalb.bmp"), //
-				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 auﬂerhalb.bmp"), //
+				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 2 au√üerhalb.bmp"), //
+				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 au√üerhalb.bmp"), //
 				new Test(SaverEvent.NONE, false, "raumeinfluss.png"), //
 				new Test(SaverEvent.POSSIBLE, false, "Bildschirmschoner V1 1 none.bmp"), //
-				new Test(SaverEvent.POSSIBLE, false, "Bildschirmschoner V1 3 auﬂerhalb.bmp"), //
+				new Test(SaverEvent.POSSIBLE, false, "Bildschirmschoner V1 3 au√üerhalb.bmp"), //
 				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 Artefakte.bmp"), //
 				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 3.bmp"), //
-				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 3 auﬂerhalb.bmp"), //
+				new Test(SaverEvent.SCREENSAVER, false, "Bildschirmschoner V1 3 au√üerhalb.bmp"), //
 				new Test(SaverEvent.SCREENSAVER, true, "bildschirmschoner.png"), //
 				new Test(SaverEvent.SCREENSAVER, false, "bildschirmschoner1.png"), //
 				new Test(SaverEvent.SCREENSAVER, false, "bildschirmschoner2.png"));

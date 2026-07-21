@@ -43,7 +43,7 @@ public class MyImage {
 
 	private final BufferedImage image;
 	protected Coordinate origin;
-	protected Coordinate size; // Zeigt auf 1. Pixel auﬂerhalb, relativ
+	protected Coordinate size; // Zeigt auf 1. Pixel au√üerhalb, relativ
 								// zu min
 	private final Collection<Rectangle> ignoreRectanglesWork;
 	private final Set<Rectangle> ignoreRectangles;

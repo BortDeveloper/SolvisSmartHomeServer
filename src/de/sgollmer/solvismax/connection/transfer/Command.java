@@ -31,8 +31,8 @@ public enum Command {
 	 */
 	SHUTDOWN,
 	/**
-	 * Triggert das Auslesen eines Parameters an, welches nur über das GUI
-	 * zugänglich ist Daten werden erst über
+	 * Triggert das Auslesen eines Parameters an, welches nur Ã¼ber das GUI
+	 * zugÃ¤nglich ist Daten werden erst Ã¼ber
 	 */
 	GET,
 	/**
@@ -41,7 +41,7 @@ public enum Command {
 	 */
 	SET,
 	/**
-	 * Server: Rückmeldung erste Kontaktierung, mit Client-Id
+	 * Server: RÃ¼ckmeldung erste Kontaktierung, mit Client-Id
 	 */
 	CONNECTED,
 	/**
@@ -49,7 +49,7 @@ public enum Command {
 	 */
 	DESCRIPTIONS,
 	/**
-	 * Server: Veränderte Daten, beim Beginn der Übertragung alle Daten
+	 * Server: VerÃ¤nderte Daten, beim Beginn der Ãœbertragung alle Daten
 	 */
 	MEASUREMENTS,
 	/**
@@ -69,11 +69,11 @@ public enum Command {
 	 */
 	CLIENT_ONLINE,
 	/**
-	 * Client: Wählt einen bestimmten Bildschirm aus.
+	 * Client: WÃ¤hlt einen bestimmten Bildschirm aus.
 	 */
 	SELECT_SCREEN,
 	/**
-	 * Bestimmte Kanäle können zum Debuggen auf einen festen Wert gesetzt werden
+	 * Bestimmte KanÃ¤le kÃ¶nnen zum Debuggen auf einen festen Wert gesetzt werden
 	 */
 	DEBUG_CHANNEL
 }

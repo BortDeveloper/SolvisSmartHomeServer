@@ -69,7 +69,7 @@ public enum TopicType {
 	UNIT_CHANNEL_DATA(null, Constants.Mqtt.DATA_SUFFIX, //
 			false, true, true, null, Format.NONE, "Current data of channel {}"); //
 
-	// Keinen Metas für letzten 3?
+	// Keinen Metas fÃ¼r letzten 3?
 
 	private static final ILogger logger = LogManager.getInstance().getLogger(TopicType.class);
 

@@ -73,7 +73,7 @@ public class Measurement extends ChannelSource {
 	// 4C P2
 	// 4C P3
 	// 0D P4
-	// 8100 RF1 8,1°C
+	// 8100 RF1 8,1Â°C
 	// 0000 RF2
 	// 0000 RF3
 	// 00 A1

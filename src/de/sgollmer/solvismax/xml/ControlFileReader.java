@@ -138,7 +138,7 @@ public class ControlFileReader {
 		SolvisDescription fromFile = null;
 		InputStream inputStreamFromFile;
 
-		boolean mustWrite; // Wenn im Verzeichnis nicht vorhanden, nicht lesbar oder älter
+		boolean mustWrite; // Wenn im Verzeichnis nicht vorhanden, nicht lesbar oder Ã¤lter
 							// oder Checksumme unbekannt
 		boolean modifiedByUser; // Wenn vom User modifiziert oder nicht lesbar
 

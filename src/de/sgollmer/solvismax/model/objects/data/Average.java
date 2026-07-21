@@ -52,7 +52,7 @@ public class Average implements Cloneable {
 		if (this.averageInt.size() > 0) {
 			int last = this.averageInt.getLast();
 			int delta = Math.abs(last - value);
-			this.absAverage += 2 * delta; // Annahme: Messfehler sind statistisch gleichmäßig verteilt
+			this.absAverage += 2 * delta; // Annahme: Messfehler sind statistisch gleichmÃ¤ÃŸig verteilt
 			++this.absCount;
 			int precision = getPrecision();
 			if (precision > 0) {

@@ -51,6 +51,13 @@ fortgeschrieben.
    arbeitet auf dem vom SolvisRemote gelieferten Web-GUI, nicht auf einem
    lokalen Display).
 
+### Nachvollziehbarkeit
+
+Ob das Produkt in einer fremden Umgebung wie beschrieben baut, startet,
+Messwerte liefert, steuert und sich integrieren lässt, prüft der phasenweise
+aufgebaute [Testplan](TESTPLAN.md) (frühe Phasen ohne Anlage, spätere mit
+realer Solvis). Durchgeführte Anpassungen: [CHANGELOG-fork.md](CHANGELOG-fork.md).
+
 ### Beziehung zum Upstream
 
 `master` folgt dem Upstream; betriebsspezifische Arbeit passiert auf

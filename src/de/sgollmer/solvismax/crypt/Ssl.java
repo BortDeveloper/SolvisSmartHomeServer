@@ -233,7 +233,8 @@ public class Ssl {
 	 *                                  Algorithmus
 	 * @throws IOException              wenn die Datei nicht lesbar ist
 	 */
-	private static PrivateKey loadPrivateKeyPkcs8(final String path)
+	// package-sichtbar (statt private) zur direkten Testbarkeit in SslTest.
+	static PrivateKey loadPrivateKeyPkcs8(final String path)
 			throws GeneralSecurityException, IOException {
 		// PEM ist reiner ASCII-Text (Base64 + Rahmenzeilen).
 		final String pem = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.US_ASCII);

@@ -38,6 +38,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <log4j.version>2.26.1</log4j.version>
     <tinylog.version>2.4.1</tinylog.version>
+    <junit.version>5.11.3</junit.version>
   </properties>
 
   <!-- XMLLibrary ist die Eigenbibliothek des Upstream-Autors und liegt NICHT
@@ -104,6 +105,14 @@
       <artifactId>xmllibrary</artifactId>
       <version>1.1.1</version>
     </dependency>
+
+    <!-- Tests (nur zur Testzeit, nicht im Uber-Jar) -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -115,6 +124,9 @@
          Nicht-Java-Dateien aus beiden werden als Ressourcen ins Jar kopiert
          (u. a. base.xsd, control.xsd unter data/). -->
     <sourceDirectory>src</sourceDirectory>
+    <!-- Tests liegen unter test/ (nicht unter src/, das komplett Produktivcode
+         ist). -->
+    <testSourceDirectory>test</testSourceDirectory>
     <resources>
       <resource>
         <directory>rsc</directory>
@@ -133,6 +145,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
+      </plugin>
+
+      <!-- Fuehrt die JUnit-5-Tests aus (mvn test / verify). -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
       </plugin>
 
       <!-- Uber-Jar: alle Laufzeit-Abhaengigkeiten ins Jar, Main-Class im

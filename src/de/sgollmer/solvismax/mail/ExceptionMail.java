@@ -4,14 +4,12 @@ import java.io.IOException;
 import java.util.Collection;
 
 import jakarta.mail.MessagingException;
-import javax.xml.namespace.QName;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.error.CryptException;
 import de.sgollmer.solvismax.error.ObserverException;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
-import de.sgollmer.solvismax.log.Diagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.mail.Mail.Recipient;
@@ -20,17 +18,10 @@ import de.sgollmer.solvismax.model.objects.ErrorState;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
 import de.sgollmer.solvismax.model.objects.unit.Unit;
 import de.sgollmer.solvismax.model.objects.unit.Units;
-import de.sgollmer.xmllibrary.ArrayXml;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
 
 public class ExceptionMail implements IObserver<ErrorState.Info> {
 
 	private static final Logger logger = LoggerFactory.getLogger(ExceptionMail.class);
-
-	private static final String XML_RECIPIENT = "Recipient";
-	private static final String XML_RECIPIENTS = "Recipients";
-	private static final String XMl_PROXY = "Proxy";
 
 	private final String name;
 	private final String from;
@@ -86,85 +77,6 @@ public class ExceptionMail implements IObserver<ErrorState.Info> {
 			}
 		}
 		return new ExceptionMail(name, from, password, security, provider, port, recipientList, proxy);
-	}
-
-	public static class Creator extends CreatorByXML<ExceptionMail> {
-
-		private String name;
-		private String from;
-		private CryptAes password = new CryptAes();
-		private Security securityType;
-		private String provider;
-		private int port;
-		private Collection<Recipient> recipients;
-		private Proxy proxy = null;
-
-		public Creator(final String id, final BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) {
-			try {
-				switch (name.getLocalPart()) {
-					case "name":
-						this.name = value;
-						break;
-					case "from":
-						this.from = value;
-						break;
-					case "passwordCrypt":
-						this.password.decrypt(value);
-						break;
-					case "securityType":
-						try {
-							this.securityType = Security.valueOf(Security.class, value.toUpperCase());
-						} catch (IllegalArgumentException e) {
-							throw new Error("Security type error", e);
-						}
-						break;
-					case "provider":
-						this.provider = value;
-						break;
-					case "port":
-						this.port = Integer.parseInt(value);
-						break;
-				}
-			} catch (CryptException e) {
-			}
-		}
-
-		@Override
-		public ExceptionMail create() throws IOException {
-			return new ExceptionMail(this.name, this.from, this.password, this.securityType, this.provider, this.port,
-					this.recipients, this.proxy);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			String id = name.getLocalPart();
-			switch (id) {
-				case XML_RECIPIENTS:
-					return new ArrayXml.Creator<Recipient, Recipient>(id, this.getBaseCreator(), new Recipient(),
-							XML_RECIPIENT);
-				case XMl_PROXY:
-					return new Proxy.Creator(id, this.getBaseCreator());
-			}
-			return null;
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) {
-			switch (creator.getId()) {
-				case XML_RECIPIENTS:
-					this.recipients = ((ArrayXml<Recipient, Recipient>) created).getArray();
-					break;
-				case XMl_PROXY:
-					this.proxy = (Proxy) created;
-					break;
-			}
-		}
 	}
 
 	public void send(final String subject, final String text, final MyImage image)

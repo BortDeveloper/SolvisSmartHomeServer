@@ -3,8 +3,6 @@ package de.sgollmer.solvismax.mail;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 import jakarta.activation.DataHandler;
@@ -20,7 +18,6 @@ import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import jakarta.mail.util.ByteArrayDataSource;
-import javax.xml.namespace.QName;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.Constants.Debug;
@@ -29,10 +26,6 @@ import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.log.Diagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import de.sgollmer.xmllibrary.ArrayXml;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.XmlException;
 
 public class Mail {
 
@@ -42,20 +35,12 @@ public class Mail {
 		TLS, SSL, NONE
 	};
 
-	private static Map<String, RecipientType> recipientTypeMap = new HashMap<>(5);
-
-	static {
-		recipientTypeMap.put("TO", RecipientType.TO);
-		recipientTypeMap.put("CC", RecipientType.CC);
-		recipientTypeMap.put("BCC", RecipientType.BCC);
-	}
-
 	/** Paketinterne Konstruktions-Factory für {@code ExceptionMail.of} (JAXB-Weg). */
 	static Recipient recipientOf(final String name, final String address, final RecipientType type) {
 		return new Recipient(name, address, type);
 	}
 
-	static class Recipient implements ArrayXml.IElement<Recipient, Recipient> {
+	static class Recipient {
 		private final String name;
 		private final String address;
 		private final RecipientType type;
@@ -64,60 +49,6 @@ public class Mail {
 			this.name = name;
 			this.address = address;
 			this.type = type;
-		}
-
-		Recipient() {
-			this(null, null, null);
-		}
-
-		private static class Creator extends CreatorByXML<Recipient> {
-			private String name;
-			private String address;
-			private RecipientType type;
-
-			private Creator(final String id, final BaseCreator<?> creator) {
-				super(id, creator);
-			}
-
-			@Override
-			public void setAttribute(final QName name, final String value) {
-				switch (name.getLocalPart()) {
-					case "name":
-						this.name = value;
-						break;
-					case "address":
-						this.address = value;
-						break;
-					case "type":
-						this.type = recipientTypeMap.get(value);
-						break;
-				}
-			}
-
-			@Override
-			public Recipient create() throws XmlException, IOException {
-				return new Recipient(this.name, this.address, this.type);
-			}
-
-			@Override
-			public CreatorByXML<?> getCreator(final QName name) {
-				return null;
-			}
-
-			@Override
-			public void created(CreatorByXML<?> creator, Object created) {
-			}
-
-		}
-
-		@Override
-		public CreatorByXML<Recipient> getCreator(final String name, final BaseCreator<?> creator) {
-			return new Creator(name, creator);
-		}
-
-		@Override
-		public Recipient getBase() {
-			return this;
 		}
 	}
 

@@ -417,8 +417,37 @@ erhalten denselben Domänengraphen.
   Vergleichsrauschen.
 - **Vervollständigte Bindung für den Umstieg:** `DEBUG`-Root-Attribut,
   `Unit.csvUnit`, deprecated `Unit.password` (Klartext), `ExceptionMail/Proxy`.
-- **Alter Pfad:** `readWithCreators()` bleibt als **Dual-Parse-Referenz** für
-  die Tests erhalten (deprecated) und fällt mit der XMLLibrary-Entfernung.
+- **Alter Pfad:** `readWithCreators()` blieb zunächst als Dual-Parse-Referenz
+  erhalten und ist inzwischen — mit den base.xml-Creators — **entfernt**
+  (siehe Abschnitt 9).
 - ⚠️ **Bewusste Robustheits-Abweichung:** Fehlt das (laut XSD optionale)
   `<Units>`-Element komplett, lieferte der alte Parser einen NPE-Absturz im
   `BaseData`-Konstruktor; der neue Pfad liefert eine leere Units-Liste.
+
+## 9. base.xml-Creators entfernt, Verhalten per Golden-Snapshot gepinnt (✅)
+
+Nach dem Reader-Umstieg sind die **base.xml-Creator-Klassen entfernt**:
+`BaseData.Creator` (+ inneres `ExecutionData`), `Units.Creator`, `Unit.Creator`
+(+ `AssignmentsCreator`), `Features.Creator`, `AllChannelOptions`-Creators,
+`Mqtt.Creator`, `Ssl.Creator`, `IoBroker.Creator`, `ExceptionMail.Creator`,
+`Proxy.Creator`, `Mail.Recipient`-Creator (inkl. `ArrayXml`-Anbindung und
+jetzt totem `recipientTypeMap`) sowie `readWithCreators()` selbst.
+
+**Sicherheitsnetz danach:** Vor der Entfernung wurde die kanonische Form des
+kompletten Domänengraphen (via `ParseDiff`, jeder öffentliche Getter rekursiv)
+**aus dem alten Creator-Pfad** als **Golden-Snapshots** gepinnt
+(`testFiles/xml/golden/*.canonical.txt`, je Template/Minimal/Extended). Der
+Test `ParseDiffTest.kanonischeFormEntsprichtGoldenSnapshot` vergleicht den
+JAXB-Pfad dauerhaft dagegen — das Original-Verhalten bleibt überprüfbar, auch
+ohne den Original-Parser. `getWritablePath` ist von der kanonischen Form
+ausgenommen (OS-Weiche, Snapshots laufen auch in der Linux-CI) und separat in
+`BaseConfigParsingTest` charakterisiert. Die früheren Dual-Parse-Tests laufen
+als Konsistenztests weiter (DTO-Sicht ↔ Domänenkonstruktion — prüft die
+`toUnit`/`toBaseData`-Verdrahtung).
+
+**In XMLLibrary-Nutzung verbleiben** (control.xml-/graficData-/Backup-Pfad):
+`unit.Configuration.Creator` (von `NotValidConfigurations` genutzt),
+`Feature`/`Feature.Creator` (SystemGrafics, configuration.Configuration),
+`Duration.Creator`/`AllDurations.Creator` (SolvisDescription),
+`ChannelAssignment.Creator` (AllChannelAssignments) — sie fallen mit der
+Umstellung der übrigen drei XML-Bäume.

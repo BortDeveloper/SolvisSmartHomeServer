@@ -1,7 +1,6 @@
 package de.sgollmer.solvismax.xml;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -26,7 +25,6 @@ import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.xml.jaxb.JaxbBaseReader;
 import de.sgollmer.solvismax.xml.jaxb.Mapper;
 import de.sgollmer.xmllibrary.XmlException;
-import de.sgollmer.xmllibrary.XmlStreamReader;
 
 import jakarta.xml.bind.JAXBException;
 
@@ -36,7 +34,6 @@ public class BaseControlFileReader {
 
 	private static final String NAME_XML_BASEFILE = "base.xml";
 	private static final String NAME_XSD_BASEFILE = "base.xsd";
-	private static final String XML_ROOT_ID = "BaseData";
 
 	private final File parent;
 	private final File baseXml;
@@ -86,44 +83,6 @@ public class BaseControlFileReader {
 		} catch (JAXBException e) {
 			throw new XmlException("JAXB parsing of " + this.baseXml.getName() + " failed: " + e.getMessage());
 		}
-	}
-
-	/**
-	 * Alter Creator-Pfad ({@code XMLLibrary}) — nur noch als
-	 * <b>Dual-Parse-Referenz</b> für die Tests erhalten; fällt mit der
-	 * XMLLibrary-Entfernung.
-	 *
-	 * @deprecated durch den JAXB-Pfad in {@link #read()} ersetzt.
-	 */
-	@Deprecated
-	public BaseData readWithCreators()
-			throws IOException, XMLStreamException, AssignmentException, ReferenceException, XmlException {
-
-		FileInputStream source = new FileInputStream(this.baseXml);
-
-		XmlStreamReader<BaseData> reader = new XmlStreamReader<>();
-
-		String rootId = XML_ROOT_ID;
-
-		String resourcePath = Constants.Files.RESOURCE + '/' + NAME_XSD_BASEFILE;
-		InputStream xsd = Main.class.getResourceAsStream(resourcePath);
-
-		if (xsd == null) {
-			Diagnostics.record(logger, Level.FATAL, "Getting of " + NAME_XSD_BASEFILE + " fails", null,
-					Constants.ExitCodes.BASE_XML_ERROR);
-			source.close();
-			return null;
-		}
-
-		boolean verified = reader.validate(source, xsd);
-		if (!verified) {
-			Diagnostics.record(logger, Level.FATAL, "Reading of " + NAME_XML_BASEFILE + " not successfull", null,
-					Constants.ExitCodes.BASE_XML_ERROR);
-			return null;
-		}
-
-		source = new FileInputStream(this.baseXml);
-		return reader.read(source, rootId, new BaseData.Creator(rootId), this.baseXml.getName()).getObject();
 	}
 
 	public static void main(final String[] args)

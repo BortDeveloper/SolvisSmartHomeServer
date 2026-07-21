@@ -1,11 +1,8 @@
 package de.sgollmer.solvismax.connection.mqtt;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-
-import javax.xml.namespace.QName;
 
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -21,20 +18,13 @@ import de.sgollmer.solvismax.connection.ServerCommand;
 import de.sgollmer.solvismax.connection.ServerStatus;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.crypt.Ssl;
-import de.sgollmer.solvismax.error.CryptException;
-import de.sgollmer.solvismax.error.CryptException.Type;
 import de.sgollmer.solvismax.error.MqttConnectionLost;
 import de.sgollmer.solvismax.error.MqttInterfaceException;
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.Diagnostics;
-import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Instances;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
 import de.sgollmer.solvismax.model.objects.data.SolvisData.SmartHomeData;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.XmlException;
 
 // Erfüllt die schmalen Config-Sichten MqttTopicConfig und MqttConnectionConfig
 // (Weg B): Konsumenten des Topic-Aufbaus bzw. des Verbindungsaufbaus hängen an
@@ -43,7 +33,6 @@ public class Mqtt implements MqttTopicConfig, MqttConnectionConfig {
 
 	static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Mqtt.class);
 
-	private static final String XML_SSL = "Ssl";
 	static final Charset UTF_8 = StandardCharsets.UTF_8;
 
 	MqttClient client = null;
@@ -99,97 +88,6 @@ public class Mqtt implements MqttTopicConfig, MqttConnectionConfig {
 			final int publishQoS, final int subscribeQoS, final Ssl ssl) {
 		return new Mqtt(enable, brokerUrl, port, userName, passwordCrypt, topicPrefix, idPrefix, smartHomeId,
 				publishQoS, subscribeQoS, ssl);
-	}
-
-	public static class Creator extends CreatorByXML<Mqtt> {
-
-		private boolean enable = false;
-		private String brokerUrl;
-		private int port;
-		private String userName;
-		private final CryptAes passwordCrypt = new CryptAes();
-		private String topicPrefix;
-		private String idPrefix;
-		private String smartHomeId = null;
-		private int publishQoS;
-		private int subscribeQoS;
-		private Ssl ssl;
-
-		public Creator(String id, BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) {
-			try {
-				switch (name.getLocalPart()) {
-					case "enable":
-						this.enable = Boolean.parseBoolean(value);
-						break;
-					case "brokerUrl":
-						this.brokerUrl = value;
-						break;
-					case "port":
-						this.port = Integer.parseInt(value);
-						break;
-					case "userName":
-						this.userName = value;
-						break;
-					case "passwordCrypt":
-						this.passwordCrypt.decrypt(value);
-						break;
-					case "topicPrefix":
-						this.topicPrefix = value;
-						break;
-					case "idPrefix":
-						this.idPrefix = value;
-						break;
-					case "smartHomeId":
-						this.smartHomeId = value;
-						break;
-					case "publishQoS":
-						this.publishQoS = Integer.parseInt(value);
-						break;
-					case "subscribeQoS":
-						this.subscribeQoS = Integer.parseInt(value);
-						break;
-				}
-			} catch (CryptException e) {
-				this.enable = false;
-				String m = "base.xml error of passwordCrypt in Mqtt tag, MQTT disabled: " + e.getMessage();
-				Level level = Level.ERROR;
-				if (e.getType() == Type.DEFAULT) {
-					level = Level.WARN;
-				}
-				Diagnostics.log(logger, level, m);
-			}
-
-		}
-
-		@Override
-		public Mqtt create() throws XmlException, IOException {
-			return new Mqtt(this.enable, this.brokerUrl, this.port, this.userName, this.passwordCrypt, this.topicPrefix,
-					this.idPrefix, this.smartHomeId, this.publishQoS, this.subscribeQoS, this.ssl);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			String id = name.getLocalPart();
-			switch (id) {
-				case XML_SSL:
-					return new Ssl.Creator(id, this.getBaseCreator());
-			}
-			return null;
-		}
-
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) {
-			switch (creator.getId()) {
-				case XML_SSL:
-					this.ssl = (Ssl) created;
-			}
-		}
-
 	}
 
 	public void connect(final Instances instances, final CommandHandler commandHandler) throws MqttException {

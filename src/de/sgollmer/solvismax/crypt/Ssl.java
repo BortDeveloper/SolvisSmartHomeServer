@@ -19,11 +19,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
-import javax.xml.namespace.QName;
-
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.XmlException;
 
 /**
  * Baut eine {@link SSLSocketFactory} fuer die MQTT-Verbindung aus PEM-Dateien
@@ -62,53 +57,6 @@ public class Ssl {
 	public static Ssl create(final boolean enable, final String caFilePath, final String clientCrtFilePath,
 			final String clientKeyFilePath) {
 		return new Ssl(enable, caFilePath, clientCrtFilePath, clientKeyFilePath);
-	}
-
-	public static class Creator extends CreatorByXML<Ssl> {
-
-		private boolean enable;
-		private String caFilePath;
-		private String clientCrtFilePath;
-		private String clientKeyFilePath;
-
-		public Creator(final String id, final BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) {
-			switch (name.getLocalPart()) {
-				case "enable":
-					this.enable = Boolean.parseBoolean(value);
-					break;
-				case "caFilePath":
-					this.caFilePath = value;
-					break;
-				case "clientCrtFilePath":
-					this.clientCrtFilePath = value;
-					break;
-				case "clientKeyFilePath":
-					this.clientKeyFilePath = value;
-					break;
-			}
-
-		}
-
-		@Override
-		public Ssl create() throws XmlException, IOException {
-			return new Ssl(this.enable, this.caFilePath, this.clientCrtFilePath, this.clientKeyFilePath);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			return null;
-		}
-
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) {
-
-		}
-
 	}
 
 	/**

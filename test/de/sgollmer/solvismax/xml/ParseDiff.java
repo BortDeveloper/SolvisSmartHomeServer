@@ -122,6 +122,13 @@ final class ParseDiff {
 			if ("getClass".equals(name)) {
 				continue;
 			}
+			// OS-abhängige Ableitung (Windows-/Linux-Pfad-Weiche) — würde die
+			// kanonische Form plattformabhängig machen (Golden-Snapshots laufen
+			// auch in der Linux-CI); separat charakterisiert in
+			// BaseConfigParsingTest.
+			if ("getWritablePath".equals(name)) {
+				continue;
+			}
 			if (name.startsWith("get") || name.startsWith("is")) {
 				getters.put(name, m);
 			}

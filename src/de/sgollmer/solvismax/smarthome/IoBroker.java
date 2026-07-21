@@ -8,8 +8,6 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
-import javax.xml.namespace.QName;
-
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.connection.mqtt.TopicType;
@@ -17,9 +15,6 @@ import de.sgollmer.solvismax.connection.mqtt.TopicType.TopicData;
 import de.sgollmer.solvismax.helper.FileHelper;
 import de.sgollmer.solvismax.helper.Helper;
 import de.sgollmer.solvismax.model.Instances;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.XmlException;
 
 public class IoBroker {
 	private final String mqttInterface;
@@ -317,45 +312,6 @@ public class IoBroker {
 		writer.close();
 
 		System.out.println("File <" + file.getAbsolutePath() + "> created.");
-
-	}
-
-	public static class Creator extends CreatorByXML<IoBroker> {
-
-		private String mqttInterface = Constants.IoBroker.DEFAULT_MQTT_INTERFACE;
-		private String javascriptInterface = Constants.IoBroker.DEFAULT_JAVASCRIPT_INTERFACE;
-
-		public Creator(final String id, final BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) throws XmlException {
-			switch (name.getLocalPart()) {
-				case "mqttInterface":
-					this.mqttInterface = value;
-					break;
-				case "javascriptInterface":
-					this.javascriptInterface = value;
-					break;
-			}
-
-		}
-
-		@Override
-		public IoBroker create() throws XmlException, IOException {
-			return new IoBroker(this.mqttInterface, this.javascriptInterface);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			return null;
-		}
-
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) throws XmlException {
-
-		}
 
 	}
 

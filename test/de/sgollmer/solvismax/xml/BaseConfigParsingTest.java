@@ -54,6 +54,19 @@ class BaseConfigParsingTest {
 		assertEquals("Europe/Berlin", baseData.getTimeZone());
 	}
 
+	/**
+	 * Charakterisiert die OS-Pfad-Weiche von {@code getWritablePath()} — bewusst
+	 * hier statt im Golden-Snapshot (der plattformunabhängig bleiben muss und
+	 * diesen Getter daher ausnimmt, siehe {@code ParseDiff}).
+	 */
+	@Test
+	void writablePathFolgtOsWeiche() throws Exception {
+		final BaseData baseData = parse();
+		final boolean windows = System.getProperty("os.name").startsWith("Windows");
+		assertEquals(windows ? "C:\\JavaPgms\\SolvisSmartHomeServer\\log" : "/opt/solvis",
+				baseData.getWritablePath());
+	}
+
 	@Test
 	void mqttAttributeGelesen() throws Exception {
 		final BaseData baseData = parse();

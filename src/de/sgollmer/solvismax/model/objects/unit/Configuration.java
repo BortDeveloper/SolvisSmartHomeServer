@@ -66,6 +66,11 @@ public class Configuration {
 		return mask;
 	}
 
+	/**
+	 * Verbleibt trotz base.xml-Reader-Umstieg: wird noch vom
+	 * <b>control.xml</b>-Pfad genutzt ({@code NotValidConfigurations},
+	 * CsvConfigurations/NotPossible) und fällt erst mit dessen JAXB-Umstellung.
+	 */
 	public static class Creator extends CreatorByXML<Configuration> {
 
 		private String solvisType = null;

@@ -30,36 +30,41 @@ class ParseDiffTest {
 	private static final String MINIMAL = "testFiles/xml/base-minimal.xml";
 	private static final String EXTENDED = "testFiles/xml/base-extended.xml";
 
-	private BaseData parseMitXmlLibrary() throws Exception {
+	private BaseData parse() throws Exception {
 		Assumptions.assumeTrue(new File(TEMPLATE).isFile(), "Vorlage fehlt: " + TEMPLATE);
-		return new BaseControlFileReader(TEMPLATE).readWithCreators();
+		return new BaseControlFileReader(TEMPLATE).read();
 	}
 
 	@Test
 	void kanonisierungIstDeterministischUndParserStabil() throws Exception {
-		final String erste = ParseDiff.canonical(parseMitXmlLibrary());
-		final String zweite = ParseDiff.canonical(parseMitXmlLibrary());
+		final String erste = ParseDiff.canonical(parse());
+		final String zweite = ParseDiff.canonical(parse());
 		assertEquals(erste, zweite,
 				"Zwei Parse-Läufe müssen dieselbe kanonische Form ergeben (Determinismus/Stabilität)");
 	}
 
 	/**
-	 * <b>Der Reader-Umstieg-Beweis:</b> Für Template, Minimal- und erweiterte
-	 * Fixture muss der neue JAXB-Pfad ({@code read()}) einen Domänengraphen
-	 * liefern, dessen kanonische Form <b>zeichengleich</b> mit der des alten
-	 * Creator-Pfads ({@code readWithCreators()}) ist — jedes über einen
-	 * öffentlichen Getter erreichbare Feld ist damit verglichen, ohne blinden
-	 * Fleck durch vergessene Einzel-Assertions.
+	 * <b>Golden-Snapshot:</b> pinnt die kanonische Form des kompletten
+	 * Domänengraphen je Eingabedatei ({@code testFiles/xml/golden/}). Die
+	 * Snapshots wurden — vor der Entfernung des alten Creator-Pfads — aus diesem
+	 * erzeugt und konservieren damit das Verhalten des Original-Parsers
+	 * dauerhaft; jede Verhaltensänderung des JAXB-Pfads schlägt hier an.
 	 */
 	@Test
-	void readerUmstiegVollGraphIdentisch() throws Exception {
+	void kanonischeFormEntsprichtGoldenSnapshot() throws Exception {
 		for (final String datei : new String[] { TEMPLATE, MINIMAL, EXTENDED }) {
 			Assumptions.assumeTrue(new File(datei).isFile(), "Datei fehlt: " + datei);
-			final BaseData alt = new BaseControlFileReader(datei).readWithCreators();
-			final BaseData neu = new BaseControlFileReader(datei).read();
-			assertEquals(ParseDiff.canonical(alt), ParseDiff.canonical(neu),
-					"Domänengraph weicht ab für: " + datei);
+			final java.nio.file.Path golden = goldenPfad(datei);
+			Assumptions.assumeTrue(java.nio.file.Files.isRegularFile(golden), "Golden fehlt: " + golden);
+			final String kanonisch = ParseDiff.canonical(new BaseControlFileReader(datei).read());
+			assertEquals(java.nio.file.Files.readString(golden), kanonisch,
+					"Kanonische Form weicht vom Golden-Snapshot ab: " + datei);
 		}
+	}
+
+	private static java.nio.file.Path goldenPfad(final String datei) {
+		final String name = new File(datei).getName().replace(".xml", "");
+		return java.nio.file.Path.of("testFiles", "xml", "golden", name + ".canonical.txt");
 	}
 
 	@Test

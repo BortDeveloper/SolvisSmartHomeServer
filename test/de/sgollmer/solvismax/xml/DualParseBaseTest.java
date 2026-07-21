@@ -25,15 +25,20 @@ import de.sgollmer.solvismax.xml.jaxb.JaxbBaseReader;
 import de.sgollmer.solvismax.xml.jaxb.Mapper;
 
 /**
- * <b>Dual-Parse-Differenztest</b> für {@code base.xml}: dieselbe Datei wird mit
- * dem bisherigen {@code XMLLibrary}-Parser (Domänengraph) <b>und</b> mit dem
- * neuen JAXB-Parser (DTO-Graph) eingelesen; die Werte müssen übereinstimmen.
+ * Konsistenztests für den JAXB-Pfad der {@code base.xml}: die DTO-Bindung, die
+ * Sicht-/Mapper-Ableitungen und der über {@code read()} gebaute Domänengraph
+ * müssen zueinander passen (z. B. muss eine Config-Sicht aus dem DTO dieselben
+ * Werte liefern wie der daraus konstruierte Domänengraph — das prüft die
+ * Verdrahtung von {@code Mapper.toUnit}/{@code toBaseData}).
  *
  * <p>
- * Dies ist der Nachweis, dass die JAXB-Umstellung <b>verhaltensidentisch</b>
- * parst. Der DTO-Baum deckt zunächst die Kernstruktur ab (ExecutionData, Units/
- * Unit/Features, Mqtt/Ssl) und wächst schrittweise; jedes hinzugenommene Feld
- * wird hier gegen den alten Parser abgesichert.
+ * <b>Historie:</b> Diese Tests entstanden als <b>Dual-Parse-Differenztests</b>
+ * gegen den alten {@code XMLLibrary}-Creator-Pfad und haben dessen
+ * Verhaltensgleichheit mit dem JAXB-Pfad belegt. Nach der Entfernung der
+ * base.xml-Creators ist die „alte" Seite der über {@code read()} gebaute
+ * Domänengraph; das Original-Verhalten bleibt zusätzlich dauerhaft über die
+ * Golden-Snapshots in {@code ParseDiffTest} gepinnt (erzeugt aus dem
+ * Creator-Pfad vor dessen Entfernung).
  * </p>
  */
 class DualParseBaseTest {
@@ -49,7 +54,7 @@ class DualParseBaseTest {
 	@Test
 	void ausfuehrungsdatenUndMqttIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		// ExecutionData
@@ -67,7 +72,7 @@ class DualParseBaseTest {
 	@Test
 	void unitKernattributeIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final Unit u = alt.getUnits().getUnits().iterator().next();
@@ -103,7 +108,7 @@ class DualParseBaseTest {
 	@Test
 	void featuresIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final Unit u = alt.getUnits().getUnits().iterator().next();
@@ -160,7 +165,7 @@ class DualParseBaseTest {
 	@Test
 	void featuresWertTypAusDtoIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final de.sgollmer.solvismax.model.objects.unit.Features ausDomaene =
@@ -249,7 +254,7 @@ class DualParseBaseTest {
 	@Test
 	void measurementsIntervalAbleitungIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final Unit u = alt.getUnits().getUnits().iterator().next();
@@ -260,7 +265,7 @@ class DualParseBaseTest {
 	@Test
 	void measurementsIntervalFastAbleitungIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 		final Unit u = alt.getUnits().getUnits().iterator().next();
 		assertEquals(u.getMeasurementsIntervalFast_ms(), Mapper.measurementsIntervalFastMs(neu.units.unit.get(0)));
@@ -277,7 +282,7 @@ class DualParseBaseTest {
 	@Test
 	void mqttTopicConfigAusDomaeneUndDtoIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final MqttTopicConfig ausDomaene = alt.getMqtt();          // Mqtt implements MqttTopicConfig
@@ -304,7 +309,7 @@ class DualParseBaseTest {
 	@Test
 	void mqttConnectionConfigAusDomaeneUndDtoIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final MqttConnectionConfig ausDomaene = alt.getMqtt();               // Mqtt implements MqttConnectionConfig
@@ -330,7 +335,7 @@ class DualParseBaseTest {
 	@Test
 	void topicAufbauAusDomaeneUndDtoIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final MqttTopicConfig ausDomaene = alt.getMqtt();
@@ -356,7 +361,7 @@ class DualParseBaseTest {
 	@Test
 	void executionConfigAusDomaeneUndDtoIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final ExecutionConfig ausDomaene = alt;                                    // BaseData implements ExecutionConfig
@@ -383,7 +388,7 @@ class DualParseBaseTest {
 	@Test
 	void unitConfigAusDomaeneUndDtoIdentisch() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final UnitConfig ausDomaene = alt.getUnits().getUnits().iterator().next(); // Unit implements UnitConfig
@@ -436,7 +441,7 @@ class DualParseBaseTest {
 	@Test
 	void defaultsBeiFehlendenAttributenIdentisch() throws Exception {
 		Assumptions.assumeTrue(new File(MINIMAL).isFile(), "Fixture fehlt: " + MINIMAL);
-		final BaseData alt = new BaseControlFileReader(MINIMAL).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(MINIMAL).read();
 		assertNotNull(alt, "alter Parser muss die Minimal-Fixture akzeptieren (XSD-valide)");
 		final BaseDataDto neu = JaxbBaseReader.read(MINIMAL);
 
@@ -494,7 +499,7 @@ class DualParseBaseTest {
 	@Test
 	void mqttMapperErgibtDomaeneWieAlterParser() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final Mqtt gemappt = Mapper.toMqtt(neu.mqtt);
@@ -516,7 +521,7 @@ class DualParseBaseTest {
 	@Test
 	void erweiterteZweigeAusDomaeneUndDtoIdentisch() throws Exception {
 		Assumptions.assumeTrue(new File(EXTENDED).isFile(), "Fixture fehlt: " + EXTENDED);
-		final BaseData alt = new BaseControlFileReader(EXTENDED).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(EXTENDED).read();
 		assertNotNull(alt, "alter Parser muss die erweiterte Fixture akzeptieren (XSD-valide)");
 		final BaseDataDto neu = JaxbBaseReader.read(EXTENDED);
 
@@ -577,7 +582,7 @@ class DualParseBaseTest {
 	@Test
 	void ioBrokerAusDomaeneUndDtoIdentischInklusiveElementDefault() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 		final de.sgollmer.solvismax.smarthome.IoBroker ausDto = Mapper.toIoBroker(neu.iobroker);
 		assertEquals(alt.getIoBroker().getMqttInterface(), ausDto.getMqttInterface());
@@ -585,7 +590,7 @@ class DualParseBaseTest {
 
 		// Minimal-Fixture: <Iobroker> fehlt -> beide Parser liefern die Defaults.
 		Assumptions.assumeTrue(new File(MINIMAL).isFile(), "Fixture fehlt: " + MINIMAL);
-		final BaseData altMin = new BaseControlFileReader(MINIMAL).readWithCreators();
+		final BaseData altMin = new BaseControlFileReader(MINIMAL).read();
 		final BaseDataDto neuMin = JaxbBaseReader.read(MINIMAL);
 		assertNull(neuMin.iobroker, "Element fehlt in der Fixture");
 		final de.sgollmer.solvismax.smarthome.IoBroker defaultDto = Mapper.toIoBroker(neuMin.iobroker);
@@ -612,7 +617,7 @@ class DualParseBaseTest {
 	@Test
 	void featureMapAbleitungIdentischZuDomaene() throws Exception {
 		assumeTemplate();
-		final BaseData alt = new BaseControlFileReader(TEMPLATE).readWithCreators();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 
 		final Unit u = alt.getUnits().getUnits().iterator().next();

@@ -5,7 +5,8 @@
 > mit betriebsspezifischen Anpassungen für ein mTLS-gehärtetes Smart-Home-Setup.
 > Warum dieser Fork existiert und was geplant ist, steht in [FORK.md](FORK.md).
 > Ob das Produkt in der eigenen Umgebung wie beschrieben arbeitet, prüft der
-> strukturierte [Testplan](TESTPLAN.md).
+> strukturierte [Testplan](TESTPLAN.md). Schritt-für-Schritt-Inbetriebnahme
+> als Container: [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md).
 
 ## Überblick
 

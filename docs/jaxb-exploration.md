@@ -128,8 +128,31 @@ Konstruktion einer ganzen Sub-Hierarchie (`Configuration`, `AllChannelOptions`,
 `AllDurations`, `ChannelAssignment`, `Pattern`) nach sich. Erst danach ist
 `BaseData` vollständig baubar und `BaseControlFileReader` auf JAXB umstellbar.
 
-**Offene Entscheidung** (dokumentiert, noch nicht getroffen): Ob sich der
-Aufwand des vollständigen Mappers zur sealed-Domäne lohnt oder ob langfristig die
-**DTOs selbst das Config-Modell** werden (mit abgeleiteten Sicht-Methoden), was
-Mapper + versiegelte-Domäne-Reibung + Duplikation beseitigen würde. Diese
-Abwägung sollte vor dem `Unit`-Aggregat-Mapper bewusst getroffen werden.
+## 7. Entscheidung: Weg B — DTOs werden das Config-Modell
+
+✅ **entschieden (Betreiber, 2026-07-21): Weg B.** Statt die versiegelte Domäne
+über einen invasiven Aggregat-Mapper zu rekonstruieren, werden die **JAXB-DTOs
+das Config-Modell**:
+
+- **Kanonische Bindung** (DTOs) + **explizite abgeleitete Sicht-Methoden** ersetzen
+  die Domänen-Config-Sichten. Belegt und grün: `Mapper.featuresToMap`
+  (`<Feature>`-Liste → `Map`), `Mapper.measurementsIntervalMs` (Sekunden → ms,
+  ×1000) — beide gegen die Domäne verifiziert.
+- **Der `Unit`-Aggregat-Mapper zur sealed-Domäne entfällt damit** — genau die
+  tiefe, invasive Rekonstruktion (Configuration/AllChannelOptions/…) muss **nicht**
+  gebaut werden.
+- **Übergang ohne Big-Bang:** Der vorhandene DTO→Domäne-Mapper (`Mapper.toMqtt`
+  u. Ä.) dient als **Brücke** — noch nicht migrierte Konsumenten erhalten weiter
+  Domänenobjekte aus den DTOs, während neue/migrierte Konsumenten direkt die DTOs
+  + Sicht-Methoden nutzen. Die versiegelten Domänen-Config-Klassen werden
+  retiriert, sobald ihr letzter Konsument migriert ist.
+
+**Fahrplan Weg B:** (1) DTO-Baum je Config-Datei vervollständigen + Sicht-Methoden
+für alle Derivate (passwordCrypt-Entschlüsselung, RecipientType-Enum, …).
+(2) Konsumenten inkrementell auf DTOs+Sichten umstellen (⚠️ app-weit, daher
+schrittweise, jeweils gegen Tests). (3) Domänen-Config-Klassen + Creators je
+Datei entfernen. (4) Zuletzt `XMLLibrary` raus.
+
+⚠️ **unsicher / zu behandeln:** Die Konsumenten-Migration (Schritt 2) ist der
+app-weite, größere Teil — sie berührt die Nutzung von `BaseData`/`Unit`/`Mqtt`
+im ganzen Modell und erfolgt bewusst inkrementell, nicht auf einmal.

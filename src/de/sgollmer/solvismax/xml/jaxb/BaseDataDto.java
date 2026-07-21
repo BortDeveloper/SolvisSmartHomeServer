@@ -77,6 +77,9 @@ public class BaseDataDto {
 		@XmlAttribute(name = "releaseBlockingAfterServiceAccess_ms") public int releaseBlockingAfterServiceAccess_ms;
 		@XmlAttribute(name = "reheatingNotRequiredActiveTime_ms") public int reheatingNotRequiredActiveTime_ms;
 		@XmlAttribute(name = "delayAfterSwitchingOnEnable") public boolean delayAfterSwitchingOnEnable;
+		// Rohwert in Sekunden — die Domäne rechnet nach Millisekunden um; diese
+		// Ableitung liefert Mapper.measurementsIntervalMs (Weg B: abgeleitete Sicht).
+		@XmlAttribute(name = "measurementsInterval_s") public int measurementsInterval_s;
 		// Hinweis: measurementsInterval_s (Sekunden) wird von der Domaene nach
 		// _ms umgerechnet und resetErrorDelayTime_ms hat keinen Getter -> beide
 		// werden spaeter ueber den Mapper bzw. Charakterisierung abgesichert.

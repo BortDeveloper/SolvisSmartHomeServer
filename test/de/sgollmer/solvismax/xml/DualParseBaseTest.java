@@ -131,6 +131,21 @@ class DualParseBaseTest {
 	}
 
 	/**
+	 * Abgeleitete Sicht (Weg B): {@code Mapper.measurementsIntervalMs} rechnet den
+	 * gebundenen Sekunden-Rohwert nach Millisekunden um und muss dem entsprechen,
+	 * was die Domäne (die dieselbe Umrechnung im Parser macht) liefert.
+	 */
+	@Test
+	void measurementsIntervalAbleitungIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final Unit u = alt.getUnits().getUnits().iterator().next();
+		assertEquals(u.getMeasurementsInterval_ms(), Mapper.measurementsIntervalMs(neu.units.unit.get(0)));
+	}
+
+	/**
 	 * Voller DTO→Domäne-Mapper am Mqtt-Teilbaum: {@code Mapper.toMqtt} baut aus
 	 * dem DTO ein echtes Domänen-{@link Mqtt} (inkl. {@code passwordCrypt}-
 	 * Entschlüsselung und {@code Ssl}-Abbildung). Das Ergebnis muss dem des alten

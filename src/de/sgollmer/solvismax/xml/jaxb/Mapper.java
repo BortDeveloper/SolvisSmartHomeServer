@@ -75,6 +75,20 @@ public final class Mapper {
 	}
 
 	/**
+	 * Abgeleitete Sicht: das Mess-Intervall in <b>Millisekunden</b> aus dem
+	 * kanonisch gebundenen Sekunden-Rohwert {@code measurementsInterval_s}.
+	 *
+	 * <p>
+	 * Weg B (DTOs als Config-Modell): Die Einheitenumrechnung (×1000) — die der
+	 * alte Parser inline vornahm — wird hier als explizite, testbare Sicht-Methode
+	 * auf dem DTO bereitgestellt, statt sie in die Bindung zu ziehen.
+	 * </p>
+	 */
+	public static int measurementsIntervalMs(final BaseDataDto.UnitDto unit) {
+		return unit.measurementsInterval_s * 1000;
+	}
+
+	/**
 	 * Bildet die kanonisch gebundene {@code <Ssl>}-Struktur auf das Domänenobjekt
 	 * {@link Ssl} ab (mTLS-Konfiguration). {@code null}, wenn kein Ssl-Element
 	 * vorhanden ist.

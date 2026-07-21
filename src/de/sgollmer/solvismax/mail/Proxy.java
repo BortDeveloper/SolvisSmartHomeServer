@@ -31,6 +31,11 @@ public class Proxy {
 		this.password = password;
 	}
 
+	/** Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md 3.3, Weg B). */
+	public static Proxy of(final String host, final int port, final String user, final CryptAes password) {
+		return new Proxy(host, port, user, password);
+	}
+
 	public String getHost() {
 		return this.host;
 	}

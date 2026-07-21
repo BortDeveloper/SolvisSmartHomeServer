@@ -390,3 +390,35 @@ Unit-Kindzweige aus dem DTO konstruierbar:
 - Damit sind **alle Bausteine für den `base.xml`-Reader-Umstieg vorhanden**:
   jeder Zweig ist gebunden, jeder Wert-Typ konstruierbar, Defaults und
   Validierungsregeln gespiegelt.
+
+## 8. Reader-Umstieg base.xml (✅ vollzogen, grün)
+
+**`BaseControlFileReader.read()` läuft jetzt über den Standard-Stack:**
+XSD-Validierung per `javax.xml.validation` (statt `XmlStreamReader.validate`),
+Parsen per JAXB (`JaxbBaseReader`), Konstruktion des Domänengraphen per
+`Mapper.toBaseData` (→ `toUnit` komponiert alle einzeln verifizierten
+Bausteine; neue Factories `BaseData.of`, `Units.of`, `Unit.of`,
+`ExceptionMail.of` (+ `RecipientData`-Record, hält `Recipient`/`Security`
+paketprivat), `Proxy.of`). Fehlerverhalten wie zuvor (fehlende XSD/invalide
+Datei → FATAL + null). `Main` und alle Konsumenten sind unverändert — sie
+erhalten denselben Domänengraphen.
+
+- ✅ **Beweis:** `ParseDiffTest.readerUmstiegVollGraphIdentisch` — die
+  kanonische Form des kompletten Domänengraphen (jeder öffentliche Getter,
+  rekursiv) ist für Template, Minimal- und erweiterte Fixture **zeichengleich**
+  zwischen altem und neuem Pfad. Zusätzlich charakterisiert
+  `BaseConfigParsingTest` jetzt den neuen Pfad (gleiche Erwartungen, grün).
+- ✅ **Dabei gefundene Feinheiten:** (a) Das Template enthält ein **leeres**
+  `<Extensions>`-Element — der alte Parser macht daraus eine leere Liste, nicht
+  `null`; `toConfiguration` bildet jetzt „Element vorhanden ⇒ (ggf. leere)
+  Liste, Element fehlt ⇒ null" exakt nach (der Voll-Graph-Vergleich fand die
+  Abweichung sofort). (b) `ParseDiff` kanonisiert `Throwable` als Klasse +
+  Message — Stacktrace/Cause hängen vom Aufrufweg des Parsers ab und wären
+  Vergleichsrauschen.
+- **Vervollständigte Bindung für den Umstieg:** `DEBUG`-Root-Attribut,
+  `Unit.csvUnit`, deprecated `Unit.password` (Klartext), `ExceptionMail/Proxy`.
+- **Alter Pfad:** `readWithCreators()` bleibt als **Dual-Parse-Referenz** für
+  die Tests erhalten (deprecated) und fällt mit der XMLLibrary-Entfernung.
+- ⚠️ **Bewusste Robustheits-Abweichung:** Fehlt das (laut XSD optionale)
+  `<Units>`-Element komplett, lieferte der alte Parser einen NPE-Absturz im
+  `BaseData`-Konstruktor; der neue Pfad liefert eine leere Units-Liste.

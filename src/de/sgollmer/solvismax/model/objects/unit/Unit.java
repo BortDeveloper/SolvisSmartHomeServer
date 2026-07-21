@@ -117,6 +117,32 @@ public class Unit implements IAccountInfo, UnitConfig {
 		;
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). Bewusst schlank: reicht nur den (privaten) Konstruktor durch;
+	 * sämtliche Interpretationslogik (Einheiten-Ableitungen, passwordCrypt,
+	 * Pattern-Kompilierung, Defaults) liegt im Mapper.
+	 */
+	public static Unit of(final String id, final Configuration configuration, final Collection<String> urls,
+			final String url, final String account, final CryptAes password, final int defaultAverageCount,
+			final int measurementHysteresisFactor, final int defaultMeasurementsInterval_ms,
+			final int defaultMeasurementsIntervalFast_ms, final int forceUpdateAfterFastChangingIntervals,
+			final int forcedUpdateInterval_ms, final int doubleUpdateInterval_ms, final int bufferedInterval_ms,
+			final int watchDogTime_ms, final int releaseBlockingAfterUserAccess_ms,
+			final int releaseBlockingAfterServiceAccess_ms, final int reheatingNotRequiredActiveTime_ms,
+			final int resetErrorDelayTime_ms, final boolean delayAfterSwitchingOnEnable, final boolean fwLth2_21_02A,
+			final Features features, final int ignoredFrameThicknesScreenSaver,
+			final Collection<Pattern> ignoredChannels, final Map<String, ChannelAssignment> assignments,
+			final boolean csvUnit, final AllDurations durations, final AllChannelOptions channelOptions) {
+		return new Unit(id, configuration, urls, url, account, password, defaultAverageCount,
+				measurementHysteresisFactor, defaultMeasurementsInterval_ms, defaultMeasurementsIntervalFast_ms,
+				forceUpdateAfterFastChangingIntervals, forcedUpdateInterval_ms, doubleUpdateInterval_ms,
+				bufferedInterval_ms, watchDogTime_ms, releaseBlockingAfterUserAccess_ms,
+				releaseBlockingAfterServiceAccess_ms, reheatingNotRequiredActiveTime_ms, resetErrorDelayTime_ms,
+				delayAfterSwitchingOnEnable, fwLth2_21_02A, features, ignoredFrameThicknesScreenSaver,
+				ignoredChannels, assignments, csvUnit, durations, channelOptions);
+	}
+
 	public String getId() {
 		return this.id;
 	}

@@ -31,6 +31,10 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class BaseDataDto {
 
+	/** Debug-Schalter am Wurzelelement ({@code null} = Attribut fehlt, Flag bleibt unverändert). */
+	@XmlAttribute(name = "DEBUG")
+	public Boolean debug;
+
 	@XmlElement(name = "ExecutionData")
 	public ExecutionDataDto executionData;
 
@@ -73,6 +77,9 @@ public class BaseDataDto {
 		@XmlAttribute(name = "account") public String account;
 		@XmlAttribute(name = "url") public String url;
 		@XmlAttribute(name = "passwordCrypt") public String passwordCrypt;
+		/** Deprecated Klartext-Alternative zu passwordCrypt (XSD: optional). */
+		@XmlAttribute(name = "password") public String password;
+		@XmlAttribute(name = "csvUnit") public boolean csvUnit;
 		@XmlAttribute(name = "defaultAverageCount") public int defaultAverageCount;
 		@XmlAttribute(name = "measurementHysteresisFactor") public int measurementHysteresisFactor;
 		@XmlAttribute(name = "watchDogTime_ms") public int watchDogTime_ms;
@@ -298,6 +305,18 @@ public class BaseDataDto {
 
 		@XmlElement(name = "Recipients")
 		public RecipientsDto recipients;
+
+		@XmlElement(name = "Proxy")
+		public ProxyDto proxy;
+	}
+
+	/** JAXB-Bean für {@code <Proxy>} (optionaler Mail-Proxy der ExceptionMail). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ProxyDto {
+		@XmlAttribute(name = "host") public String host;
+		@XmlAttribute(name = "port") public int port;
+		@XmlAttribute(name = "user") public String user;
+		@XmlAttribute(name = "passwordCrypt") public String passwordCrypt;
 	}
 
 	/** JAXB-Bean für {@code <Recipients>} (Sammlung von {@code <Recipient>}). */

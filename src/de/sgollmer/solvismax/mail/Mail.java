@@ -50,6 +50,11 @@ public class Mail {
 		recipientTypeMap.put("BCC", RecipientType.BCC);
 	}
 
+	/** Paketinterne Konstruktions-Factory für {@code ExceptionMail.of} (JAXB-Weg). */
+	static Recipient recipientOf(final String name, final String address, final RecipientType type) {
+		return new Recipient(name, address, type);
+	}
+
 	static class Recipient implements ArrayXml.IElement<Recipient, Recipient> {
 		private final String name;
 		private final String address;

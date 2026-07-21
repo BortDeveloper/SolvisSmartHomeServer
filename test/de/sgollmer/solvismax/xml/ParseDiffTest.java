@@ -27,10 +27,12 @@ import de.sgollmer.solvismax.BaseData;
 class ParseDiffTest {
 
 	private static final String TEMPLATE = "rsc/de/sgollmer/solvismax/data/base.xml";
+	private static final String MINIMAL = "testFiles/xml/base-minimal.xml";
+	private static final String EXTENDED = "testFiles/xml/base-extended.xml";
 
 	private BaseData parseMitXmlLibrary() throws Exception {
 		Assumptions.assumeTrue(new File(TEMPLATE).isFile(), "Vorlage fehlt: " + TEMPLATE);
-		return new BaseControlFileReader(TEMPLATE).read();
+		return new BaseControlFileReader(TEMPLATE).readWithCreators();
 	}
 
 	@Test
@@ -39,6 +41,25 @@ class ParseDiffTest {
 		final String zweite = ParseDiff.canonical(parseMitXmlLibrary());
 		assertEquals(erste, zweite,
 				"Zwei Parse-Läufe müssen dieselbe kanonische Form ergeben (Determinismus/Stabilität)");
+	}
+
+	/**
+	 * <b>Der Reader-Umstieg-Beweis:</b> Für Template, Minimal- und erweiterte
+	 * Fixture muss der neue JAXB-Pfad ({@code read()}) einen Domänengraphen
+	 * liefern, dessen kanonische Form <b>zeichengleich</b> mit der des alten
+	 * Creator-Pfads ({@code readWithCreators()}) ist — jedes über einen
+	 * öffentlichen Getter erreichbare Feld ist damit verglichen, ohne blinden
+	 * Fleck durch vergessene Einzel-Assertions.
+	 */
+	@Test
+	void readerUmstiegVollGraphIdentisch() throws Exception {
+		for (final String datei : new String[] { TEMPLATE, MINIMAL, EXTENDED }) {
+			Assumptions.assumeTrue(new File(datei).isFile(), "Datei fehlt: " + datei);
+			final BaseData alt = new BaseControlFileReader(datei).readWithCreators();
+			final BaseData neu = new BaseControlFileReader(datei).read();
+			assertEquals(ParseDiff.canonical(alt), ParseDiff.canonical(neu),
+					"Domänengraph weicht ab für: " + datei);
+		}
 	}
 
 	@Test

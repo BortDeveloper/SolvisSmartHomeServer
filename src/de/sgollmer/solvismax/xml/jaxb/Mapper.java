@@ -52,7 +52,116 @@ import de.sgollmer.xmllibrary.XmlException;
  */
 public final class Mapper {
 
+	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Mapper.class);
+
 	private Mapper() {
+	}
+
+	/**
+	 * Baut den kompletten Domänengraphen {@link de.sgollmer.solvismax.BaseData}
+	 * aus dem DTO — der Kern des <b>Reader-Umstiegs</b> (MODERNISIERUNG.md 3.3):
+	 * {@code BaseControlFileReader.read()} liefert damit dasselbe Objektmodell
+	 * wie zuvor der Creator-Pfad, gespeist aus dem JAXB-Parse.
+	 */
+	public static de.sgollmer.solvismax.BaseData toBaseData(final BaseDataDto dto) throws XmlException {
+		if (dto.debug != null) {
+			// Wie BaseData.Creator.setAttribute: das DEBUG-Attribut setzt das
+			// statische Flag nur, wenn es im XML vorhanden ist.
+			de.sgollmer.solvismax.BaseData.DEBUG = dto.debug;
+		}
+		final List<de.sgollmer.solvismax.model.objects.unit.Unit> units = new ArrayList<>();
+		if (dto.units != null && dto.units.unit != null) {
+			for (final BaseDataDto.UnitDto unit : dto.units.unit) {
+				units.add(toUnit(unit));
+			}
+		}
+		final BaseDataDto.ExecutionDataDto exec = dto.executionData;
+		final de.sgollmer.solvismax.BaseData baseData = de.sgollmer.solvismax.BaseData.of(exec.timeZone, exec.port,
+				exec.writeablePathWindows, exec.writablePathLinux, exec.echoInhibitTime_ms,
+				de.sgollmer.solvismax.model.objects.unit.Units.of(units), toExceptionMail(dto.exceptionMail),
+				toMqtt(dto.mqtt), toIoBroker(dto.iobroker));
+		// Verdrahtung wie im alten BaseData.Creator.create().
+		baseData.getIoBroker().setTopicConfig(baseData.getMqtt());
+		return baseData;
+	}
+
+	/**
+	 * Baut das Domänen-{@link de.sgollmer.solvismax.model.objects.unit.Unit} aus
+	 * dem DTO — Komposition aller bereits einzeln verifizierten Bausteine
+	 * (UnitConfig-Skalare, Features, Configuration, ChannelOptions, Urls,
+	 * IgnoredChannels, Assignments, Durations, passwordCrypt).
+	 */
+	public static de.sgollmer.solvismax.model.objects.unit.Unit toUnit(final BaseDataDto.UnitDto dto)
+			throws XmlException {
+		if (dto.measurementsInterval_s == null && dto.defaultReadMeasurementsInterval_ms == null) {
+			// Wie Unit.Creator.create().
+			throw new XmlException("<defaultMeasurementsInterval_s> is missing in base.xml");
+		}
+		final CryptAes password = toCryptAes(dto.passwordCrypt);
+		if (password.getException() != null) {
+			// Wie Unit.Creator: Fehler geloggt, Einlesen laeuft weiter.
+			logger.error("base.xml error of passwordCrypt in Unit tag: "
+					+ password.getException().getMessage());
+		}
+		if (dto.password != null) {
+			// Deprecated Klartext-Attribut (Creator: password.set, nur wenn
+			// nicht bereits entschluesselt).
+			password.set(dto.password);
+		}
+		return de.sgollmer.solvismax.model.objects.unit.Unit.of(dto.id, toConfiguration(dto),
+				dto.urls == null ? null : toUrls(dto.urls), dto.url, dto.account, password,
+				dto.defaultAverageCount, dto.measurementHysteresisFactor, measurementsIntervalMs(dto),
+				measurementsIntervalFastMs(dto), dto.forceUpdateAfterFastChangingIntervals,
+				dto.forcedUpdateInterval_ms, dto.doubleUpdateInterval_ms, dto.bufferedInterval_ms,
+				dto.watchDogTime_ms, dto.releaseBlockingAfterUserAccess_ms,
+				dto.releaseBlockingAfterServiceAccess_ms, dto.reheatingNotRequiredActiveTime_ms,
+				dto.resetErrorDelayTime_ms, dto.delayAfterSwitchingOnEnable, dto.fwLth2_21_02A,
+				toFeatures(dto.features), dto.ignoredFrameThicknesScreenSaver,
+				toIgnoredChannels(dto.ignoredChannels), toChannelAssignments(dto.channelAssignments),
+				dto.csvUnit, dto.durations == null ? null : toDurations(dto.durations),
+				dto.channelOptions == null ? null : toChannelOptions(dto.channelOptions));
+	}
+
+	/**
+	 * Baut die Domänen-{@link de.sgollmer.solvismax.mail.ExceptionMail} aus dem
+	 * DTO ({@code null}, wenn das Element fehlt). Die Empfänger laufen über die
+	 * DTO-neutralen {@code RecipientData}; das {@code type}-Enum-Mapping liefert
+	 * {@link #recipientType}.
+	 */
+	public static de.sgollmer.solvismax.mail.ExceptionMail toExceptionMail(final BaseDataDto.ExceptionMailDto dto) {
+		if (dto == null) {
+			return null;
+		}
+		List<de.sgollmer.solvismax.mail.ExceptionMail.RecipientData> recipients = null;
+		if (dto.recipients != null && dto.recipients.recipient != null) {
+			recipients = new ArrayList<>();
+			for (final BaseDataDto.RecipientDto recipient : dto.recipients.recipient) {
+				recipients.add(new de.sgollmer.solvismax.mail.ExceptionMail.RecipientData(recipient.name,
+						recipient.address, recipientType(recipient)));
+			}
+		}
+		return de.sgollmer.solvismax.mail.ExceptionMail.of(dto.name, dto.from, toCryptAes(dto.passwordCrypt),
+				dto.securityType, dto.provider, dto.port, recipients, toProxy(dto.proxy));
+	}
+
+	/**
+	 * Baut den Mail-{@link de.sgollmer.solvismax.mail.Proxy} aus dem DTO.
+	 * Wie der alte Creator: schlägt die {@code passwordCrypt}-Entschlüsselung
+	 * fehl, wird das Passwort verworfen ({@code null}) und gewarnt.
+	 */
+	public static de.sgollmer.solvismax.mail.Proxy toProxy(final BaseDataDto.ProxyDto dto) {
+		if (dto == null) {
+			return null;
+		}
+		CryptAes password = null;
+		if (dto.passwordCrypt != null) {
+			password = toCryptAes(dto.passwordCrypt);
+			if (password.getException() != null) {
+				logger.warn("base.xml error of passwordCrypt in proxy tag, mail password not used");
+				password = null;
+			}
+		}
+		return de.sgollmer.solvismax.mail.Proxy.of(dto.host, dto.port, dto.user, password);
 	}
 
 	/**
@@ -494,11 +603,15 @@ public final class Mapper {
 	 */
 	public static de.sgollmer.solvismax.model.objects.unit.Configuration toConfiguration(
 			final BaseDataDto.UnitDto unit) {
+		// Wie der alte ExtensionsCreator: ein VORHANDENES <Extensions>-Element
+		// ergibt eine (ggf. leere) Liste; nur ein fehlendes Element ergibt null.
 		List<String> extensions = null;
-		if (unit.extensions != null && unit.extensions.extension != null) {
+		if (unit.extensions != null) {
 			extensions = new ArrayList<>();
-			for (final BaseDataDto.ExtensionDto e : unit.extensions.extension) {
-				extensions.add(e.id);
+			if (unit.extensions.extension != null) {
+				for (final BaseDataDto.ExtensionDto e : unit.extensions.extension) {
+					extensions.add(e.id);
+				}
 			}
 		}
 		return de.sgollmer.solvismax.model.objects.unit.Configuration.of(unit.type, unit.mainHeating,

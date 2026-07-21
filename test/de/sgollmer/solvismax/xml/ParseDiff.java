@@ -58,6 +58,13 @@ final class ParseDiff {
 			sb.append(value);
 			return;
 		}
+		if (value instanceof Throwable) {
+			// Fuer den Parser-Vergleich zaehlt WELCHER Fehler vorliegt (Klasse +
+			// Message), nicht der Stacktrace/Cause-Pfad — der haengt vom
+			// Aufrufweg des jeweiligen Parsers ab und waere reines Rauschen.
+			sb.append(type.getSimpleName()).append(':').append(((Throwable) value).getMessage());
+			return;
+		}
 		if (value instanceof Collection<?>) {
 			sb.append('[');
 			for (final Object element : (Collection<?>) value) {

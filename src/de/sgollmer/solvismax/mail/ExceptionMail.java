@@ -53,6 +53,41 @@ public class ExceptionMail implements IObserver<ErrorState.Info> {
 		this.proxy = proxy;
 	}
 
+	/**
+	 * DTO-neutrale Empfänger-Daten für die Factory {@link #of} — hält die
+	 * paketprivaten Mail-Typen ({@code Recipient}, {@code Security}) weiterhin
+	 * gekapselt.
+	 */
+	public record RecipientData(String name, String address, jakarta.mail.Message.RecipientType type) {
+	}
+
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). {@code securityType} wird — wie beim alten Creator — über
+	 * {@code Security.valueOf(toUpperCase())} aufgelöst; ein unbekannter Wert
+	 * ist ein {@link Error} (identisches Verhalten).
+	 */
+	public static ExceptionMail of(final String name, final String from, final CryptAes password,
+			final String securityType, final String provider, final int port,
+			final Collection<RecipientData> recipients, final Proxy proxy) {
+		Security security = null;
+		if (securityType != null) {
+			try {
+				security = Security.valueOf(Security.class, securityType.toUpperCase());
+			} catch (IllegalArgumentException e) {
+				throw new Error("Security type error", e);
+			}
+		}
+		Collection<Recipient> recipientList = null;
+		if (recipients != null) {
+			recipientList = new java.util.ArrayList<>();
+			for (final RecipientData recipient : recipients) {
+				recipientList.add(Mail.recipientOf(recipient.name(), recipient.address(), recipient.type()));
+			}
+		}
+		return new ExceptionMail(name, from, password, security, provider, port, recipientList, proxy);
+	}
+
 	public static class Creator extends CreatorByXML<ExceptionMail> {
 
 		private String name;

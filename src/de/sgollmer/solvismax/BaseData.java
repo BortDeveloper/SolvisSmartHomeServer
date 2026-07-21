@@ -94,6 +94,18 @@ public class BaseData implements ExecutionConfig {
 		}
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). Nutzt den (privaten) Konstruktor inklusive dessen
+	 * Mail-Konsistenzprüfung.
+	 */
+	public static BaseData of(final String timeZone, final int port, final String writeablePathWindows,
+			final String writablePathLinux, final int echoInhibitTime_ms, final Units units,
+			final ExceptionMail exceptionMail, final Mqtt mqtt, final IoBroker ioBroker) {
+		return new BaseData(timeZone, port, writeablePathWindows, writablePathLinux, echoInhibitTime_ms, units,
+				exceptionMail, mqtt, ioBroker);
+	}
+
 	public Units getUnits() {
 		return this.units;
 	}

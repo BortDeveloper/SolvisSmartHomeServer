@@ -24,6 +24,11 @@ public class Units {
 		}
 	}
 
+	/** Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md 3.3, Weg B). */
+	public static Units of(final Collection<Unit> units) {
+		return new Units(units);
+	}
+
 	public Collection<Unit> getUnits() {
 		return this.units;
 	}

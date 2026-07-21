@@ -68,6 +68,22 @@ dieser Umgebung nicht.
   umgestellt — alle Laufzeit-Bibliotheken landen im Uber-Jar. Der
   `Main-Class`-Manifest-Eintrag bleibt unverändert.
 
+### Verifikation (2026-07-21, OpenJDK 21 / Debian 13 / arm64)
+
+- `ant clean && ant` → **BUILD SUCCESSFUL**, erzeugt
+  `dist/SolvisSmartHomeServer.jar` (≈ 3,99 MB).
+- Kernklassen im Jar geprüft: Paho-MQTT, tinylog, log4j, `javax.mail.Session`,
+  `de.sgollmer.solvismax.Main` — alle vorhanden.
+- Laufzeit-Smoke-Test:
+  `java -jar dist/SolvisSmartHomeServer.jar --string-to-crypt=probe` liefert
+  einen AES-Wert und terminiert sauber → Main lädt, Abhängigkeiten sind zur
+  Laufzeit auflösbar.
+- **Verbleibende Warnungen (kein Handlungsbedarf für den Build):** `source`/
+  `target` 1.8 sind unter JDK 21 als „obsolete" markiert; einzelne
+  deprecated-API-Aufrufe. Ein Anheben auf ein aktuell unterstütztes
+  Sprachniveau (z. B. 11/17) ist ein optionaler Folgeschritt und wird
+  separat bewertet.
+
 ### Umgebung (nicht im Repo, auf dem Zielhost `ransible`)
 
 Zum Bauen aus dem Quellcode wurden dort nachinstalliert:

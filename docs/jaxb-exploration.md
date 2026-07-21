@@ -264,3 +264,42 @@ vom Reader und reicht Aggregate weiter), `Instances` (Aggregat-Zugriffe) und
 `IoBroker`-Verdrahtung im Creator. Die Aggregat-Getter (`getUnits`, `getMqtt`,
 `getExceptionMail`, `getIoBroker`) sind der verbleibende Block — sie fallen,
 wenn `Unit`/`Units` selbst DTO-gestützt sind (der große `Unit`-Teil).
+
+### Ausrollung auf die Unit-Konsumenten — flache Skalarwerte (✅ erledigt, grün)
+
+`Unit` ist das tiefe Aggregat; die Bestandsaufnahme aller Lesestellen zeigt
+aber: die **meisten Konsumenten lesen nur flache Skalarwerte** (Timing,
+Messwert-Intervalle, Bildschirm-Parameter). Muster angewandt:
+
+- ✅ **Neue schmale Sicht `UnitConfig`** (id + 17 Skalarwerte inkl. der
+  Ableitungen `isBuffered` und der ×1000-Intervalle; `Unit` erfüllt sie,
+  DTO-Sicht via `Mapper.unitConfig`). Zugang im laufenden System über
+  **`Solvis.getUnitConfig()`** — `Solvis` bleibt der Laufzeit-Halter, gibt die
+  Config aber als Sicht heraus.
+- ✅ **Konsumenten umgestellt** (alle Skalar-Lesestellen): `WatchDog`,
+  `Distributor`, `HumanAccess` (flacher Teil; der `Features`-Zugriff bleibt
+  vorerst am Aggregat), `SolvisWorkers`, `Measurement`, `StrategyReheat`,
+  `SolvisData`, `ScreenSaver.Exec`, `ErrorState`, `Solvis.MeasurementUpdateThread`
+  (Konstruktor nimmt jetzt `UnitConfig`).
+- ✅ **DTO ergänzt:** `resetErrorDelayTime_ms` als Attribut gebunden (Getter
+  `Unit.getResetErrorDelayTime()` existiert inzwischen — damit 1:1-vergleichbar,
+  der frühere Ausschluss ist obsolet).
+- ✅ **Dual-Parse-Test:** alle 19 `UnitConfig`-Methoden aus Domäne UND DTO
+  identisch.
+
+⚠️ **zu behandeln (vor dem Reader-Umstieg):** Der alte Parser hat für einige
+Attribute **Nicht-Null-Defaults** (`forceUpdateAfterFastChangingIntervals` →
+`Constants.FORCE_UPDATE_AFTER_N_INTERVALS`,
+`reheatingNotRequiredActiveTime_ms` → `Constants.Defaults.…`). Die DTO-Bindung
+liefert bei **fehlendem** Attribut dagegen `0` (primitives int). Im Template
+sind diese Attribute gesetzt (Dual-Parse grün); für beliebige Nutzer-Configs
+muss die Default-Logik beim Umstieg in die Sicht/den Mapper wandern
+(Integer-Bindung + expliziter Default).
+
+**Noch am Aggregat** (eigene Sichten folgen): `getFeatures` (ErrorState,
+EquipmentOnOff, Solvis, HumanAccess, ExceptionMail), `getConfiguration`
+(Instances, Solvis), `isChannelIgnored` (AllSolvisData,
+AllChannelDescriptions), `getChannelAssignment` (ChannelInstance),
+`getChannelOptions`/`getDuration` (Solvis), `getUrls`/`getUrl`/`IAccountInfo`
+(SolvisConnection-Verdrahtung), Identitäts-/Sonderfälle (`isAdmin`, `isCsvUnit`,
+`getComment`, `getForcedConfigMask` — Laufzeit-Zustand).

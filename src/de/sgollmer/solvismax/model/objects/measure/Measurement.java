@@ -293,8 +293,8 @@ public class Measurement extends ChannelSource {
 
 	@Override
 	public Integer getScanInterval_ms(final Solvis solvis) {
-		return this.isFast() ? solvis.getUnit().getMeasurementsIntervalFast_ms()
-				: solvis.getUnit().getMeasurementsInterval_ms();
+		return this.isFast() ? solvis.getUnitConfig().getMeasurementsIntervalFast_ms()
+				: solvis.getUnitConfig().getMeasurementsInterval_ms();
 	}
 
 	@Override

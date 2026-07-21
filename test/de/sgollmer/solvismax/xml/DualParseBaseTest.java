@@ -19,6 +19,7 @@ import de.sgollmer.solvismax.connection.mqtt.MqttConnectionConfig;
 import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.connection.mqtt.TopicType;
 import de.sgollmer.solvismax.model.objects.unit.Unit;
+import de.sgollmer.solvismax.model.objects.unit.UnitConfig;
 import de.sgollmer.solvismax.xml.jaxb.BaseDataDto;
 import de.sgollmer.solvismax.xml.jaxb.JaxbBaseReader;
 import de.sgollmer.solvismax.xml.jaxb.Mapper;
@@ -297,6 +298,48 @@ class DualParseBaseTest {
 		// muessen beide Quellen denselben Pfad waehlen.
 		assertEquals(ausDomaene.getWritablePath(), ausDto.getWritablePath());
 		assertNotNull(ausDto.getWritablePath());
+	}
+
+	/**
+	 * <b>Konsumenten-Migration nach dem Pilotmuster (Weg B):</b> Die flachen
+	 * Unit-Skalarwerte werden jetzt über die schmale Sicht {@link UnitConfig}
+	 * gelesen (Zugang: {@code Solvis.getUnitConfig()}; Konsumenten: WatchDog,
+	 * Distributor, HumanAccess, SolvisWorkers, Measurement, StrategyReheat,
+	 * SolvisData, ScreenSaver, ErrorState). Dieser Test belegt, dass beide
+	 * Quellen — Domänen-Aggregat und DTO-gestützte Sicht (inkl. der
+	 * ×1000-Ableitungen und {@code isBuffered}) — identische Config liefern.
+	 */
+	@Test
+	void unitConfigAusDomaeneUndDtoIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final UnitConfig ausDomaene = alt.getUnits().getUnits().iterator().next(); // Unit implements UnitConfig
+		final UnitConfig ausDto = Mapper.unitConfig(neu.units.unit.get(0));        // DTO-gestützt
+
+		assertEquals(ausDomaene.getId(), ausDto.getId());
+		assertEquals(ausDomaene.getDefaultAverageCount(), ausDto.getDefaultAverageCount());
+		assertEquals(ausDomaene.getMeasurementHysteresisFactor(), ausDto.getMeasurementHysteresisFactor());
+		assertEquals(ausDomaene.getMeasurementsInterval_ms(), ausDto.getMeasurementsInterval_ms());
+		assertEquals(ausDomaene.getMeasurementsIntervalFast_ms(), ausDto.getMeasurementsIntervalFast_ms());
+		assertEquals(ausDomaene.getForceUpdateAfterFastChangingIntervals(),
+				ausDto.getForceUpdateAfterFastChangingIntervals());
+		assertEquals(ausDomaene.getForcedUpdateInterval_ms(), ausDto.getForcedUpdateInterval_ms());
+		assertEquals(ausDomaene.getDoubleUpdateInterval_ms(), ausDto.getDoubleUpdateInterval_ms());
+		assertEquals(ausDomaene.getBufferedInterval_ms(), ausDto.getBufferedInterval_ms());
+		assertEquals(ausDomaene.isBuffered(), ausDto.isBuffered());
+		assertEquals(ausDomaene.getWatchDogTime_ms(), ausDto.getWatchDogTime_ms());
+		assertEquals(ausDomaene.getReleaseBlockingAfterUserAccess_ms(),
+				ausDto.getReleaseBlockingAfterUserAccess_ms());
+		assertEquals(ausDomaene.getReleaseBlockingAfterServiceAccess_ms(),
+				ausDto.getReleaseBlockingAfterServiceAccess_ms());
+		assertEquals(ausDomaene.getReheatingNotRequiredActiveTime_ms(),
+				ausDto.getReheatingNotRequiredActiveTime_ms());
+		assertEquals(ausDomaene.getResetErrorDelayTime(), ausDto.getResetErrorDelayTime());
+		assertEquals(ausDomaene.isDelayAfterSwitchingOnEnable(), ausDto.isDelayAfterSwitchingOnEnable());
+		assertEquals(ausDomaene.isFwLth2_21_02A(), ausDto.isFwLth2_21_02A());
+		assertEquals(ausDomaene.getIgnoredFrameThicknesScreenSaver(), ausDto.getIgnoredFrameThicknesScreenSaver());
 	}
 
 	/**

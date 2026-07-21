@@ -10,6 +10,7 @@ import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.crypt.Ssl;
 import de.sgollmer.solvismax.error.CryptException;
+import de.sgollmer.solvismax.model.objects.unit.UnitConfig;
 
 /**
  * Überführt die kanonisch von JAXB gebundenen {@link BaseDataDto DTO-Strukturen}
@@ -207,6 +208,108 @@ public final class Mapper {
 			@Override
 			public int getSubscribeQoS() {
 				return dto.subscribeQoS;
+			}
+		};
+	}
+
+	/**
+	 * DTO-gestützte {@link UnitConfig}-Sicht (Weg B, Konsumenten-Migration nach
+	 * dem Pilotmuster): liefert die flachen Unit-Skalarwerte direkt aus dem
+	 * {@link BaseDataDto.UnitDto} — ohne das tiefe Domänen-Aggregat {@code Unit}.
+	 * Enthält die abgeleiteten Sichten Sekunden→Millisekunden (×1000, siehe
+	 * {@link #measurementsIntervalMs}) und {@code isBuffered()}
+	 * ({@code bufferedInterval_ms > 0}, wie {@code Unit.isBuffered()}).
+	 */
+	public static UnitConfig unitConfig(final BaseDataDto.UnitDto dto) {
+		return new UnitConfig() {
+			@Override
+			public String getId() {
+				return dto.id;
+			}
+
+			@Override
+			public int getDefaultAverageCount() {
+				return dto.defaultAverageCount;
+			}
+
+			@Override
+			public int getMeasurementHysteresisFactor() {
+				return dto.measurementHysteresisFactor;
+			}
+
+			@Override
+			public int getMeasurementsInterval_ms() {
+				return measurementsIntervalMs(dto);
+			}
+
+			@Override
+			public int getMeasurementsIntervalFast_ms() {
+				return measurementsIntervalFastMs(dto);
+			}
+
+			@Override
+			public int getForceUpdateAfterFastChangingIntervals() {
+				return dto.forceUpdateAfterFastChangingIntervals;
+			}
+
+			@Override
+			public int getForcedUpdateInterval_ms() {
+				return dto.forcedUpdateInterval_ms;
+			}
+
+			@Override
+			public int getDoubleUpdateInterval_ms() {
+				return dto.doubleUpdateInterval_ms;
+			}
+
+			@Override
+			public int getBufferedInterval_ms() {
+				return dto.bufferedInterval_ms;
+			}
+
+			@Override
+			public boolean isBuffered() {
+				return dto.bufferedInterval_ms > 0;
+			}
+
+			@Override
+			public int getWatchDogTime_ms() {
+				return dto.watchDogTime_ms;
+			}
+
+			@Override
+			public int getReleaseBlockingAfterUserAccess_ms() {
+				return dto.releaseBlockingAfterUserAccess_ms;
+			}
+
+			@Override
+			public int getReleaseBlockingAfterServiceAccess_ms() {
+				return dto.releaseBlockingAfterServiceAccess_ms;
+			}
+
+			@Override
+			public int getReheatingNotRequiredActiveTime_ms() {
+				return dto.reheatingNotRequiredActiveTime_ms;
+			}
+
+			@Override
+			public int getResetErrorDelayTime() {
+				return dto.resetErrorDelayTime_ms;
+			}
+
+			@Override
+			public boolean isDelayAfterSwitchingOnEnable() {
+				return dto.delayAfterSwitchingOnEnable;
+			}
+
+			@Override
+			public boolean isFwLth2_21_02A() {
+				return dto.fwLth2_21_02A;
+			}
+
+			@Override
+			public int getIgnoredFrameThicknesScreenSaver() {
+				return dto.ignoredFrameThicknesScreenSaver;
 			}
 		};
 	}

@@ -123,7 +123,7 @@ public class SolvisWorkers {
 
 			Miscellaneous misc = SolvisWorkers.this.solvis.getSolvisDescription().getMiscellaneous();
 			int unsuccessfullWaitTime = misc.getUnsuccessfullWaitTime_ms();
-			int watchDogTime = SolvisWorkers.this.solvis.getUnit().getWatchDogTime_ms();
+			int watchDogTime = SolvisWorkers.this.solvis.getUnitConfig().getWatchDogTime_ms();
 
 			synchronized (this) {
 				this.running = true;
@@ -581,8 +581,8 @@ public class SolvisWorkers {
 
 		private MeasurementsWorkerThread() {
 			super("MeasurementsWorkerThread");
-			this.measurementInterval = SolvisWorkers.this.solvis.getUnit().getMeasurementsInterval_ms();
-			this.measurementIntervalFast = SolvisWorkers.this.solvis.getUnit().getMeasurementsIntervalFast_ms();
+			this.measurementInterval = SolvisWorkers.this.solvis.getUnitConfig().getMeasurementsInterval_ms();
+			this.measurementIntervalFast = SolvisWorkers.this.solvis.getUnitConfig().getMeasurementsIntervalFast_ms();
 		}
 
 		private int calculateNextMeasurementTimes() {

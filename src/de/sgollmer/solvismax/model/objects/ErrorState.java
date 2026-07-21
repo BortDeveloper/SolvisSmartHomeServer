@@ -40,7 +40,7 @@ public class ErrorState extends Observable<ErrorState.Info> {
 		this.solvis = solvis;
 
 		this.clearErrorMessageAfterMail = solvis.getUnit().getFeatures().isClearErrorMessageAfterMail();
-		this.resetErrorDelayTime = solvis.getUnit().getResetErrorDelayTime();
+		this.resetErrorDelayTime = solvis.getUnitConfig().getResetErrorDelayTime();
 	}
 
 	public enum ErrorType {

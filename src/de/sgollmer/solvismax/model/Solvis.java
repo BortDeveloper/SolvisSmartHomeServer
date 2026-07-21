@@ -69,6 +69,7 @@ import de.sgollmer.solvismax.model.objects.screen.SolvisScreen;
 import de.sgollmer.solvismax.model.objects.unit.Feature;
 import de.sgollmer.solvismax.model.objects.unit.Features;
 import de.sgollmer.solvismax.model.objects.unit.Unit;
+import de.sgollmer.solvismax.model.objects.unit.UnitConfig;
 import de.sgollmer.solvismax.model.update.UpdateStrategies;
 import de.sgollmer.solvismax.objects.Coordinate;
 
@@ -569,6 +570,15 @@ public class Solvis {
 		return this.unit;
 	}
 
+	/**
+	 * Schmale Config-Sicht auf die flachen Unit-Skalarwerte (Weg B): Konsumenten,
+	 * die nur Timing-/Messwert-/Bildschirm-Config lesen, nutzen diese Sicht statt
+	 * des ganzen {@link Unit}-Aggregats.
+	 */
+	public UnitConfig getUnitConfig() {
+		return this.unit;
+	}
+
 	public Features getFeatures() {
 		return this.unit.getFeatures();
 	}
@@ -601,7 +611,7 @@ public class Solvis {
 		private boolean power = false;
 		private boolean singleUpdate = false;
 
-		private MeasurementUpdateThread(final Unit unit) {
+		private MeasurementUpdateThread(final UnitConfig unit) {
 			super("MeasurementUpdateThread");
 			this.updateInterval = unit.getForcedUpdateInterval_ms();
 			this.doubleUpdateInterval = unit.getDoubleUpdateInterval_ms();

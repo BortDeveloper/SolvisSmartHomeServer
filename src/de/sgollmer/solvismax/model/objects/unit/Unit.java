@@ -27,7 +27,9 @@ import de.sgollmer.xmllibrary.CreatorByXML;
 import de.sgollmer.xmllibrary.StringElement;
 import de.sgollmer.xmllibrary.XmlException;
 
-public class Unit implements IAccountInfo {
+// Erfüllt die schmale Config-Sicht UnitConfig (Weg B): Konsumenten der flachen
+// Skalarwerte hängen an der Sicht, nicht am ganzen Aggregat.
+public class Unit implements IAccountInfo, UnitConfig {
 
 	private static final Logger logger = LoggerFactory.getLogger(Unit.class);
 

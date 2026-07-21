@@ -16,15 +16,16 @@ Es eignet sich nicht für die neueren Anlagen der SolvisMax7 und SolvisBen, welc
 
 Dieses Programm ist ein eigenständiges Java-Programm, das als Service/Task/Daemon im Hintergrund läuft. Ziel war nicht nur ein Monitoring der Anlage zu ermöglichen sondern auch die Einstellung der wichtigsten Anlageparameter wie z. B. Soll-Temperaturen, Raumabhängigkeit, Anlagemodus.
 
-Die bisher mir bekannten Lösungen liefern nur die Messwerte/Zustände einer Solvis-Anlagen an die SmartHome-Systeme. Dabei wird ein XML-String interpretiert,
-der über das WebInterface der SolvisRemote abgefragt wird. Der SolvisSmartHomeServer nutzt ebenfalls diese Schnittstelle.
+Oft liefern Lösungen für diese Hardware Situation der SOVLIS Anlage  nur die Messwerte/Zustände an die SmartHome-Systeme. Dabei wird ein XML-String interpretiert, der über das WebInterface der SolvisRemote abgefragt wird. Der SolvisSmartHomeServer nutzt ebenfalls diese Schnittstelle.
 Eine Steuerung der Anlage mit dieser Schnittstelle ist jedoch nicht möglich.
 
 Erst bei neueren Anlagen (von der Solvis-Control-2-Zentralreglerversion MA205 an) hat die Firma Solvis die Steuermöglichkeit über das Modbus-Interface realisiert. Ältere Anlagen bleiben dabei außen vor.
 
 Bei älteren Anlagen gibt es nur die Möglichkeit der Steuerung über die Web-Oberfläche der SolvisRemote, das jedoch auf rein grafischer Basis arbeitet
 (es ist eine Pixelkopie der SolvisControl2 der Anlage). Die Steuerung darüber erfolgt über Maus-Klicks auf bestimmte Koordinaten auf diesem GUI,
-die Rückmeldung erfolgt ebenfalls nur grafisch über das GUI.
+die Rückmeldung erfolgt ebenfalls nur grafisch über das GUI. 
+
+Dank an dieser Stelle an stgollmer für die Implementierung dieser Idee, die ich mit dem Fork übernehme.
 
 ### Funktionsweise der Einstellung der Anlageparameter
 

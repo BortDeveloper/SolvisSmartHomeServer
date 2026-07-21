@@ -234,3 +234,33 @@ Der gesamte Config-Lesepfad (Topic-Aufbau + Verbindungsaufbau) läuft über die
 beiden Sichten und ist DTO-gestützt belegt. `Mqtt` selbst bleibt als
 Laufzeitklasse (Client/Queue/Callback) bestehen und wird künftig aus den DTOs
 konstruiert (`Mapper.toMqtt`).
+
+### Ausrollung auf die BaseData-Konsumenten (✅ erledigt, grün)
+
+Bestandsaufnahme aller `BaseData`-lesenden Stellen und Anwendung des Musters:
+
+- ✅ **Neue schmale Sicht `ExecutionConfig`** (timeZone, port, writablePath,
+  echoInhibitTime_ms — die flachen `<ExecutionData>`-Werte; `BaseData` erfüllt
+  sie, DTO-Sicht via `Mapper.executionConfig`). `getWritablePath()` ist dabei
+  eine **abgeleitete** Sicht (OS-Weiche Windows/Linux), jetzt explizit im
+  Mapper statt nur inline in der Domäne. Konsumenten verschmälert:
+  - `Main.serverTerminateAndExit` / `serverRestartAndExit` (lesen nur den Port)
+    nehmen jetzt `ExecutionConfig`.
+  - `Instances` liest die flachen Werte über ein `ExecutionConfig`-Feld; an
+    `baseData` bleiben nur die Aggregat-Zugriffe (Units, Mqtt, ExceptionMail,
+    IoBroker).
+- ✅ **`IoBroker`**: hielt das ganze `BaseData`, las daraus aber nur
+  `getMqtt().getTopicPrefix()` — auf die vorhandene Sicht `MqttTopicConfig`
+  verschmälert (`setBaseData` → `setTopicConfig`; die Verdrahtung im
+  `BaseData.Creator` übergibt `baseData.getMqtt()`).
+- ✅ **`ExceptionMail.sendTestMail(BaseData)`** → `sendTestMail(Units)`: liest
+  nur die Unit-Liste für den Mail-Feature-Check.
+- ✅ **Kein Config-Lesen** (nur statischer `BaseData.DEBUG`-Flag): `HumanAccess`,
+  `SolvisScreen`, `Constants` — der Debug-Schalter ist Laufzeit-Zustand, kein
+  base.xml-Wert (wird über das XML-Attribut `DEBUG` gesetzt, bleibt vorerst).
+
+Damit hängen an `BaseData` als Typ nur noch: der Lese-Fluss (`Main` erhält es
+vom Reader und reicht Aggregate weiter), `Instances` (Aggregat-Zugriffe) und
+`IoBroker`-Verdrahtung im Creator. Die Aggregat-Getter (`getUnits`, `getMqtt`,
+`getExceptionMail`, `getIoBroker`) sind der verbleibende Block — sie fallen,
+wenn `Unit`/`Units` selbst DTO-gestützt sind (der große `Unit`-Teil).

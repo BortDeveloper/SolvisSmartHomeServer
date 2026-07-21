@@ -3,6 +3,7 @@ package de.sgollmer.solvismax.xml.jaxb;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import de.sgollmer.solvismax.ExecutionConfig;
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
 import de.sgollmer.solvismax.connection.mqtt.MqttConnectionConfig;
 import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
@@ -108,6 +109,45 @@ public final class Mapper {
 			@Override
 			public String getSmartHomeId() {
 				return dto.smartHomeId;
+			}
+		};
+	}
+
+	/**
+	 * DTO-gestützte {@link ExecutionConfig}-Sicht (Weg B, Konsumenten-Migration
+	 * nach dem Pilotmuster): liefert die flachen Ausführungswerte direkt aus dem
+	 * {@link BaseDataDto.ExecutionDataDto} — ohne die Aggregat-Klasse
+	 * {@code BaseData}. Konsumenten ({@code Main}, {@code Instances}) können damit
+	 * von dieser Sicht ODER vom Domänenobjekt gespeist werden.
+	 *
+	 * <p>
+	 * {@code getWritablePath()} ist eine <b>abgeleitete</b> Sicht: die OS-Weiche
+	 * zwischen {@code writeablePathWindows} und {@code writablePathLinux}, die die
+	 * Domäne in {@code BaseData.getWritablePath()} inline vornimmt — hier explizit
+	 * und testbar.
+	 * </p>
+	 */
+	public static ExecutionConfig executionConfig(final BaseDataDto.ExecutionDataDto dto) {
+		return new ExecutionConfig() {
+			@Override
+			public String getTimeZone() {
+				return dto.timeZone;
+			}
+
+			@Override
+			public int getPort() {
+				return dto.port;
+			}
+
+			@Override
+			public String getWritablePath() {
+				final boolean windows = System.getProperty("os.name").startsWith("Windows");
+				return windows ? dto.writeablePathWindows : dto.writablePathLinux;
+			}
+
+			@Override
+			public int getEchoInhibitTime_ms() {
+				return dto.echoInhibitTime_ms;
 			}
 		};
 	}

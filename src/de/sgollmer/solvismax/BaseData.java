@@ -18,7 +18,9 @@ import de.sgollmer.xmllibrary.BaseCreator;
 import de.sgollmer.xmllibrary.CreatorByXML;
 import de.sgollmer.xmllibrary.XmlException;
 
-public class BaseData {
+// Erfüllt die schmale Config-Sicht ExecutionConfig (Weg B): Konsumenten der
+// flachen Ausführungswerte hängen an der Sicht, nicht an der Aggregat-Klasse.
+public class BaseData implements ExecutionConfig {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaseData.class);;
 
@@ -32,10 +34,12 @@ public class BaseData {
 
 	private final String timeZone;
 
-	int getPort() {
+	@Override
+	public int getPort() {
 		return this.port;
 	}
 
+	@Override
 	public String getWritablePath() {
 		boolean windows = System.getProperty("os.name").startsWith("Windows");
 		return windows ? this.writeablePathWindows : this.writablePathLinux;
@@ -51,6 +55,7 @@ public class BaseData {
 	private final Mqtt mqtt;
 	private final IoBroker ioBroker;
 
+	@Override
 	public String getTimeZone() {
 		return this.timeZone;
 	}
@@ -97,6 +102,7 @@ public class BaseData {
 		return this.exceptionMail;
 	}
 
+	@Override
 	public int getEchoInhibitTime_ms() {
 		return this.echoInhibitTime_ms;
 	}
@@ -135,7 +141,7 @@ public class BaseData {
 			BaseData baseData = new BaseData(this.executionData.timeZone, this.executionData.port,
 					this.executionData.writeablePathWindows, this.executionData.writablePathLinux,
 					this.executionData.echoInhibitTime_ms, this.units, this.exceptionMail, this.mqtt, this.ioBroker);
-			this.ioBroker.setBaseData(baseData);
+			this.ioBroker.setTopicConfig(baseData.getMqtt());
 			return baseData;
 		}
 

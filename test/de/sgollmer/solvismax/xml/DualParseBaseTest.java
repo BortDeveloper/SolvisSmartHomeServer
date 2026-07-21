@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import de.sgollmer.solvismax.BaseData;
+import de.sgollmer.solvismax.ExecutionConfig;
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
 import de.sgollmer.solvismax.connection.mqtt.MqttConnectionConfig;
 import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
@@ -270,6 +271,32 @@ class DualParseBaseTest {
 			assertNotNull(vonDto);
 			assertEquals(vonDomaene.getTopic(), vonDto.getTopic(), "Topic weicht ab: " + type);
 		}
+	}
+
+	/**
+	 * <b>Konsumenten-Migration nach dem Pilotmuster (Weg B):</b> Die flachen
+	 * Ausführungswerte werden jetzt über die schmale Sicht {@link ExecutionConfig}
+	 * gelesen (Konsumenten: {@code Main} für Port/Pfad, {@code Instances} für
+	 * Pfad/Zeitzone/Echo-Sperrzeit). Dieser Test belegt, dass beide Quellen —
+	 * Domänenobjekt und DTO-gestützte Sicht — identische Config liefern;
+	 * {@code getWritablePath()} enthält dabei die abgeleitete OS-Weiche.
+	 */
+	@Test
+	void executionConfigAusDomaeneUndDtoIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final ExecutionConfig ausDomaene = alt;                                    // BaseData implements ExecutionConfig
+		final ExecutionConfig ausDto = Mapper.executionConfig(neu.executionData);  // DTO-gestützt
+
+		assertEquals(ausDomaene.getTimeZone(), ausDto.getTimeZone());
+		assertEquals(ausDomaene.getPort(), ausDto.getPort());
+		assertEquals(ausDomaene.getEchoInhibitTime_ms(), ausDto.getEchoInhibitTime_ms());
+		// Abgeleitete Sicht: OS-Weiche Windows/Linux — auf derselben Maschine
+		// muessen beide Quellen denselben Pfad waehlen.
+		assertEquals(ausDomaene.getWritablePath(), ausDto.getWritablePath());
+		assertNotNull(ausDto.getWritablePath());
 	}
 
 	/**

@@ -10,8 +10,8 @@ import java.io.Writer;
 
 import javax.xml.namespace.QName;
 
-import de.sgollmer.solvismax.BaseData;
 import de.sgollmer.solvismax.Constants;
+import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.connection.mqtt.TopicType;
 import de.sgollmer.solvismax.connection.mqtt.TopicType.TopicData;
 import de.sgollmer.solvismax.helper.FileHelper;
@@ -24,7 +24,8 @@ import de.sgollmer.xmllibrary.XmlException;
 public class IoBroker {
 	private final String mqttInterface;
 	private final String javascriptInterface;
-	private BaseData baseData;
+	// Schmale Config-Sicht (Weg B): IoBroker liest nur den Topic-Praefix.
+	private MqttTopicConfig topicConfig;
 	private boolean first = true;
 
 	private IoBroker(final String mqttInterface, final String javascriptInterface) {
@@ -83,7 +84,7 @@ public class IoBroker {
 			first = false;
 		}
 
-		for (String p : this.baseData.getMqtt().getTopicPrefix().split("/")) {
+		for (String p : this.topicConfig.getTopicPrefix().split("/")) {
 			if (!first) {
 				builder.append(separator);
 			} else {
@@ -341,8 +342,8 @@ public class IoBroker {
 
 	}
 
-	public void setBaseData(final BaseData baseData) {
-		this.baseData = baseData;
+	public void setTopicConfig(final MqttTopicConfig topicConfig) {
+		this.topicConfig = topicConfig;
 
 	}
 }

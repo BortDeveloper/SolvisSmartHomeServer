@@ -36,9 +36,10 @@ import de.sgollmer.xmllibrary.BaseCreator;
 import de.sgollmer.xmllibrary.CreatorByXML;
 import de.sgollmer.xmllibrary.XmlException;
 
-// Erfüllt die schmale Config-Sicht MqttTopicConfig (Weg B): Konsumenten des
-// Topic-Aufbaus hängen an der Sicht, nicht an dieser laufzeitgekoppelten Klasse.
-public class Mqtt implements MqttTopicConfig {
+// Erfüllt die schmalen Config-Sichten MqttTopicConfig und MqttConnectionConfig
+// (Weg B): Konsumenten des Topic-Aufbaus bzw. des Verbindungsaufbaus hängen an
+// der jeweiligen Sicht, nicht an dieser laufzeitgekoppelten Klasse.
+public class Mqtt implements MqttTopicConfig, MqttConnectionConfig {
 
 	static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Mqtt.class);
 
@@ -461,5 +462,30 @@ public class Mqtt implements MqttTopicConfig {
 
 	public boolean isEnable() {
 		return this.enable;
+	}
+
+	@Override
+	public String getUserName() {
+		return this.userName;
+	}
+
+	@Override
+	public CryptAes getPasswordCrypt() {
+		return this.passwordCrypt;
+	}
+
+	@Override
+	public Ssl getSsl() {
+		return this.ssl;
+	}
+
+	@Override
+	public int getPublishQoS() {
+		return this.publishQoS;
+	}
+
+	@Override
+	public int getSubscribeQoS() {
+		return this.subscribeQoS;
 	}
 }

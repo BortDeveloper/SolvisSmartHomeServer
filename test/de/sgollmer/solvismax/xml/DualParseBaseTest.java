@@ -1,8 +1,10 @@
 package de.sgollmer.solvismax.xml;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.File;
 import java.util.Map;
@@ -12,7 +14,9 @@ import org.junit.jupiter.api.Test;
 
 import de.sgollmer.solvismax.BaseData;
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
+import de.sgollmer.solvismax.connection.mqtt.MqttConnectionConfig;
 import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
+import de.sgollmer.solvismax.connection.mqtt.TopicType;
 import de.sgollmer.solvismax.model.objects.unit.Unit;
 import de.sgollmer.solvismax.xml.jaxb.BaseDataDto;
 import de.sgollmer.solvismax.xml.jaxb.JaxbBaseReader;
@@ -208,6 +212,64 @@ class DualParseBaseTest {
 
 		assertEquals(ausDomaene.getTopicPrefix(), ausDto.getTopicPrefix());
 		assertEquals(ausDomaene.getSmartHomeId(), ausDto.getSmartHomeId());
+	}
+
+	/**
+	 * <b>Konsumenten-Migration nach dem Pilotmuster (Weg B):</b> Der
+	 * Broker-Verbindungsaufbau ({@code MqttThread}) liest seine Config jetzt über
+	 * die schmale Sicht {@link MqttConnectionConfig}. Dieser Test belegt, dass der
+	 * Konsument aus <b>beiden</b> Quellen — dem Domänenobjekt (das die Sicht
+	 * erfüllt) und der DTO-gestützten Sicht — <b>identische</b> Config erhält.
+	 *
+	 * <p>
+	 * {@code passwordCrypt}: Die Vorlage enthält den Platzhalter
+	 * {@code "AES-coded"}, dessen Entschlüsselung in beiden Parsern fehlschlägt —
+	 * beide Sichten liefern daher eine ungesetzte {@link
+	 * de.sgollmer.solvismax.crypt.CryptAes} ({@code cP() == null}).
+	 * </p>
+	 */
+	@Test
+	void mqttConnectionConfigAusDomaeneUndDtoIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final MqttConnectionConfig ausDomaene = alt.getMqtt();               // Mqtt implements MqttConnectionConfig
+		final MqttConnectionConfig ausDto = Mapper.connectionConfig(neu.mqtt); // DTO-gestützt
+
+		assertEquals(ausDomaene.getUserName(), ausDto.getUserName());
+		assertEquals(ausDomaene.getTopicPrefix(), ausDto.getTopicPrefix());
+		assertEquals(ausDomaene.getPublishQoS(), ausDto.getPublishQoS());
+		assertEquals(ausDomaene.getSubscribeQoS(), ausDto.getSubscribeQoS());
+		// Ssl-Element in der Vorlage nicht vorhanden -> beide Sichten null.
+		assertEquals(ausDomaene.getSsl() == null, ausDto.getSsl() == null);
+		assertNull(ausDto.getSsl());
+		// Entschluesseltes Passwort (hier: beidseitig ungesetzt, s. Javadoc).
+		assertArrayEquals(ausDomaene.getPasswordCrypt().cP(), ausDto.getPasswordCrypt().cP());
+	}
+
+	/**
+	 * Konsumenten-Nachweis auf Verhaltensebene: {@code TopicType.getTopicData}
+	 * (jetzt an {@link MqttTopicConfig} verschmälert) baut aus Domänen- und
+	 * DTO-Sicht <b>identische Topics</b> — inklusive eines Typs mit ClientId-Teil
+	 * ({@code CLIENT_ONLINE} nutzt {@code getSmartHomeId()}).
+	 */
+	@Test
+	void topicAufbauAusDomaeneUndDtoIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final MqttTopicConfig ausDomaene = alt.getMqtt();
+		final MqttTopicConfig ausDto = Mapper.topicConfig(neu.mqtt);
+
+		for (final TopicType type : new TopicType[] { TopicType.SERVER_META, TopicType.CLIENT_ONLINE }) {
+			final TopicType.TopicData vonDomaene = type.getTopicData(ausDomaene, null, null);
+			final TopicType.TopicData vonDto = type.getTopicData(ausDto, null, null);
+			assertNotNull(vonDomaene);
+			assertNotNull(vonDto);
+			assertEquals(vonDomaene.getTopic(), vonDto.getTopic(), "Topic weicht ab: " + type);
+		}
 	}
 
 	/**

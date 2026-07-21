@@ -267,7 +267,7 @@ public enum TopicType {
 		}
 	}
 
-	public TopicData getTopicData(final Mqtt mqtt, final Solvis solvis, final SolvisData data) {
+	public TopicData getTopicData(final MqttTopicConfig mqtt, final Solvis solvis, final SolvisData data) {
 		TopicData topicData = null;
 		if (this.hasChannelId()) {
 			if (data == null) {

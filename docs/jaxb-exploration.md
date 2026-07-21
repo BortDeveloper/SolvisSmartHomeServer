@@ -206,3 +206,31 @@ Config-Lese-Signatur verschmälert, das Laufzeitverhalten bleibt unberührt. Die
 restlichen Konsumenten folgen demselben Muster; sobald ein Konsument nur noch an
 der Sicht hängt und der Fluss die DTO-Sicht liefert, entfällt seine Abhängigkeit
 von der Domänen-Config-Klasse.
+
+### Ausrollung auf die restlichen Mqtt-Konsumenten (✅ erledigt, grün)
+
+Bestandsaufnahme aller `Mqtt`-lesenden Stellen und Anwendung des Musters:
+
+- ✅ **`TopicType.getTopicData`** und **`MqttData.getTopic`**: reine
+  Topic-Aufbau-Konsumenten (reichen nur an `getTopicParts` durch) — Signaturen
+  auf die vorhandene Sicht `MqttTopicConfig` verschmälert. Verhaltens-Nachweis:
+  Dual-Parse-Test baut über `getTopicData` aus Domänen- UND DTO-Sicht
+  **identische Topics** (inkl. `CLIENT_ONLINE` mit `smartHomeId`-Teil).
+- ✅ **`MqttThread`** (Broker-Verbindungsaufbau): las Verbindungs-Config direkt
+  aus Feldern (`userName`, `passwordCrypt`, `ssl`, `topicPrefix`, `publishQoS`,
+  `subscribeQoS`). Neue schmale Sicht **`MqttConnectionConfig`** (Mqtt erfüllt
+  sie; DTO-Sicht via `Mapper.connectionConfig`); alle Config-Lesezugriffe laufen
+  jetzt über die Sicht, die Laufzeit-Zugriffe (Client, Callback, Last-Will)
+  bleiben bewusst an `Mqtt`. Dual-Parse-Test: beide Quellen liefern identische
+  Config (Passwort-Vergleich über `cP()`; beim Template-Platzhalter beidseitig
+  ungesetzt).
+- ✅ **Keine Config-Konsumenten** (nur Laufzeit: publish/subscribe, Client,
+  Instances): `MqttQueue`, `Callback`, `AllSolvisData.sendMetaToMqtt`,
+  `Instances.getMqtt`/`Solvis.getMqtt`-Durchreichungen — hier gibt es kein
+  Config-Lesen zu verschmälern; sie wandern später mit der Laufzeitklasse.
+
+Damit liest **kein Konsument mehr Mqtt-Config an der konkreten Klasse vorbei**:
+Der gesamte Config-Lesepfad (Topic-Aufbau + Verbindungsaufbau) läuft über die
+beiden Sichten und ist DTO-gestützt belegt. `Mqtt` selbst bleibt als
+Laufzeitklasse (Client/Queue/Callback) bestehen und wird künftig aus den DTOs
+konstruiert (`Mapper.toMqtt`).

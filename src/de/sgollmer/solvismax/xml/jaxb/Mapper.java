@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
+import de.sgollmer.solvismax.connection.mqtt.MqttConnectionConfig;
 import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.crypt.Ssl;
@@ -107,6 +108,65 @@ public final class Mapper {
 			@Override
 			public String getSmartHomeId() {
 				return dto.smartHomeId;
+			}
+		};
+	}
+
+	/**
+	 * DTO-gestützte {@link MqttConnectionConfig}-Sicht (Weg B,
+	 * Konsumenten-Migration nach dem Pilotmuster): liefert die für den
+	 * Broker-Verbindungsaufbau nötige Config direkt aus dem
+	 * {@link BaseDataDto.MqttDto} — ohne die laufzeitgekoppelte Domänenklasse
+	 * {@code Mqtt}. Der Konsument {@code MqttThread} kann damit von dieser Sicht
+	 * ODER vom Domänenobjekt gespeist werden (beide erfüllen das Interface,
+	 * verifiziert im Dual-Parse-Test).
+	 *
+	 * <p>
+	 * {@code passwordCrypt} wird — wie in {@link #toMqtt} — hier explizit
+	 * entschlüsselt. Schlägt das fehl, bleibt die {@link CryptAes} ungesetzt
+	 * ({@code cP() == null}); im alten Fluss wird MQTT in diesem Fall ohnehin
+	 * deaktiviert, sodass der Verbindungsaufbau nie stattfindet.
+	 * </p>
+	 */
+	public static MqttConnectionConfig connectionConfig(final BaseDataDto.MqttDto dto) {
+		final CryptAes passwordCrypt = new CryptAes();
+		if (dto.passwordCrypt != null) {
+			try {
+				passwordCrypt.decrypt(dto.passwordCrypt);
+			} catch (final CryptException e) {
+				// Wie der alte Parser: ungueltiges passwordCrypt bleibt ungesetzt.
+			}
+		}
+		final Ssl ssl = toSsl(dto.ssl);
+		return new MqttConnectionConfig() {
+			@Override
+			public String getUserName() {
+				return dto.userName;
+			}
+
+			@Override
+			public CryptAes getPasswordCrypt() {
+				return passwordCrypt;
+			}
+
+			@Override
+			public Ssl getSsl() {
+				return ssl;
+			}
+
+			@Override
+			public String getTopicPrefix() {
+				return dto.topicPrefix;
+			}
+
+			@Override
+			public int getPublishQoS() {
+				return dto.publishQoS;
+			}
+
+			@Override
+			public int getSubscribeQoS() {
+				return dto.subscribeQoS;
 			}
 		};
 	}

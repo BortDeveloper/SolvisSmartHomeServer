@@ -1,4 +1,10 @@
 # SolvisSmartHomeServer
+
+> **Fork-Hinweis:** Dies ist ein Fork von
+> [GollmerSt/SolvisSmartHomeServer](https://github.com/GollmerSt/SolvisSmartHomeServer)
+> mit betriebsspezifischen Anpassungen für ein mTLS-gehärtetes Smart-Home-Setup.
+> Warum dieser Fork existiert und was geplant ist, steht in [FORK.md](FORK.md).
+
 ## Überblick
 
 Dieses Programnm dient der Anbindung der SolvisMax 6 und 7 mit SolvisControl2 in Kombination der SolvisRemote an Smart-Home-Systeme wie z.B. Fhem, ioBroker, OpenHAB, Indigo.

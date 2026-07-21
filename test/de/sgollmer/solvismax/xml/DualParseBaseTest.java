@@ -1,9 +1,11 @@
 package de.sgollmer.solvismax.xml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
+import java.util.Map;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -98,5 +100,30 @@ class DualParseBaseTest {
 				.findFirst()
 				.orElseThrow(() -> new AssertionError("Feature fehlt im DTO: " + id))
 				.value;
+	}
+
+	/**
+	 * Prüft den {@link de.sgollmer.solvismax.xml.jaxb.Mapper}: Die aus der
+	 * kanonischen Feature-Liste abgeleitete Map muss für <b>jedes</b> Feature
+	 * denselben Wert liefern wie die Domäne (die dieselbe Ableitung noch im
+	 * Parser vornimmt). Das sichert das Prinzip „kanonisch binden + explizit
+	 * ableiten" verhaltensidentisch ab.
+	 */
+	@Test
+	void featureMapAbleitungIdentischZuDomaene() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final Unit u = alt.getUnits().getUnits().iterator().next();
+		final Map<String, Boolean> abgeleitet =
+				de.sgollmer.solvismax.xml.jaxb.Mapper.featuresToMap(neu.units.unit.get(0).features);
+
+		assertFalse(abgeleitet.isEmpty(), "Die Vorlage enthält Features");
+		// Jeder abgeleitete Feature-Wert muss dem der Domäne entsprechen.
+		for (final Map.Entry<String, Boolean> e : abgeleitet.entrySet()) {
+			assertEquals(u.getFeatures().get(e.getKey(), !e.getValue()), e.getValue(),
+					"Feature-Wert weicht ab: " + e.getKey());
+		}
 	}
 }

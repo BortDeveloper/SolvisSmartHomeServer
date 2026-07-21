@@ -2,6 +2,7 @@ package de.sgollmer.solvismax.xml.jaxb;
 
 import java.util.List;
 
+import de.sgollmer.solvismax.Constants;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -16,6 +17,15 @@ import jakarta.xml.bind.annotation.XmlRootElement;
  * XML-Struktur ab; die Werte werden vom {@code Unmarshaller} gesetzt. Siehe
  * {@link de.sgollmer.solvismax.xml.jaxb}.
  * </p>
+ *
+ * <h2>Default-Werte fehlender Attribute (Standard-Mechanismus)</h2>
+ * Der JAXB-Unmarshaller setzt nur Felder, deren Attribut im XML vorhanden ist —
+ * <b>Feld-Initialisierer</b> sind daher der standardkonforme Ort für Defaults
+ * (exakt das Muster der alten {@code Creator}-Felder, die {@code setAttribute}
+ * nur bei vorhandenem Attribut überschrieb). Die base.xsd deklariert keine
+ * {@code default=}-Werte; maßgeblich sind die Creator-Defaults des alten
+ * Parsers, die hier gespiegelt und per Dual-Parse-Test an einer
+ * Minimal-Fixture (ohne die optionalen Attribute) verifiziert sind.
  */
 @XmlRootElement(name = "BaseData")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -75,14 +85,20 @@ public class BaseDataDto {
 		@XmlAttribute(name = "bufferedInterval_ms") public int bufferedInterval_ms;
 		@XmlAttribute(name = "releaseBlockingAfterUserAccess_ms") public int releaseBlockingAfterUserAccess_ms;
 		@XmlAttribute(name = "releaseBlockingAfterServiceAccess_ms") public int releaseBlockingAfterServiceAccess_ms;
-		@XmlAttribute(name = "reheatingNotRequiredActiveTime_ms") public int reheatingNotRequiredActiveTime_ms;
+		@XmlAttribute(name = "reheatingNotRequiredActiveTime_ms")
+		public int reheatingNotRequiredActiveTime_ms = Constants.Defaults.REHEATING_NOT_REQUIRED_ACTIVE_TIME;
 		@XmlAttribute(name = "delayAfterSwitchingOnEnable") public boolean delayAfterSwitchingOnEnable;
 		// Rohwert in Sekunden — die Domäne rechnet nach Millisekunden um; diese
 		// Ableitung liefert Mapper.measurementsIntervalMs (Weg B: abgeleitete Sicht).
 		@XmlAttribute(name = "measurementsInterval_s") public int measurementsInterval_s;
-		@XmlAttribute(name = "measurementsIntervalFast_s") public int measurementsIntervalFast_s;
+		// Integer statt int: Fehlt das Attribut, faellt der Wert auf
+		// measurementsInterval_s zurueck (Creator-Semantik) — der Fallback braucht
+		// die Unterscheidung "nicht gesetzt" (null) und liegt in
+		// Mapper.measurementsIntervalFastMs.
+		@XmlAttribute(name = "measurementsIntervalFast_s") public Integer measurementsIntervalFast_s;
 		// Nach der Fork-Korrektur des Creator-Tippfehlers wieder 1:1-vergleichbar.
-		@XmlAttribute(name = "forceUpdateAfterFastChangingIntervals") public int forceUpdateAfterFastChangingIntervals;
+		@XmlAttribute(name = "forceUpdateAfterFastChangingIntervals")
+		public int forceUpdateAfterFastChangingIntervals = Constants.FORCE_UPDATE_AFTER_N_INTERVALS;
 		@XmlAttribute(name = "resetErrorDelayTime_ms") public int resetErrorDelayTime_ms;
 
 		@XmlElement(name = "Features")
@@ -195,10 +211,17 @@ public class BaseDataDto {
 		@XmlAttribute(name = "type") public String type;
 	}
 
-	/** JAXB-Bean für {@code <Iobroker>}. */
+	/**
+	 * JAXB-Bean für {@code <Iobroker>}. Die Initialisierer spiegeln die
+	 * Creator-Defaults; fehlt das <b>ganze Element</b>, ersetzt der alte Parser
+	 * es durch eine Default-Instanz — dieser Element-Default gehört beim
+	 * Reader-Umstieg in die Sicht/den Mapper (DTO bleibt dann {@code null}).
+	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class IobrokerDto {
-		@XmlAttribute(name = "mqttInterface") public String mqttInterface;
-		@XmlAttribute(name = "javascriptInterface") public String javascriptInterface;
+		@XmlAttribute(name = "mqttInterface")
+		public String mqttInterface = Constants.IoBroker.DEFAULT_MQTT_INTERFACE;
+		@XmlAttribute(name = "javascriptInterface")
+		public String javascriptInterface = Constants.IoBroker.DEFAULT_JAVASCRIPT_INTERFACE;
 	}
 }

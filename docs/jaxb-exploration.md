@@ -287,14 +287,44 @@ Messwert-Intervalle, Bildschirm-Parameter). Muster angewandt:
 - ✅ **Dual-Parse-Test:** alle 19 `UnitConfig`-Methoden aus Domäne UND DTO
   identisch.
 
-⚠️ **zu behandeln (vor dem Reader-Umstieg):** Der alte Parser hat für einige
-Attribute **Nicht-Null-Defaults** (`forceUpdateAfterFastChangingIntervals` →
-`Constants.FORCE_UPDATE_AFTER_N_INTERVALS`,
-`reheatingNotRequiredActiveTime_ms` → `Constants.Defaults.…`). Die DTO-Bindung
-liefert bei **fehlendem** Attribut dagegen `0` (primitives int). Im Template
-sind diese Attribute gesetzt (Dual-Parse grün); für beliebige Nutzer-Configs
-muss die Default-Logik beim Umstieg in die Sicht/den Mapper wandern
-(Integer-Bindung + expliziter Default).
+### Default-Werte fehlender Attribute (✅ gelöst, im Standard)
+
+Der alte Parser trägt seine Defaults in den **Creator-Feldern** (Initialisierer,
+die `setAttribute` nur bei vorhandenem Attribut überschreibt). Der
+**JAXB-Standard-Mechanismus ist identisch**: Der Unmarshaller setzt nur Felder,
+deren Attribut im Dokument vorkommt — **Feld-Initialisierer im DTO** sind daher
+der standardkonforme Ort für Defaults (kein Mapper-Sonderweg nötig). Die
+base.xsd deklariert selbst keine `default=`-Werte (nur `use="required"`);
+XSD-Defaults würden ohnehin keinen der beiden Parser erreichen (der alte liest
+nach der Validierung erneut ohne Schema, JAXB unmarshallt ohne Schema).
+
+- ✅ **Gespiegelt als DTO-Initialisierer** (dieselben Konstanten, keine
+  Duplikate): `forceUpdateAfterFastChangingIntervals =
+  Constants.FORCE_UPDATE_AFTER_N_INTERVALS` (3),
+  `reheatingNotRequiredActiveTime_ms =
+  Constants.Defaults.REHEATING_NOT_REQUIRED_ACTIVE_TIME` (30000),
+  `Iobroker`-Interfaces = `Constants.IoBroker.DEFAULT_*`. Die übrigen
+  Optionalen (doubleUpdate, resetErrorDelay, fwLth, …) defaulten auf 0/false —
+  primitives Feld genügt.
+- ✅ **Feldübergreifender Fallback:** fehlendes `measurementsIntervalFast_s` →
+  Wert von `measurementsInterval_s` (Creator-Semantik). Im DTO als `Integer`
+  gebunden (null = nicht gesetzt, kanonisch); der Fallback liegt als abgeleitete
+  Sicht in `Mapper.measurementsIntervalFastMs` — er referenziert zwei Felder und
+  gehört damit in die Sicht, nicht in die Bindung.
+- ✅ **Bewiesen per Dual-Parse an einer Minimal-Fixture**
+  (`testFiles/xml/base-minimal.xml`, nur XSD-Pflichtattribute): beide Parser
+  liefern für alle 19 `UnitConfig`-Werte identische Defaults. Nebenbefund der
+  Fixture-Erstellung: Der alte Parser erzwingt fachlich **genau eines** der
+  Features `InteractiveGUIAccess`/`OnlyMeasurements` — eine Validierungsregel
+  außerhalb der XSD (für den Reader-Umstieg relevant).
+
+⚠️ **Notiert (nicht Default-bezogen):** (a) Das Alternativ-Attribut
+`defaultReadMeasurementsInterval_ms` (bereits in ms, deprecated-Pfad des
+Creators) ist im DTO noch nicht gebunden. (b) Die XSD-Doku behauptet für
+`resetErrorDelayTime_ms` „Default: 5min" — der Code defaultet tatsächlich auf
+`0` (= sofortiges Reset); Doku-Inkonsistenz im Upstream. (c) Fehlt das ganze
+`<Iobroker>`-Element, ersetzt es der alte Parser durch eine Default-Instanz —
+dieser **Element**-Default gehört beim Reader-Umstieg in die Sicht.
 
 **Noch am Aggregat** (eigene Sichten folgen): `getFeatures` (ErrorState,
 EquipmentOnOff, Solvis, HumanAccess, ExceptionMail), `getConfiguration`

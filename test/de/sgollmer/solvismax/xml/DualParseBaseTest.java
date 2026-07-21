@@ -39,6 +39,7 @@ import de.sgollmer.solvismax.xml.jaxb.Mapper;
 class DualParseBaseTest {
 
 	private static final String TEMPLATE = "rsc/de/sgollmer/solvismax/data/base.xml";
+	private static final String MINIMAL = "testFiles/xml/base-minimal.xml";
 
 	private void assumeTemplate() {
 		Assumptions.assumeTrue(new File(TEMPLATE).isFile(), "Vorlage fehlt: " + TEMPLATE);
@@ -318,6 +319,10 @@ class DualParseBaseTest {
 		final UnitConfig ausDomaene = alt.getUnits().getUnits().iterator().next(); // Unit implements UnitConfig
 		final UnitConfig ausDto = Mapper.unitConfig(neu.units.unit.get(0));        // DTO-gestützt
 
+		assertUnitConfigIdentisch(ausDomaene, ausDto);
+	}
+
+	private static void assertUnitConfigIdentisch(final UnitConfig ausDomaene, final UnitConfig ausDto) {
 		assertEquals(ausDomaene.getId(), ausDto.getId());
 		assertEquals(ausDomaene.getDefaultAverageCount(), ausDto.getDefaultAverageCount());
 		assertEquals(ausDomaene.getMeasurementHysteresisFactor(), ausDto.getMeasurementHysteresisFactor());
@@ -340,6 +345,47 @@ class DualParseBaseTest {
 		assertEquals(ausDomaene.isDelayAfterSwitchingOnEnable(), ausDto.isDelayAfterSwitchingOnEnable());
 		assertEquals(ausDomaene.isFwLth2_21_02A(), ausDto.isFwLth2_21_02A());
 		assertEquals(ausDomaene.getIgnoredFrameThicknesScreenSaver(), ausDto.getIgnoredFrameThicknesScreenSaver());
+	}
+
+	/**
+	 * <b>Default-Behandlung fehlender Attribute (Standard-Mechanismus):</b> Der
+	 * JAXB-Unmarshaller lässt Felder unangetastet, deren Attribut im XML fehlt —
+	 * die Creator-Defaults des alten Parsers sind daher als
+	 * <b>Feld-Initialisierer</b> im DTO gespiegelt; der Fallback
+	 * {@code measurementsIntervalFast_s → measurementsInterval_s} liegt (als
+	 * feldübergreifende Regel) in der Sicht {@code Mapper.measurementsIntervalFastMs}.
+	 *
+	 * <p>
+	 * Beweis an einer Minimal-Fixture, die nur die XSD-Pflichtattribute enthält:
+	 * beide Parser liefern für ALLE {@code UnitConfig}-Werte identische Defaults —
+	 * charakterisiert: {@code forceUpdateAfterFastChangingIntervals=3},
+	 * {@code reheatingNotRequiredActiveTime_ms=30000}, schnelles Intervall fällt
+	 * auf das normale zurück (10 s → 10000 ms).
+	 * </p>
+	 */
+	@Test
+	void defaultsBeiFehlendenAttributenIdentisch() throws Exception {
+		Assumptions.assumeTrue(new File(MINIMAL).isFile(), "Fixture fehlt: " + MINIMAL);
+		final BaseData alt = new BaseControlFileReader(MINIMAL).read();
+		assertNotNull(alt, "alter Parser muss die Minimal-Fixture akzeptieren (XSD-valide)");
+		final BaseDataDto neu = JaxbBaseReader.read(MINIMAL);
+
+		final UnitConfig ausDomaene = alt.getUnits().getUnits().iterator().next();
+		final UnitConfig ausDto = Mapper.unitConfig(neu.units.unit.get(0));
+
+		// Charakterisierung der Default-Werte (aus den Creator-Feldern).
+		assertEquals(3, ausDto.getForceUpdateAfterFastChangingIntervals(),
+				"Default Constants.FORCE_UPDATE_AFTER_N_INTERVALS");
+		assertEquals(30000, ausDto.getReheatingNotRequiredActiveTime_ms(),
+				"Default Constants.Defaults.REHEATING_NOT_REQUIRED_ACTIVE_TIME");
+		assertEquals(10_000, ausDto.getMeasurementsIntervalFast_ms(),
+				"fehlendes measurementsIntervalFast_s faellt aufs normale Intervall zurueck");
+		assertEquals(0, ausDto.getDoubleUpdateInterval_ms());
+		assertEquals(0, ausDto.getResetErrorDelayTime());
+		assertFalse(ausDto.isFwLth2_21_02A());
+
+		// 1:1 gegen den alten Parser — Defaults beider Seiten identisch.
+		assertUnitConfigIdentisch(ausDomaene, ausDto);
 	}
 
 	/**

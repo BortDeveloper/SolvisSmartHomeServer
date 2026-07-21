@@ -314,9 +314,21 @@ public final class Mapper {
 		};
 	}
 
-	/** Abgeleitete Sicht: schnelles Mess-Intervall in Millisekunden (×1000). */
+	/**
+	 * Abgeleitete Sicht: schnelles Mess-Intervall in Millisekunden (×1000).
+	 *
+	 * <p>
+	 * Default-Semantik des alten Parsers gespiegelt: Fehlt
+	 * {@code measurementsIntervalFast_s} (DTO-Feld {@code null}), gilt das
+	 * normale Mess-Intervall ({@code Unit.Creator.create()} setzte in dem Fall
+	 * {@code fast = defaultMeasurementsInterval_ms}).
+	 * </p>
+	 */
 	public static int measurementsIntervalFastMs(final BaseDataDto.UnitDto unit) {
-		return unit.measurementsIntervalFast_s * 1000;
+		final int fast_s = unit.measurementsIntervalFast_s != null
+				? unit.measurementsIntervalFast_s
+				: unit.measurementsInterval_s;
+		return fast_s * 1000;
 	}
 
 	/**

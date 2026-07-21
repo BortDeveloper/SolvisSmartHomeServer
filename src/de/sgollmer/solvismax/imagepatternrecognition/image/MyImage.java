@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
-import javax.mail.util.ByteArrayDataSource;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.log.Diagnostics;
@@ -526,13 +525,24 @@ public class MyImage {
 		return true;
 	}
 
-	public ByteArrayDataSource getByteArrayDataSource() throws IOException {
+	/**
+	 * Kodiert das Bild als Byte-Array im Format {@link Constants.Files#GRAFIC_SUFFIX}.
+	 *
+	 * <p>
+	 * Modul-Isolierung (Fork): Frueher lieferte diese Methode direkt einen
+	 * {@code javax.mail.util.ByteArrayDataSource} und koppelte damit das
+	 * Bildmodul an die Mail-Bibliothek. Sie liefert jetzt nur noch die rohen
+	 * Bytes; das Einpacken fuer den Mail-Anhang uebernimmt der Aufrufer
+	 * ({@code mail.Mail}). Siehe MODERNISIERUNG.md (3.1).
+	 * </p>
+	 */
+	public byte[] getImageBytes() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ImageIO.write(this.image, Constants.Files.GRAFIC_SUFFIX, baos);
 		baos.flush();
 		byte[] imageBytes = baos.toByteArray();
 		baos.close();
-		return new ByteArrayDataSource(imageBytes, "image/" + Constants.Files.GRAFIC_SUFFIX);
+		return imageBytes;
 	}
 
 	public void writeWhole(final File file) throws IOException {

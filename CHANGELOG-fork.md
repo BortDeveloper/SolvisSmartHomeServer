@@ -8,6 +8,22 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Modernisierung Stufe 3.1: OCR-Kern isoliert
+
+- **Schichtungs-Leck entfernt:** Das Bildmodul (`MyImage`) hing über
+  `getByteArrayDataSource()` an **`javax.mail`** — fachlich fehl am Platz
+  (Bilderkennung braucht keine Mail-Bibliothek). `MyImage` liefert jetzt
+  `getImageBytes()` (`byte[]`); das Einpacken in den Mail-Anhang macht die
+  Mail-Schicht (`mail.Mail`). Der `javax.mail`-Import ist aus dem OCR-Modul
+  verschwunden.
+- **Modulgrenze dokumentiert:** `package-info.java` für `ocr`, `image` und
+  `pattern` (Zweck, öffentliche Schnittstelle
+  `new Ocr(new MyImage(img)).toChar()`, minimale Abhängigkeitsgrenze — nur
+  JDK-Bildklassen, geteilte Geometrie-Typen, Logging —, Golden-Test-Schutz und
+  die Zuschreibung der OCR-Idee an Stefan Gollmer (GollmerSt)).
+- Der OCR-Kern wird bewusst **nicht** umgeschrieben; die 31 Golden-Tests
+  sichern die Erkennung ab. BUILD SUCCESS, 37 Tests grün.
+
 ## Modernisierung Stufe 2.2: Logging auf SLF4J umgestellt
 
 Die eigene Logger-Fassade wurde durch den Standard **SLF4J** (+ **Logback**)

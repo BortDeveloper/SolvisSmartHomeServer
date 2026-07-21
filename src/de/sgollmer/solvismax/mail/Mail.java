@@ -184,7 +184,10 @@ public class Mail {
 
 		if (image != null) {
 			messageBodyPart = new MimeBodyPart();
-			ByteArrayDataSource bds = image.getByteArrayDataSource();
+			// Bytes aus dem Bildmodul in einen Mail-Anhang einpacken (die
+			// Mail-Typen gehoeren hierher, nicht ins Bildmodul; Fork 3.1).
+			ByteArrayDataSource bds = new ByteArrayDataSource(image.getImageBytes(),
+					"image/" + Constants.Files.GRAFIC_SUFFIX);
 			messageBodyPart.setDataHandler(new DataHandler(bds));
 			messageBodyPart.setFileName(Constants.Files.SOLVIS_SCREEN);
 			messageBodyPart.setHeader("Content-ID", "<image>");

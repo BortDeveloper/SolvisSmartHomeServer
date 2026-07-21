@@ -30,9 +30,9 @@ Debian-Basisimage mit OpenJDK verwenden, z. B.:
 
 ```dockerfile
 FROM debian:bookworm AS build
-RUN apt-get update && apt-get install -y --no-install-recommends default-jdk-headless ant \
+RUN apt-get update && apt-get install -y --no-install-recommends default-jdk-headless \
     && rm -rf /var/lib/apt/lists/*
-# … ant clean && ant …
+# … ./mvnw -B clean package …  (der Maven-Wrapper laedt Maven selbst)
 
 FROM debian:bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends default-jre-headless \

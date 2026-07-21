@@ -8,6 +8,32 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Modernisierung Stufe 1: Maven-Build, CI, Aufräumen
+
+Fundament für langfristige Wartbarkeit. Fahrplan aller Stufen und Status:
+[MODERNISIERUNG.md](MODERNISIERUNG.md).
+
+- **Build auf Maven umgestellt** (`pom.xml`): Abhängigkeiten deklarativ von
+  Maven Central statt der von Hand in `lib/` eingecheckten Jars; Uber-Jar via
+  `maven-shade-plugin` (inkl. `ServicesResourceTransformer` — führt
+  `META-INF/services` korrekt zusammen, u. a. für den SMTP-Provider). Die
+  Eigenbibliothek `XMLLibrary` (nicht auf Central) ist reproduzierbar in
+  `local-maven-repo/` **vendored**. **Maven-Wrapper** (`mvnw`) ergänzt →
+  Build ohne vorinstalliertes Maven. Java-Sprachniveau bleibt in dieser Phase
+  bewusst 8 (Anhebung auf 17 ist ein separater, späterer Schritt).
+- **Ant-Build entfernt**: `build.xml`, `build-user.xml` und das komplette
+  `lib/`-Verzeichnis (14 Jars) gelöscht; das `Dockerfile` baut jetzt über
+  `./mvnw` statt Ant.
+- **CI (GitHub Actions)** unter `.github/workflows/build.yml`: Build + Test bei
+  jedem Push/PR, JDK-Matrix **17/21**, Uber-Jar als Artefakt. Ersetzt die
+  frühere manuelle Build-Verifikation auf einem Zielhost.
+- **Aufräumen:** 178 tote `$Id$`-SVN-Header aus den Quelldateien entfernt
+  (Git liefert die Historie); `.editorconfig` und `.gitattributes` erzwingen
+  künftig UTF-8/LF (beenden die CRLF-Vermischung dauerhaft).
+- **Verifikation (2026-07-21, JDK 17):** `mvn clean package` →
+  `target/SolvisSmartHomeServer.jar` (~4,16 MB), alle Kernklassen + `base.xsd`
+  enthalten, Laufzeit-Smoke `--string-to-crypt` ok.
+
 ## log4j auf aktuelle Version 2.26.1 gehoben
 
 Ziel: statt der (im vorigen Schritt aus dem Bundle ausgeschlossenen)

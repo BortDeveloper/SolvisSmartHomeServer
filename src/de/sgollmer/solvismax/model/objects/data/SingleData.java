@@ -1,10 +1,3 @@
-/************************************************************************
- * 
- * $Id$
- *
- * 
- ************************************************************************/
-
 package de.sgollmer.solvismax.model.objects.data;
 
 import de.sgollmer.solvismax.error.TypeException;

@@ -1,10 +1,3 @@
-/************************************************************************
- * 
- * $Id$
- *
- * 
- ************************************************************************/
-
 package de.sgollmer.solvismax.connection;
 
 import de.sgollmer.solvismax.connection.mqtt.MqttData;

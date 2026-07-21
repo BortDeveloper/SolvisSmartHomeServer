@@ -7,6 +7,11 @@
 > Ob das Produkt in der eigenen Umgebung wie beschrieben arbeitet, prüft der
 > strukturierte [Testplan](TESTPLAN.md). Schritt-für-Schritt-Inbetriebnahme
 > als Container: [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md).
+> Umbau zu langfristiger Wartbarkeit (Status/Fahrplan):
+> [MODERNISIERUNG.md](MODERNISIERUNG.md).
+>
+> **Build:** `./mvnw -B clean package` (Maven-Wrapper, JDK 17+) →
+> `target/SolvisSmartHomeServer.jar`.
 
 ## Überblick
 

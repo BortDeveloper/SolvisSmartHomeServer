@@ -1,10 +1,3 @@
-/************************************************************************
- * 
- * $Id$
- *
- * 
- ************************************************************************/
-
 package de.sgollmer.solvismax.model.objects.screen;
 
 import de.sgollmer.solvismax.model.objects.Preparation;

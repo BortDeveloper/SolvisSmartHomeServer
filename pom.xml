@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven-Build des SolvisSmartHomeServer (Fork).
+
+  Ersetzt den frueheren Ant-Build (build.xml/build-user.xml) samt der von Hand
+  in lib/ eingecheckten Jars. Vorteile fuer die Langzeitwartung:
+    * Abhaengigkeiten deklarativ und versioniert (statt Jar-Pflege von Hand),
+    * Schwachstellen-/Update-Automatisierung moeglich (Dependabot/OWASP),
+    * IDE- und CI-unabhaengig reproduzierbar,
+    * Uber-Jar via maven-shade-plugin (ersetzt den zipgroupfileset-Trick).
+
+  Java-Sprachniveau bleibt in dieser Phase bewusst bei 8 (wie der Ant-Build),
+  um die Build-Migration von der spaeteren Anhebung auf Java 17 zu trennen
+  (eine Aenderung nach der anderen). Siehe MODERNISIERUNG.md.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>de.sgollmer.solvismax</groupId>
+  <artifactId>solvissmarthomeserver</artifactId>
+  <version>1.6.0-fork</version>
+  <packaging>jar</packaging>
+
+  <name>SolvisSmartHomeServer (Fork)</name>
+  <description>
+    Fork von GollmerSt/SolvisSmartHomeServer. Bindet eine SolvisMax
+    (SolvisControl 2 + SolvisRemote) an Smart-Home-Systeme an. Die zugrunde
+    liegende Idee, die Anlage ueber ihre grafische Web-Oberflaeche per OCR
+    auszulesen und zu steuern, stammt vom urspruenglichen Autor Stefan Gollmer
+    (GollmerSt).
+  </description>
+
+  <properties>
+    <!-- Phase 1: Sprachniveau wie im Ant-Build (8). Anhebung auf 17 spaeter. -->
+    <maven.compiler.release>8</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <log4j.version>2.26.1</log4j.version>
+    <tinylog.version>2.4.1</tinylog.version>
+  </properties>
+
+  <!-- XMLLibrary ist die Eigenbibliothek des Upstream-Autors und liegt NICHT
+       auf Maven Central. Sie ist reproduzierbar in ein projektlokales Repo
+       (local-maven-repo/) vendored. -->
+  <repositories>
+    <repository>
+      <id>project-local</id>
+      <url>${project.baseUri}local-maven-repo</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- Logging: tinylog ist der aktive Logger; log4j fuer den optionalen
+         Log4j2-Backend (Logger4j2 nutzt org.apache.logging.log4j.core.config). -->
+    <dependency>
+      <groupId>org.tinylog</groupId>
+      <artifactId>tinylog-api</artifactId>
+      <version>${tinylog.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.tinylog</groupId>
+      <artifactId>tinylog-impl</artifactId>
+      <version>${tinylog.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+
+    <!-- MQTT-Client -->
+    <dependency>
+      <groupId>org.eclipse.paho</groupId>
+      <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+      <version>1.2.5</version>
+    </dependency>
+
+    <!-- E-Mail (Fehlerbenachrichtigung). javax.mail-API + SMTP-Provider. -->
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>mailapi</artifactId>
+      <version>1.6.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>smtp</artifactId>
+      <version>1.6.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+
+    <!-- Eigenbibliothek des Autors (vendored, s. o.) -->
+    <dependency>
+      <groupId>de.sgollmer</groupId>
+      <artifactId>xmllibrary</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Feste Ausgabe-Bezeichnung, unabhaengig von der Maven-Version, damit
+         Deployment/Doku stabil "SolvisSmartHomeServer.jar" referenzieren. -->
+    <finalName>SolvisSmartHomeServer</finalName>
+
+    <!-- Projekt nutzt das gewachsene Layout src/ (Java) + rsc/ (Ressourcen).
+         Nicht-Java-Dateien aus beiden werden als Ressourcen ins Jar kopiert
+         (u. a. base.xsd, control.xsd unter data/). -->
+    <sourceDirectory>src</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>rsc</directory>
+      </resource>
+      <resource>
+        <directory>src</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+          <exclude>**/*.launch</exclude>
+        </excludes>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+
+      <!-- Uber-Jar: alle Laufzeit-Abhaengigkeiten ins Jar, Main-Class im
+           Manifest, META-INF/services korrekt zusammenfuehren (wichtig fuer
+           den SMTP-Provider), Signaturdateien der Abhaengigkeiten entfernen. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>de.sgollmer.solvismax.Main</mainClass>
+                </transformer>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

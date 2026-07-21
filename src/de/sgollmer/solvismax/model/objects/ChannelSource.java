@@ -1,10 +1,3 @@
-/************************************************************************
- * 
- * $Id$
- *
- * 
- ************************************************************************/
-
 package de.sgollmer.solvismax.model.objects;
 
 public abstract class ChannelSource implements IChannelSource {

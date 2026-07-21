@@ -1,0 +1,41 @@
+# CI-Pipeline (Fork). Baut und testet den SolvisSmartHomeServer bei jedem Push
+# und Pull Request. Ersetzt die frueher nur manuell (auf einem Zielhost)
+# durchgefuehrte Build-Verifikation.
+name: build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      # Auf beiden aktuellen LTS bauen: 17 (aktuelle Baseline) und 21 (Zielhost).
+      matrix:
+        java: ["17", "21"]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK ${{ matrix.java }} einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      # Baut das Uber-Jar und fuehrt die Tests aus (mvnw = Maven-Wrapper,
+      # keine externe Maven-Installation noetig). verify umfasst package + test.
+      - name: Build & Test (Maven)
+        run: ./mvnw -B -ntp clean verify
+
+      - name: Uber-Jar als Artefakt sichern
+        if: matrix.java == '21'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SolvisSmartHomeServer-jar
+          path: target/SolvisSmartHomeServer.jar
+          if-no-files-found: error

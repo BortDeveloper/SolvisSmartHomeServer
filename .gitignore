@@ -1,3 +1,7 @@
+# Maven-Build
+/target/
+
+# Alt (Ant/Eclipse) — historisch, falls noch lokal vorhanden
 /bin/
 /private/
 /publish Linux/
@@ -5,3 +9,7 @@
 /zip files/
 build
 /dist/
+
+# IDE
+/.idea/
+*.iml

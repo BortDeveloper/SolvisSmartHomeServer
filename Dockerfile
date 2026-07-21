@@ -19,22 +19,16 @@
 # ---- Stufe 1: Build ----
 FROM eclipse-temurin:21-jdk AS build
 
-# Ant ist das Buildsystem des Projekts (kein Maven/Gradle). Alle Abhaengigkeiten
-# liegen bereits gebuendelt in lib/, daher braucht der Build kein Netz.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ant \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /src
 # Nur die fuer den Build noetigen Teile werden per .dockerignore einbezogen
-# (src, rsc, lib, build.xml). Der Rest (docu, Windows-Setup, Git) bleibt aussen
-# vor und haelt den Build-Kontext klein.
+# (src, rsc, pom.xml, Maven-Wrapper, vendored local-maven-repo). Der Rest
+# (docu, Windows-Setup, Git) bleibt aussen vor und haelt den Kontext klein.
 COPY . .
 
-# Default-Target "Build complete" erzeugt dist/SolvisSmartHomeServer.jar.
-# (Der Fork-Fix setzt hier UTF-8-Quell-Encoding und korrigiert Classpath/
-# Bundling — siehe CHANGELOG-fork.md.)
-RUN ant clean && ant
+# Build ueber den Maven-Wrapper (kein vorinstalliertes Maven noetig; der Wrapper
+# laedt die passende Maven-Version). Erzeugt target/SolvisSmartHomeServer.jar
+# (Uber-Jar via maven-shade-plugin). -ntp = "no transfer progress" (ruhiges Log).
+RUN ./mvnw -B -ntp clean package
 
 # ---- Stufe 2: Laufzeit ----
 FROM eclipse-temurin:21-jre
@@ -48,7 +42,7 @@ RUN useradd --system --uid 10001 --create-home --home-dir /home/solvis solvis
 # hier hinein gemountet (siehe docker-compose.yml). Alternativ per Argument
 # --base-xml=/pfad/base.xml.
 WORKDIR /opt/solvis
-COPY --from=build /src/dist/SolvisSmartHomeServer.jar ./SolvisSmartHomeServer.jar
+COPY --from=build /src/target/SolvisSmartHomeServer.jar ./SolvisSmartHomeServer.jar
 
 # Persistente Laufzeitdaten (angelernte Screens "LearnedImages", generierte
 # control.xml/Messwerte, Logs) landen unter /data. In base.xml muss

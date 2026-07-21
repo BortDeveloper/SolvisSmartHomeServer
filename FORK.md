@@ -6,14 +6,21 @@ Dies ist ein Fork von
 betriebsspezifische Anpassungen für die Einbindung in ein gehärtetes,
 MQTT-über-mTLS-basiertes Smart-Home-Setup.
 
+**Urheberschaft der Kernidee:** Der eigentliche Einfall, eine Solvis-Anlage
+ohne native Schnittstelle über ihre **grafische Web-Oberfläche per OCR**
+auszulesen und zu steuern, stammt vom ursprünglichen Autor **Stefan Gollmer
+(GollmerSt)**. Dieser Fork übernimmt diesen Ansatz unverändert und trägt
+lediglich Betriebs-, Wartungs- und Modernisierungsanpassungen bei — die
+inhaltliche Leistung der OCR-basierten Anlagenanbindung gebührt dem Upstream.
+
 ## Motivation
 
 Der SolvisSmartHomeServer bindet eine **SolvisMax mit SolvisControl 2 +
 SolvisRemote** an (die Anlage ist zu alt für das Modbus-Interface, das Solvis
 erst ab Reglerversion MA205 bzw. der SolvisControl 3 anbietet — für unsere
-Anlage bleibt also nur der hier implementierte Weg über die grafische
-Web-Oberfläche mit OCR). Er ist damit die einzige praktikable Anbindung dieser
-Anlage.
+Anlage bleibt also nur der von Stefan Gollmer (GollmerSt) ersonnene Weg über
+die grafische Web-Oberfläche mit OCR). Er ist damit die einzige praktikable
+Anbindung dieser Anlage.
 
 Er wird in einem privaten Smart-Home-Stack eingesetzt, dessen MQTT-Verkehr
 ausschließlich über einen **mit gegenseitigem TLS (mTLS) abgesicherten

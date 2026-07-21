@@ -1,0 +1,16 @@
+# Einheitliche Zeilenenden/Encoding im Repository.
+# Textdateien werden im Repo als LF gespeichert (verhindert die CRLF/LF-
+# Vermischung, die beim Bearbeiten unter Windows sonst entsteht).
+* text=auto eol=lf
+
+# Der Windows-Wrapper braucht CRLF.
+mvnw.cmd text eol=crlf
+
+# Binaerdateien nie normalisieren.
+*.jar binary
+*.bmp binary
+*.png binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.docx binary

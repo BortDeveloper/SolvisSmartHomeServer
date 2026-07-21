@@ -1,10 +1,3 @@
-/************************************************************************
- * 
- * $Id$
- *
- * 
- ************************************************************************/
-
 package de.sgollmer.solvismax.model.objects.data;
 
 public abstract class AbstractMode<C> implements Comparable<C> {

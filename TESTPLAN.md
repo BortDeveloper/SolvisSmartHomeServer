@@ -29,7 +29,7 @@ Prüfkriterium ist die im README zugesagte Funktion:
 |---|---|
 | Anlage | SolvisMax 6/7 mit **SolvisControl 2 + SolvisRemote**. **Nicht** SC3 (dort Modbus nutzen). |
 | Laufzeit | JRE ≥ 1.8; verifiziert mit **OpenJDK 21**. |
-| Build (optional) | JDK + Apache Ant, falls aus Quellen gebaut wird. |
+| Build (optional) | JDK 17+ (Maven-Wrapper `mvnw` ist im Repo enthalten — kein separates Maven nötig). |
 | MQTT | Ein MQTT-Broker (z. B. Mosquitto). Hinweis: Upstream-MQTT ist **unverschlüsselt** — für TLS-Umgebungen siehe Phase 6/Integrationsvariante. |
 | Netz | SolvisRemote per HTTP erreichbar; TCP-Port des Servers (Default **10735**) für TCP-Clients erreichbar. |
 
@@ -38,7 +38,7 @@ Prüfkriterium ist die im README zugesagte Funktion:
 Damit klar ist, worauf aufgesetzt wird — geprüft am 2026-07-21 auf
 OpenJDK 21 / Debian 13 / arm64:
 
-- **T1.1** Build aus Quellen → erfolgreich (`dist/SolvisSmartHomeServer.jar`).
+- **T1.1** Build aus Quellen → erfolgreich (`target/SolvisSmartHomeServer.jar`).
 - **T2.1** Laufzeit-Smoke `--string-to-crypt` → erfolgreich.
 
 Alle übrigen Tests sind in der **eigenen** Umgebung auszuführen; die
@@ -50,18 +50,17 @@ Ergebnismatrix am Ende ist dafür gedacht.
 
 ### T1.1 — Build aus Quellen
 - **Zweck:** Der Quellstand baut auf der eigenen JDK-Version.
-- **Vorbedingung:** JDK + Ant installiert; Repo ausgecheckt.
-- **Schritte:** `ant clean && ant`
-- **Erwartung:** `BUILD SUCCESSFUL`; Datei `dist/SolvisSmartHomeServer.jar`
-  entsteht (Größenordnung ~4 MB). Nur Warnungen (u. a. `source/target 1.8
-  obsolete`) sind zulässig, keine Fehler.
+- **Vorbedingung:** JDK 17+; Repo ausgecheckt (Maven-Wrapper mitgeliefert).
+- **Schritte:** `./mvnw -B clean package`
+- **Erwartung:** `BUILD SUCCESS`; Datei `target/SolvisSmartHomeServer.jar`
+  entsteht (Größenordnung ~4 MB). Keine Fehler.
 - **Bestanden, wenn:** Jar erzeugt, Exit-Code 0.
 
 ### T1.2 — Uber-Jar ist vollständig
 - **Zweck:** Alle Laufzeit-Bibliotheken sind gebündelt (kein späteres
   `NoClassDefFoundError`).
 - **Schritte:**
-  `unzip -l dist/SolvisSmartHomeServer.jar | grep -E 'paho|tinylog|log4j|javax/mail|solvismax/Main'`
+  `unzip -l target/SolvisSmartHomeServer.jar | grep -E 'paho|tinylog|log4j|javax/mail|solvismax/Main'`
 - **Erwartung:** Paho-MQTT-, tinylog-, log4j-, `javax.mail`- und
   `de/sgollmer/solvismax/Main`-Klassen vorhanden.
 - **Bestanden, wenn:** alle fünf gefunden.
@@ -71,7 +70,7 @@ Ergebnismatrix am Ende ist dafür gedacht.
 ### T2.1 — Start & Passwort-Verschlüsselung
 - **Zweck:** `Main` lädt, Abhängigkeiten sind zur Laufzeit auflösbar, das
   Krypto für `passwordCrypt` funktioniert.
-- **Schritte:** `java -jar dist/SolvisSmartHomeServer.jar --string-to-crypt=probe`
+- **Schritte:** `java -jar target/SolvisSmartHomeServer.jar --string-to-crypt=probe`
 - **Erwartung:** Ein Base64-artiger, verschlüsselter String wird ausgegeben,
   Programm terminiert ohne Stacktrace.
 - **Bestanden, wenn:** verschlüsselter Wert erscheint, kein Fehler.
@@ -223,7 +222,7 @@ Integrations- und Dauerbetriebstauglichkeit.
 
 ## Hinweise zu CLI-Optionen
 
-Die genutzten Optionen stammen aus `SmartHome/Linux/Makefile` und `build.xml`
+Die genutzten Optionen stammen aus `SmartHome/Linux/Makefile` und dem Code
 (u. a. `--string-to-crypt=`, `--server-learn`, `--server-terminate`,
 `--test-mail`, `--documentation --csvSemicolon`, `--iobroker`). In diesem Fork
 **verifiziert** sind bislang der Build (T1.1) und `--string-to-crypt` (T2.1);

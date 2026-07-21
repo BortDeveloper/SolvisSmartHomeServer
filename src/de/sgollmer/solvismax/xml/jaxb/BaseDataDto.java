@@ -86,6 +86,30 @@ public class BaseDataDto {
 
 		@XmlElement(name = "Features")
 		public FeaturesDto features;
+
+		@XmlElement(name = "ChannelOptions")
+		public ChannelOptionsDto channelOptions;
+	}
+
+	/** JAXB-Bean für {@code <ChannelOptions>} (Sammlung von {@code <Channel>}). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ChannelOptionsDto {
+		@XmlElement(name = "Channel")
+		public List<ChannelDto> channel;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Channel>} — Kanal-Sonderoption. Pro Eintrag ist i. d. R.
+	 * nur eines von {@code fix}/{@code offset}/{@code powerOnDelay_s} gesetzt; die
+	 * nicht gesetzten int-Attribute sind kanonisch {@code 0}.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ChannelDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "fix") public int fix;
+		@XmlAttribute(name = "factor") public int factor;
+		@XmlAttribute(name = "offset") public int offset;
+		@XmlAttribute(name = "powerOnDelay_s") public int powerOnDelay_s;
 	}
 
 	/** JAXB-Bean für {@code <Features>}. */

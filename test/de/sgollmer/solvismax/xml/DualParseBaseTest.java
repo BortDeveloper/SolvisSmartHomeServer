@@ -106,6 +106,33 @@ class DualParseBaseTest {
 	}
 
 	/**
+	 * Charakterisierung von {@code <ChannelOptions>}: der einzige im Template real
+	 * befüllte Unit-Kindzweig (7 {@code <Channel>}-Einträge mit
+	 * {@code fix}/{@code offset}/{@code powerOnDelay_s}). Die Domäne kapselt das in
+	 * {@code AllChannelOptions} ohne einfachen Getter, daher Charakterisierung der
+	 * JAXB-Bindung gegen die Vorlagenwerte.
+	 */
+	@Test
+	void channelOptionsGebunden() throws Exception {
+		assumeTemplate();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+		final BaseDataDto.UnitDto ud = neu.units.unit.get(0);
+
+		assertNotNull(ud.channelOptions);
+		assertNotNull(ud.channelOptions.channel);
+		assertEquals(7, ud.channelOptions.channel.size());
+
+		final BaseDataDto.ChannelDto erster = ud.channelOptions.channel.get(0);
+		assertEquals("C47.Puffer_dT_Start", erster.id);
+		assertEquals(12, erster.fix);
+		// Kanal mit powerOnDelay_s (Aussentemperatur = 900).
+		final boolean hatPowerOnDelay = ud.channelOptions.channel.stream()
+				.anyMatch(c -> "S10.Aussentemperatur".equals(c.id) && c.powerOnDelay_s == 900);
+		org.junit.jupiter.api.Assertions.assertTrue(hatPowerOnDelay,
+				"Kanal S10.Aussentemperatur mit powerOnDelay_s=900 erwartet");
+	}
+
+	/**
 	 * Charakterisierung von {@code <ExceptionMail>} und {@code <Iobroker>}: Die
 	 * Domäne legt diese Werte nicht über Getter offen, daher wird die
 	 * JAXB-Bindung gegen die bekannten Vorlagenwerte geprüft (statt Dual-Parse

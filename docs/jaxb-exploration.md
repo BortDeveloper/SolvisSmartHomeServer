@@ -51,7 +51,18 @@ dual-parse-verifiziert:
 account/url + Intervall-/Verzögerungs-`_ms`-Werte + Flags), `Features`.
 
 ✅ **gesichert** per Charakterisierung (die Domäne legt keine Getter offen):
-`ExceptionMail` inkl. `Recipients`, `Iobroker`.
+`ExceptionMail` inkl. `Recipients`, `Iobroker`, `Unit/ChannelOptions` (7
+`<Channel>` mit `fix`/`offset`/`powerOnDelay_s`).
+
+✅ **gesichert:** Der base.xml-DTO-Baum ist damit **vollständig für den im
+Template real befüllten Inhalt**. ⚠️ **Nicht modelliert (im Template leer/
+auskommentiert, keine Fixture-Daten):** `Unit/Extensions`, `Unit/Urls`,
+`Unit/IgnoredChannels`, `Unit/ChannelAssignments`, `Unit/Durations`,
+`Unit/Configuration` — sie sind erst mit einer Fixture, die sie befüllt,
+sinnvoll dual-parse-bar. ⚠️ **Parser-Mismatch:** Das Template-Attribut
+`forceUpdateAfterFastChangingIntervals` weicht vom Creator-Namen
+`forceUpdateInFastChangingAfterIntervals` ab → der alte Parser **ignoriert** den
+Template-Wert; bewusst nicht modelliert (latente Alt-Unstimmigkeit).
 
 ### Abgeleitete Werte (Derivate, nicht 1:1)
 

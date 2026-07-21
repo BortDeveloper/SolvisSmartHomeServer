@@ -49,7 +49,7 @@ fortgeschrieben.
    und Doku für einen unbeaufsichtigten Dauerbetrieb auf einem
    ARM-Raspberry ohne grafische Oberfläche (die OCR-Bildschirmerkennung
    arbeitet auf dem vom SolvisRemote gelieferten Web-GUI, nicht auf einem
-   lokalen Display).
+   lokalen Display). Container-Betrieb: [docs/DOCKER.md](docs/DOCKER.md).
 
 ### Nachvollziehbarkeit
 

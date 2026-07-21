@@ -1,0 +1,24 @@
+# Build-Kontext klein halten: Nur src/, rsc/, lib/ und die Ant-Builddateien
+# werden fuers Kompilieren gebraucht. Alles andere ausschliessen.
+.git
+.gitignore
+.settings
+.classpath
+.project
+
+# Build-/Ausgabeverzeichnisse (werden im Container neu erzeugt)
+bin
+dist
+build
+private
+publish Linux
+publish Windows
+zip files
+
+# Grosse, fuer den Build irrelevante Inhalte
+docu
+testFiles
+SmartHome/Windows
+
+# Doku/Meta (nicht buildrelevant)
+*.md

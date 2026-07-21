@@ -1,0 +1,36 @@
+# Beispiel-Compose fuer den SolvisSmartHomeServer (Fork).
+#
+# Vorbereitung:
+#   1. base.xml aus base.xml.new erstellen und anpassen; darin
+#        writablePathLinux="/data"
+#      setzen, damit angelernte Bilder/Logs im persistenten Volume landen.
+#   2. Passwort(e) verschluesseln:
+#        docker compose run --rm solvis --string-to-crypt=DEINPASSWORT
+#      und den Ausgabewert als passwordCrypt in base.xml eintragen.
+#   3. Einmalig die OCR-Lernphase fahren (schreibt nach /data):
+#        docker compose run --rm solvis --server-learn
+#   4. Danach den Dauerbetrieb starten: docker compose up -d
+#
+# TLS/mTLS (Fork-Feature): Zertifikate unter ./ssl bereitstellen und in base.xml
+# im <Mqtt>-Element ein <Ssl .../> mit den /certs-Pfaden konfigurieren
+# (clientKeyFilePath muss PKCS#8 sein). Siehe CHANGELOG-fork.md.
+
+services:
+  solvis:
+    build: .
+    image: solvissmarthomeserver:fork
+    container_name: solvissmarthomeserver
+    restart: unless-stopped
+    # tini als PID 1 -> sauberes SIGTERM (LWT/Disconnect beim Stoppen).
+    init: true
+    volumes:
+      # base.xml wird NEBEN das Jar gemountet (dort sucht die App sie per Default).
+      - ./base.xml:/opt/solvis/base.xml:ro
+      # Persistente Laufzeitdaten (LearnedImages, control.xml, Logs).
+      - ./data:/data
+      # TLS-Zertifikate (read-only), von base.xml <Ssl> referenziert.
+      - ./ssl:/certs:ro
+    # Optional: proprietaeren TCP-Server-Port (Default 10735) veroeffentlichen,
+    # falls TCP-Clients (statt/zusaetzlich zu MQTT) genutzt werden.
+    # ports:
+    #   - "10735:10735"

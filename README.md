@@ -30,7 +30,7 @@ Bei älteren Anlagen gibt es nur die Möglichkeit der Steuerung über die Web-Ob
 (es ist eine Pixelkopie der SolvisControl2 der Anlage). Die Steuerung darüber erfolgt über Maus-Klicks auf bestimmte Koordinaten auf diesem GUI,
 die Rückmeldung erfolgt ebenfalls nur grafisch über das GUI. 
 
-Dank an dieser Stelle an stgollmer für die Implementierung dieser Idee, die ich mit dem Fork übernehme.
+Dank an dieser Stelle an sgollmer für die Implementierung dieser Idee, die ich mit dem Fork übernehme.
 
 ### Funktionsweise der Einstellung der Anlageparameter
 

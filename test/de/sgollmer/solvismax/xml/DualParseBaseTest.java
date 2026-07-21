@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import de.sgollmer.solvismax.BaseData;
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
+import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.model.objects.unit.Unit;
 import de.sgollmer.solvismax.xml.jaxb.BaseDataDto;
 import de.sgollmer.solvismax.xml.jaxb.JaxbBaseReader;
@@ -186,6 +187,27 @@ class DualParseBaseTest {
 		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
 		final Unit u = alt.getUnits().getUnits().iterator().next();
 		assertEquals(u.getMeasurementsIntervalFast_ms(), Mapper.measurementsIntervalFastMs(neu.units.unit.get(0)));
+	}
+
+	/**
+	 * <b>Konsumenten-Pilot (Weg B):</b> Der Topic-Aufbau (`TopicType.getTopicParts`)
+	 * hängt jetzt an der schmalen Sicht {@link MqttTopicConfig} statt an der
+	 * konkreten, laufzeitgekoppelten {@code Mqtt}. Dieser Test belegt, dass der
+	 * Konsument aus <b>beiden</b> Quellen — dem Domänenobjekt (das die Sicht
+	 * erfüllt) und der DTO-gestützten Sicht — <b>identische</b> Config erhält. Die
+	 * spätere Ablösung der Domänen-Config ändert das Verhalten also nicht.
+	 */
+	@Test
+	void mqttTopicConfigAusDomaeneUndDtoIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final MqttTopicConfig ausDomaene = alt.getMqtt();          // Mqtt implements MqttTopicConfig
+		final MqttTopicConfig ausDto = Mapper.topicConfig(neu.mqtt); // DTO-gestützt
+
+		assertEquals(ausDomaene.getTopicPrefix(), ausDto.getTopicPrefix());
+		assertEquals(ausDomaene.getSmartHomeId(), ausDto.getSmartHomeId());
 	}
 
 	/**

@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
+import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.crypt.Ssl;
 import de.sgollmer.solvismax.error.CryptException;
@@ -86,6 +87,28 @@ public final class Mapper {
 	 */
 	public static int measurementsIntervalMs(final BaseDataDto.UnitDto unit) {
 		return unit.measurementsInterval_s * 1000;
+	}
+
+	/**
+	 * DTO-gestützte {@link MqttTopicConfig}-Sicht (Weg B, Konsumenten-Pilot):
+	 * liefert die für den Topic-Aufbau nötige Config direkt aus dem
+	 * {@link BaseDataDto.MqttDto} — ohne die laufzeitgekoppelte Domänenklasse
+	 * {@code Mqtt}. Der Konsument {@code TopicType.getTopicParts} kann damit von
+	 * dieser Sicht ODER vom Domänenobjekt gespeist werden (beide erfüllen das
+	 * Interface, verifiziert im Dual-Parse-Test).
+	 */
+	public static MqttTopicConfig topicConfig(final BaseDataDto.MqttDto dto) {
+		return new MqttTopicConfig() {
+			@Override
+			public String getTopicPrefix() {
+				return dto.topicPrefix;
+			}
+
+			@Override
+			public String getSmartHomeId() {
+				return dto.smartHomeId;
+			}
+		};
 	}
 
 	/** Abgeleitete Sicht: schnelles Mess-Intervall in Millisekunden (×1000). */

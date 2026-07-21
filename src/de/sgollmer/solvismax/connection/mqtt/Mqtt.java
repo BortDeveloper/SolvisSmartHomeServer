@@ -36,7 +36,9 @@ import de.sgollmer.xmllibrary.BaseCreator;
 import de.sgollmer.xmllibrary.CreatorByXML;
 import de.sgollmer.xmllibrary.XmlException;
 
-public class Mqtt {
+// Erfüllt die schmale Config-Sicht MqttTopicConfig (Weg B): Konsumenten des
+// Topic-Aufbaus hängen an der Sicht, nicht an dieser laufzeitgekoppelten Klasse.
+public class Mqtt implements MqttTopicConfig {
 
 	static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Mqtt.class);
 

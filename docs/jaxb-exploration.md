@@ -182,3 +182,27 @@ Datei entfernen. (4) Zuletzt `XMLLibrary` raus.
 ⚠️ **unsicher / zu behandeln:** Die Konsumenten-Migration (Schritt 2) ist der
 app-weite, größere Teil — sie berührt die Nutzung von `BaseData`/`Unit`/`Mqtt`
 im ganzen Modell und erfolgt bewusst inkrementell, nicht auf einmal.
+
+### Muster für Schritt 2, im Piloten validiert (✅ gesichert)
+
+`BaseData`/`Unit`/`Mqtt` vermischen **Config und Laufzeit** (z. B. hält `Mqtt`
+Client/Queue). Ein Konsument darf daher nicht durch ein DTO „ersetzt" werden;
+stattdessen:
+
+1. **Schmale Config-Sicht** als Interface definieren (nur die Werte, die der
+   Konsument liest). Pilot: `MqttTopicConfig` (`getTopicPrefix`, `getSmartHomeId`)
+   für den Topic-Aufbau.
+2. **Domäne erfüllt die Sicht** (`Mqtt implements MqttTopicConfig`) — der laufende
+   Fluss übergibt weiter das Domänenobjekt, nichts an der Laufzeit ändert sich.
+3. **Konsument auf die Sicht verschmälern** (`TopicType.getTopicParts` nimmt jetzt
+   `MqttTopicConfig` statt `Mqtt`) — damit hängt er nicht mehr an der konkreten,
+   laufzeitgekoppelten Klasse.
+4. **DTO-gestützte Sicht** ergänzen (`Mapper.topicConfig(MqttDto)`); ein
+   Dual-Parse-Test belegt: der Konsument erhält aus Domäne UND DTO **identische**
+   Config.
+
+✅ **gesichert:** Dieser Pilot ist grün und **risikoarm** — nur eine
+Config-Lese-Signatur verschmälert, das Laufzeitverhalten bleibt unberührt. Die
+restlichen Konsumenten folgen demselben Muster; sobald ein Konsument nur noch an
+der Sicht hängt und der Fluss die DTO-Sicht liefert, entfällt seine Abhängigkeit
+von der Domänen-Config-Klasse.

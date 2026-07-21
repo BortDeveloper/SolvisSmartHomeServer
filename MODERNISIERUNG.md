@@ -24,8 +24,8 @@ durch die vorher aufgebauten Tests.
 
 | # | Maßnahme | Status |
 |---|---|---|
-| 2.1 | **JUnit 5 + erste Tests** auf die gut testbare Logik: `base.xml`-Parsing, `CryptAes`-Round-Trip, Topic-Aufbau (`TopicType`), Mess-/Mittelwertlogik, `Ssl`-PKCS#8. **Golden-Tests** für die OCR-Ziffernerkennung gegen `testFiles/images/`. | ⏳ geplant |
-| 2.2 | **Logging konsolidieren** auf **SLF4J** + eine Implementierung; eigene `LogManager`/`ILogger`-Abstraktion und den ungenutzten Log4j2-Pfad ablösen → log4j-Abhängigkeit entfällt. | ⏳ geplant |
+| 2.1 | **JUnit 5 + erste Tests**: `CryptAes`-Round-Trip + Schlüssel-Stabilität, `Ssl`-PKCS#8 (Laden/Ablehnung), **OCR-Golden-Tests** (31 Referenzbilder aus `testFiles/images/` → erwartetes Zeichen). 37 Tests, grün (lokal + CI). | ✅ erledigt |
+| 2.2 | **Logging auf SLF4J umstellen** (Betreiber-Entscheid: volle Umstellung an allen Aufrufstellen). **Befund aus der Analyse:** Die `LogManager`/`ILogger`-Fassade ist mehr als ein Logger — sie trägt App-Lebenszyklus (Vor-Init-**Nachrichtenpufferung**, **Exit-Code-Kopplung** `log(Level,msg,t,errorCode)`, `LogManager.exit(code)`, `createInstance(path)`) über **64 Dateien / ~348 Aufrufe** und eigene Level (`FATAL`,`LEARN`). Plan: (a) Exit-Code-/Puffer-Lebenszyklus in eine schlanke `Diagnostics`-Komponente **extrahieren** (das ist App-Logik, kein Logging); (b) eigentliches Logging überall auf **SLF4J** (`LoggerFactory.getLogger`) heben — `error/info/warn/debug(msg[,t])` sind SLF4J-kompatibel (~266 Fälle unverändert), `fatal→error`, `learn→info`, `log(Level.X,…)`→gemappt, `debug(bool,…)`→bedingt, `*Ext`/`out`/variable `log(level,…)`→Helfer; (c) `slf4j-api` + eine Implementierung (Logback) in `pom.xml`, tinylog + log4j entfallen; `LogManager`/`TinyLog`/`Logger4j2` löschen. **Kartierung abgeschlossen; Umsetzung ist ein umfangreicher, in sich geschlossener Refactor (kompiliert nur als Ganzes) und daher der nächste fokussierte Schritt.** | 🔄 kartiert, Umsetzung als nächstes |
 
 ## Stufe 3 — Modernisierung (nach dem Test-Netz)
 

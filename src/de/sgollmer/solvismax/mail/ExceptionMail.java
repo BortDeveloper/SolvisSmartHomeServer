@@ -12,8 +12,9 @@ import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.error.CryptException;
 import de.sgollmer.solvismax.error.ObserverException;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.mail.Mail.Recipient;
 import de.sgollmer.solvismax.mail.Mail.Security;
 import de.sgollmer.solvismax.model.objects.ErrorState;
@@ -25,7 +26,7 @@ import de.sgollmer.xmllibrary.CreatorByXML;
 
 public class ExceptionMail implements IObserver<ErrorState.Info> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(ExceptionMail.class);
+	private static final Logger logger = LoggerFactory.getLogger(ExceptionMail.class);
 
 	private static final String XML_RECIPIENT = "Recipient";
 	private static final String XML_RECIPIENTS = "Recipients";

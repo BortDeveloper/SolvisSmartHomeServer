@@ -7,16 +7,17 @@ import javax.xml.namespace.QName;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.error.CryptException;
 import de.sgollmer.solvismax.error.CryptException.Type;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.xmllibrary.BaseCreator;
 import de.sgollmer.xmllibrary.CreatorByXML;
 import de.sgollmer.xmllibrary.XmlException;
 
 public class Proxy {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Proxy.class);;
+	private static final Logger logger = LoggerFactory.getLogger(Proxy.class);;
 
 	private final String host;
 	private final int port;
@@ -80,7 +81,7 @@ public class Proxy {
 						if (e.getType() == Type.DEFAULT) {
 							level = Level.WARN;
 						}
-						logger.log(level, m);
+						Diagnostics.log(logger, level, m);
 					}
 					break;
 			}

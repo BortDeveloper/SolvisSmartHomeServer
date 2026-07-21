@@ -7,9 +7,10 @@ import javax.xml.namespace.QName;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.pattern.Pattern;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.objects.Rectangle;
 import de.sgollmer.xmllibrary.BaseCreator;
@@ -18,7 +19,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class ScreenGraficDescription implements IScreenPartCompare {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(ScreenGraficDescription.class);
+	private static final Logger logger = LoggerFactory.getLogger(ScreenGraficDescription.class);
 	private static final Level LEARN = Level.getLevel("LEARN");
 
 	private static final String XML_RECTANGLE = "Rectangle";
@@ -160,11 +161,11 @@ public class ScreenGraficDescription implements IScreenPartCompare {
 			if (!grafic.getImage().equals(image)) {
 				String warning = "Warning: The screen grafic <" + this.getId() + "> was tried to learn again,"
 						+ " but didn't match with the previous.";
-				logger.log(LEARN, warning);
+				logger.info( warning);
 			}
 		}
 		solvis.getGrafics().put(this.id, image);
-		logger.log(LEARN, "Screen grafic <" + this.getId() + "> learned.");
+		logger.info( "Screen grafic <" + this.getId() + "> learned.");
 		solvis.writeLearningImage(image, "graphic__" + this.id);
 	}
 

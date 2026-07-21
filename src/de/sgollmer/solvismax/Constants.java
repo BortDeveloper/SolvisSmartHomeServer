@@ -3,7 +3,8 @@ package de.sgollmer.solvismax;
 import java.lang.reflect.Field;
 import java.util.regex.Pattern;
 
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.objects.Coordinate;
 
 public class Constants {
@@ -214,7 +215,7 @@ public class Constants {
 			}
 		}
 
-		public static void logDebugging(final ILogger logger) {
+		public static void logDebugging(final Logger logger) {
 			boolean debugging = false;
 			;
 			for (NoDebug noDebug : NO_DEBUGS) {

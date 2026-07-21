@@ -7,12 +7,13 @@ import java.util.Collection;
 
 import de.sgollmer.solvismax.Constants.ExitCodes;
 import de.sgollmer.solvismax.connection.CommandHandler;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Restart {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(CommandHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(CommandHandler.class);
 
 	/**
 	 * Sun property pointing the main class and its arguments. Might not be defined

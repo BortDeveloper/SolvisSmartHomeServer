@@ -13,15 +13,16 @@ import de.sgollmer.solvismax.Main;
 import de.sgollmer.solvismax.error.AssignmentException;
 import de.sgollmer.solvismax.error.ReferenceException;
 import de.sgollmer.solvismax.helper.FileHelper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.xmllibrary.XmlException;
 import de.sgollmer.xmllibrary.XmlStreamReader;
 
 public class BaseControlFileReader {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(BaseControlFileReader.class);
+	private static final Logger logger = LoggerFactory.getLogger(BaseControlFileReader.class);
 
 	private static final String NAME_XML_BASEFILE = "base.xml";
 	private static final String NAME_XSD_BASEFILE = "base.xsd";
@@ -52,7 +53,7 @@ public class BaseControlFileReader {
 		InputStream xsd = Main.class.getResourceAsStream(resourcePath);
 
 		if (xsd == null) {
-			logger.log(Level.FATAL, "Getting of " + NAME_XSD_BASEFILE + " fails", null,
+			Diagnostics.record(logger, Level.FATAL, "Getting of " + NAME_XSD_BASEFILE + " fails", null,
 					Constants.ExitCodes.BASE_XML_ERROR);
 			source.close();
 			return null;
@@ -60,7 +61,7 @@ public class BaseControlFileReader {
 
 		boolean verified = reader.validate(source, xsd);
 		if (!verified) {
-			logger.log(Level.FATAL, "Reading of " + NAME_XML_BASEFILE + " not successfull", null,
+			Diagnostics.record(logger, Level.FATAL, "Reading of " + NAME_XML_BASEFILE + " not successfull", null,
 					Constants.ExitCodes.BASE_XML_ERROR);
 			return null;
 		}

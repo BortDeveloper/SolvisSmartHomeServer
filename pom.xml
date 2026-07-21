@@ -36,8 +36,8 @@
     <!-- Phase 1: Sprachniveau wie im Ant-Build (8). Anhebung auf 17 spaeter. -->
     <maven.compiler.release>8</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <log4j.version>2.26.1</log4j.version>
-    <tinylog.version>2.4.1</tinylog.version>
+    <slf4j.version>2.0.16</slf4j.version>
+    <logback.version>1.5.12</logback.version>
     <junit.version>5.11.3</junit.version>
   </properties>
 
@@ -52,27 +52,17 @@
   </repositories>
 
   <dependencies>
-    <!-- Logging: tinylog ist der aktive Logger; log4j fuer den optionalen
-         Log4j2-Backend (Logger4j2 nutzt org.apache.logging.log4j.core.config). -->
+    <!-- Logging: SLF4J als Fassade + Logback als Implementierung (ersetzt die
+         fruehere Eigen-Abstraktion mit tinylog/log4j). -->
     <dependency>
-      <groupId>org.tinylog</groupId>
-      <artifactId>tinylog-api</artifactId>
-      <version>${tinylog.version}</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.tinylog</groupId>
-      <artifactId>tinylog-impl</artifactId>
-      <version>${tinylog.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <version>${log4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>${log4j.version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
     </dependency>
 
     <!-- MQTT-Client -->

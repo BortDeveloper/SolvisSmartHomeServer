@@ -6,12 +6,13 @@ import java.io.InputStream;
 import de.sgollmer.solvismax.error.JsonException;
 import de.sgollmer.solvismax.error.PackageException;
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReceivedPackageCreator {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(ReceivedPackageCreator.class);
+	private static final Logger logger = LoggerFactory.getLogger(ReceivedPackageCreator.class);
 
 	public static ReceivedPackageCreator getInstance() {
 		return JsonPackageCreatorHolder.INSTANCE;

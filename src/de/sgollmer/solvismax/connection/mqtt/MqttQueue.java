@@ -5,14 +5,13 @@ import java.util.LinkedList;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 import de.sgollmer.solvismax.error.MqttConnectionLost;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
 import de.sgollmer.solvismax.model.objects.unit.Unit;
 import de.sgollmer.solvismax.helper.Helper.Runnable;
 
 public class MqttQueue extends Runnable {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(MqttQueue.class);
+	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MqttQueue.class);
 
 	private final LinkedList<MqttData> queue = new LinkedList<>();
 	private final Mqtt mqtt;

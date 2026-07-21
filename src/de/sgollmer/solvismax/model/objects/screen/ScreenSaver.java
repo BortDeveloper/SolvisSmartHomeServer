@@ -18,8 +18,9 @@ import de.sgollmer.solvismax.Constants.Debug;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.ocr.OcrRectangle;
 import de.sgollmer.solvismax.imagepatternrecognition.pattern.Pattern;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.TouchPoint;
 import de.sgollmer.solvismax.objects.Coordinate;
@@ -37,7 +38,7 @@ public class ScreenSaver {
 	private static final String XML_RESET_SCREEN_SAVER = "ResetScreenSaver";
 	private static final String XML_MAX_GRAFIC_SIZE = "MaxGraficSize";
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(ScreenSaver.class);
+	private static final Logger logger = LoggerFactory.getLogger(ScreenSaver.class);
 
 	private final int xCoordinateWithinTimedate;
 

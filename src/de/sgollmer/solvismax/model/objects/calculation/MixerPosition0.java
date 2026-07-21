@@ -4,8 +4,9 @@ import de.sgollmer.solvismax.error.AliasException;
 import de.sgollmer.solvismax.error.AssignmentException;
 import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.SolvisDataHelper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.AllSolvisData;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
@@ -15,7 +16,7 @@ import de.sgollmer.solvismax.model.objects.data.SolvisData;
 
 public class MixerPosition0 extends Strategy<MixerPosition0> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(MixerPosition0.class);
+	private static final Logger logger = LoggerFactory.getLogger(MixerPosition0.class);
 
 	private MixerPosition0(final Calculation calculation) {
 		super(calculation);

@@ -18,15 +18,16 @@ import de.sgollmer.solvismax.error.ConnectionClosedException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.Helper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.Miscellaneous;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
 
 public class Server {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Server.class);
+	private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
 	private ServerSocket serverSocket;
 	private final Collection<Client> connectedClients;

@@ -7,8 +7,9 @@ import java.util.Collection;
 import javax.xml.namespace.QName;
 
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.data.DoubleValue;
 import de.sgollmer.solvismax.model.objects.data.SingleData;
@@ -19,7 +20,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class AllChannelOptions {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(AllChannelOptions.class);
+	private static final Logger logger = LoggerFactory.getLogger(AllChannelOptions.class);
 	private static final String XML_CHANNEL_VALUE = "Channel";
 
 	private final Collection<ChannelOption> values;

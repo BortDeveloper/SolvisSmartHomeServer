@@ -13,9 +13,10 @@ import de.sgollmer.solvismax.error.SolvisErrorException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.AbortHelper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.AllPreparations.PreparationRef;
 import de.sgollmer.solvismax.model.objects.ChannelDescription;
@@ -41,7 +42,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Control extends ChannelSource {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Control.class);
+	private static final Logger logger = LoggerFactory.getLogger(Control.class);
 	private static final Level LEARN = Level.getLevel("LEARN");
 
 	private static final String XML_CONTROL_CURRENT = "CurrentValue";
@@ -274,7 +275,7 @@ public class Control extends ChannelSource {
 					finished = true;
 				} catch (IOException e) {
 					if (repeat < Constants.LEARNING_RETRIES - 1) {
-						logger.log(LEARN, "Going to <" + screen.getId() + "> not successfull, will be retried");
+						logger.info( "Going to <" + screen.getId() + "> not successfull, will be retried");
 					} else {
 						throw e;
 					}
@@ -298,7 +299,7 @@ public class Control extends ChannelSource {
 					}
 				}
 				if (!finished) {
-					logger.log(LEARN,
+					logger.info(
 							"Learning of <" + this.getDescription().getId() + "> not successfull, will be retried");
 				}
 			}

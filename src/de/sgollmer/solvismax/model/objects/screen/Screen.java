@@ -17,9 +17,10 @@ import de.sgollmer.solvismax.error.ReferenceException;
 import de.sgollmer.solvismax.error.SolvisErrorException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.AllPreparations.PreparationRef;
 import de.sgollmer.solvismax.model.objects.Preparation;
@@ -35,7 +36,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Screen extends AbstractScreen implements Comparable<AbstractScreen> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Screen.class);
+	private static final Logger logger = LoggerFactory.getLogger(Screen.class);
 	private static final Level LEARN = Level.getLevel("LEARN");
 
 	private static final String XML_CONFIGURATION = "Configuration";
@@ -374,7 +375,7 @@ public class Screen extends AbstractScreen implements Comparable<AbstractScreen>
 
 				solvis.clearCurrentScreen();
 			} catch (IOException e) {
-				logger.log(LEARN,
+				logger.info(
 						"Screen <" + this.getId() + "> not learned in case of IOEexception, will be tried again.");
 				success = false;
 				if (cnt <= 0) {
@@ -417,13 +418,13 @@ public class Screen extends AbstractScreen implements Comparable<AbstractScreen>
 						} catch (LearningTerminationException e) {
 							throw e;
 						} catch (IOException e) {
-							logger.log(LEARN, "Screen <" + nextScreen.getId()
+							logger.info( "Screen <" + nextScreen.getId()
 									+ "> not learned in case of IOEexception, will be tried again.", e);
 							if (cnt <= 0) {
 								throw e;
 							}
 						} catch (LearningException e) {
-							logger.log(LEARN, "Screen <" + nextScreen.getId() + "> not learned. " + e.getMessage());
+							logger.info( "Screen <" + nextScreen.getId() + "> not learned. " + e.getMessage());
 						}
 						if (!success) {
 							solvis.sendBackWithCheckError();
@@ -472,7 +473,7 @@ public class Screen extends AbstractScreen implements Comparable<AbstractScreen>
 		AbstractScreen current = currentScreen;
 		if (current == null) {
 			if (this != solvis.getHomeScreen()) {
-				logger.log(LEARN, "Warning: Goto screen <" + this + "> not successfull, home screen is forced");
+				logger.info( "Warning: Goto screen <" + this + "> not successfull, home screen is forced");
 			}
 			solvis.gotoHome(true);
 			current = solvis.getHomeScreen();
@@ -510,18 +511,18 @@ public class Screen extends AbstractScreen implements Comparable<AbstractScreen>
 						if (current == null) {
 							current = next;
 							if (next != this) {
-								logger.log(LEARN,
+								logger.info(
 										"Warning: Goto with an unlearned Screen, algorithm or control.xml fail?");
 //								solvis.gotoHome();
 								solvis.sendBackWithCheckError();
-								logger.log(LEARN, "Pepartation failed, goto learning will tried again.");
+								logger.info( "Pepartation failed, goto learning will tried again.");
 								return false;
 							}
 						}
 					} else {
 						solvis.gotoHome();
 						current = solvis.getHomeScreen();
-						logger.log(LEARN, "Pepartation failed, goto learning will tried again.");
+						logger.info( "Pepartation failed, goto learning will tried again.");
 					}
 				}
 				if (this == current) {

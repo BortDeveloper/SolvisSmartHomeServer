@@ -18,12 +18,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Helper {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Helper.class);
+	private static final Logger logger = LoggerFactory.getLogger(Helper.class);
 
 	private static Collection<InterfaceAddress> LOCAL_INTERFACE_ADDRESSES = null;
 	private static Pattern IP_V4_ADDRESS_PATTERN = Pattern.compile("((\\d+\\.){3}\\d+)(:\\d+)?");

@@ -2,8 +2,6 @@ package de.sgollmer.solvismax.connection.mqtt;
 
 import java.util.ResourceBundle;
 
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
 
 public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 
@@ -34,7 +32,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(SEVERE)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.error(msg);
 	}
 
@@ -43,7 +41,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(SEVERE)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.error(java.text.MessageFormat.format(msg, inserts));
 	}
 
@@ -53,7 +51,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(SEVERE)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.error(java.text.MessageFormat.format(msg, inserts), thrown);
 	}
 
@@ -62,7 +60,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(WARNING)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.warn(msg);
 	}
 
@@ -71,7 +69,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(WARNING)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.warn(java.text.MessageFormat.format(msg, inserts));
 	}
 
@@ -81,7 +79,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(WARNING)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.warn(java.text.MessageFormat.format(msg, inserts), thrown);
 	}
 
@@ -90,7 +88,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(INFO)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.info(msg);
 	}
 
@@ -99,7 +97,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(INFO)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.info(java.text.MessageFormat.format(msg, inserts));
 	}
 
@@ -109,7 +107,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(INFO)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.info(java.text.MessageFormat.format(msg, inserts), thrown);
 	}
 
@@ -118,7 +116,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(CONFIG)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.info(msg);
 	}
 
@@ -127,7 +125,7 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(CONFIG)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.info(java.text.MessageFormat.format(msg, inserts));
 	}
 
@@ -137,23 +135,23 @@ public class Logger implements org.eclipse.paho.client.mqttv3.logging.Logger {
 		if (!isLoggable(CONFIG)) {
 			return;
 		}
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.info(java.text.MessageFormat.format(msg, inserts), thrown);
 	}
 
 	public void debug(final String sourceClass, final String sourceMethod, final String msg) {
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.debug(msg);
 	}
 
 	public void debug(final String sourceClass, final String sourceMethod, final String msg, final Object[] inserts) {
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.debug(java.text.MessageFormat.format(msg, inserts));
 	}
 
 	public void debug(final String sourceClass, final String sourceMethod, final String msg, final Object[] inserts,
 			final Throwable thrown) {
-		ILogger logger = LogManager.getInstance().getLogger(getClass(sourceClass));
+		org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(sourceClass);
 		logger.debug(java.text.MessageFormat.format(msg, inserts), thrown);
 	}
 

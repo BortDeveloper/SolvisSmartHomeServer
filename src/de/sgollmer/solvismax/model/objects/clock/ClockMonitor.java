@@ -20,9 +20,10 @@ import de.sgollmer.solvismax.helper.Helper;
 import de.sgollmer.solvismax.helper.Helper.AverageInt;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.ocr.OcrRectangle;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.AllSolvisData;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
@@ -44,7 +45,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class ClockMonitor implements IGraficsLearnable, IXmlElement<SolvisDescription> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(ClockMonitor.class);
+	private static final Logger logger = LoggerFactory.getLogger(ClockMonitor.class);
 	private static final Level LEARN = Level.getLevel("LEARN");
 	private static final Calendar CALENDAR_2018;
 
@@ -586,7 +587,7 @@ public class ClockMonitor implements IGraficsLearnable, IXmlElement<SolvisDescri
 		for (int repeat = 0; repeat < Constants.LEARNING_RETRIES && !finished; ++repeat) {
 			try {
 				if (repeat > 0) {
-					logger.log(LEARN, "Learning of clock not successfull, try it again.");
+					logger.info( "Learning of clock not successfull, try it again.");
 				}
 				screen.goTo(solvis);
 				finished = true;

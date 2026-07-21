@@ -4,14 +4,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.objects.screen.ScreenGraficDescription;
 import de.sgollmer.xmllibrary.XmlException;
 
 public class AllScreenGraficDescriptions {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(AllScreenGraficDescriptions.class);
+	private static final Logger logger = LoggerFactory.getLogger(AllScreenGraficDescriptions.class);
 
 	private final Map<String, ScreenGraficDescription> screenGraficDescriptions = new HashMap<>();
 

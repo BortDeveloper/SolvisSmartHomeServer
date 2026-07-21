@@ -10,8 +10,9 @@ import de.sgollmer.solvismax.error.ObserverException;
 import de.sgollmer.solvismax.error.SolvisErrorException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.Solvis.SynchronizedScreenResult;
 import de.sgollmer.solvismax.model.objects.Observer.Observable;
@@ -20,7 +21,7 @@ import de.sgollmer.solvismax.model.objects.screen.SolvisScreen;
 
 public class ErrorState extends Observable<ErrorState.Info> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(ErrorState.class);
+	private static final Logger logger = LoggerFactory.getLogger(ErrorState.class);
 
 	private final Solvis solvis;
 

@@ -5,8 +5,9 @@ import java.io.IOException;
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.connection.transfer.SolvisStatePackage;
 import de.sgollmer.solvismax.error.TerminationException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.HumanAccess.Status;
 import de.sgollmer.solvismax.model.Solvis.SynchronizedScreenResult;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
@@ -17,7 +18,7 @@ import de.sgollmer.solvismax.model.objects.screen.SolvisScreen;
 public class WatchDog {
 
 	@SuppressWarnings("unused")
-	private static final ILogger logger = LogManager.getInstance().getLogger(WatchDog.class);
+	private static final Logger logger = LoggerFactory.getLogger(WatchDog.class);
 
 	private final Solvis solvis;
 	private final ScreenSaver.Exec saver;

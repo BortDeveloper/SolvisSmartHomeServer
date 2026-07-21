@@ -9,8 +9,9 @@ import de.sgollmer.solvismax.connection.transfer.SingleValue;
 import de.sgollmer.solvismax.connection.transfer.SolvisStatePackage;
 import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.Helper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.SolvisStatus;
 import de.sgollmer.solvismax.model.objects.AllSolvisData;
@@ -24,7 +25,7 @@ import de.sgollmer.solvismax.model.objects.unit.AllChannelOptions.ChannelOption;
 
 public class SolvisData extends Observer.Observable<SolvisData> implements IObserver<SolvisStatePackage> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(SolvisData.class);
+	private static final Logger logger = LoggerFactory.getLogger(SolvisData.class);
 
 	private ChannelInstance channelInstance;
 	private final AllSolvisData datas;

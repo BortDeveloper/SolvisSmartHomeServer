@@ -4,7 +4,8 @@ import java.io.IOException;
 
 import javax.xml.namespace.QName;
 
-import org.tinylog.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.error.TerminationException;
@@ -16,6 +17,8 @@ import de.sgollmer.xmllibrary.CreatorByXML;
 import de.sgollmer.xmllibrary.XmlException;
 
 public class Preparation {
+
+	private static final Logger logger = LoggerFactory.getLogger(Preparation.class);
 
 	private static final String XML_TOUCH_POINT = "TouchPoint";
 	private static final String XML_SCREEN_GRAFIC = "ScreenGrafic";
@@ -47,7 +50,7 @@ public class Preparation {
 			} catch (IOException e) {
 			}
 			if (!success && c == 0) {
-				Logger.error("Preparation not successfull, will be tried again");
+				logger.error("Preparation not successfull, will be tried again");
 			}
 		}
 		if (success) {

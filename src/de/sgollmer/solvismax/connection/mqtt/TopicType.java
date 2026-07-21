@@ -8,8 +8,7 @@ import java.util.List;
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.connection.mqtt.Mqtt.Format;
 import de.sgollmer.solvismax.connection.transfer.Command;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
 import de.sgollmer.solvismax.model.Instances;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.ChannelDescription;
@@ -64,7 +63,7 @@ public enum TopicType {
 
 	// Keinen Metas für letzten 3?
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(TopicType.class);
+	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(TopicType.class);
 
 	private final String[] parts;
 	private final String suffix;

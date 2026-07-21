@@ -8,8 +8,9 @@ import de.sgollmer.solvismax.error.ObserverException;
 import de.sgollmer.solvismax.error.SolvisErrorException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.objects.ChannelDescription;
 import de.sgollmer.solvismax.model.objects.ErrorState;
 import de.sgollmer.solvismax.model.objects.ErrorState.Info;
@@ -19,7 +20,7 @@ import de.sgollmer.solvismax.model.objects.screen.SolvisScreen;
 
 public class SolvisState extends Observable<SolvisStatePackage> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(SolvisState.class);
+	private static final Logger logger = LoggerFactory.getLogger(SolvisState.class);
 
 	private final Solvis solvis;
 

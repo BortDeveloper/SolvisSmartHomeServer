@@ -8,8 +8,9 @@ import javax.xml.namespace.QName;
 
 import de.sgollmer.solvismax.error.SolvisErrorException;
 import de.sgollmer.solvismax.error.TerminationException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.screen.Screen;
 import de.sgollmer.solvismax.model.objects.screen.SolvisScreen;
@@ -19,7 +20,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class FallBack {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(FallBack.class);
+	private static final Logger logger = LoggerFactory.getLogger(FallBack.class);
 
 	private static final String XML_BACK = "Back";
 	private static final String XML_SCREENREF = "ScreenRef";

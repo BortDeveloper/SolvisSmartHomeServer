@@ -7,8 +7,9 @@ import javax.xml.namespace.QName;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.command.CommandControl;
 import de.sgollmer.solvismax.model.command.CommandObserver;
@@ -29,7 +30,7 @@ public class EquipmentOnOff extends Strategy<EquipmentOnOff> {
 
 	private static final String XML_TRIGGER = "Trigger";
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(EquipmentOnOff.class);
+	private static final Logger logger = LoggerFactory.getLogger(EquipmentOnOff.class);
 
 	private final String equipmentId;
 	private final String calculatedId;

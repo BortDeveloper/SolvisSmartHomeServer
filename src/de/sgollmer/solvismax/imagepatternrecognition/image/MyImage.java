@@ -21,14 +21,15 @@ import javax.imageio.ImageIO;
 import javax.mail.util.ByteArrayDataSource;
 
 import de.sgollmer.solvismax.Constants;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.objects.Coordinate;
 import de.sgollmer.solvismax.objects.Rectangle;
 
 public class MyImage {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(MyImage.class);
+	private static final Logger logger = LoggerFactory.getLogger(MyImage.class);
 
 	private static final int HASH_START = 269;
 	private static final int HASH_HASH_MULT = 643;

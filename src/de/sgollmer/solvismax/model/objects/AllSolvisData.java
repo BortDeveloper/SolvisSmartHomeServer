@@ -10,8 +10,9 @@ import de.sgollmer.solvismax.connection.mqtt.Mqtt;
 import de.sgollmer.solvismax.connection.mqtt.MqttData;
 import de.sgollmer.solvismax.error.MqttConnectionLost;
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.Observer.Observable;
 import de.sgollmer.solvismax.model.objects.backup.Measurement;
@@ -24,7 +25,7 @@ import de.sgollmer.solvismax.model.objects.data.SolvisData.SmartHomeData;
 
 public class AllSolvisData extends Observable<SmartHomeData> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(AllSolvisData.class);
+	private static final Logger logger = LoggerFactory.getLogger(AllSolvisData.class);
 
 	private final Solvis solvis;
 

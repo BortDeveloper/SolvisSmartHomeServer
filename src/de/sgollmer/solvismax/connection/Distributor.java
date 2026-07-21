@@ -9,8 +9,9 @@ import de.sgollmer.solvismax.connection.transfer.MeasurementsPackage;
 import de.sgollmer.solvismax.connection.transfer.SolvisStatePackage;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.helper.AbortHelper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.HumanAccess;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.SolvisStatus;
@@ -23,7 +24,7 @@ import de.sgollmer.solvismax.model.objects.unit.Unit;
 
 public final class Distributor extends Observable<ISendData> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Distributor.class);
+	private static final Logger logger = LoggerFactory.getLogger(Distributor.class);
 
 	private final Solvis solvis;
 	private Measurements collectedMeasurements = new Measurements();

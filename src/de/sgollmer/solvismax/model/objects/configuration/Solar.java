@@ -10,8 +10,9 @@ import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.helper.Helper.Format;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.ocr.OcrRectangle;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.configuration.Configurations.IConfiguration;
 import de.sgollmer.solvismax.model.objects.screen.AbstractScreen;
@@ -22,7 +23,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Solar implements IConfiguration {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Solar.class);
+	private static final Logger logger = LoggerFactory.getLogger(Solar.class);
 
 	private static final String XML_RETURN_TEMPERATURE = "ReturnTemperature";
 	private static final String XML_OUTGOING_TEMPERATURE = "OutgoingTemperature";

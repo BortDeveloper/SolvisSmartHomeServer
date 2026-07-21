@@ -8,13 +8,14 @@ import de.sgollmer.solvismax.error.JsonException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.AbortHelper.Abortable;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.SolvisWorkers;
 
 public class Helper {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(SolvisWorkers.class);
+	private static final Logger logger = LoggerFactory.getLogger(SolvisWorkers.class);
 
 	static char charAt(final String json, final int position) throws JsonException {
 		try {

@@ -18,8 +18,9 @@ import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.FileHelper;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.ocr.OcrRectangle;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Instances;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.AllSolvisData;
@@ -35,7 +36,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class ErrorDetection {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(ErrorDetection.class);
+	private static final Logger logger = LoggerFactory.getLogger(ErrorDetection.class);
 
 	private static final String XML_LEFT_BORDER = "LeftBorder";
 	private static final String XML_RIGHT_BORDER = "RightBorder";

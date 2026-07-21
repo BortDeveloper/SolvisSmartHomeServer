@@ -10,12 +10,11 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.helper.Helper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
 
 public class MqttThread extends Helper.Runnable {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(MqttThread.class);
+	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MqttThread.class);
 	/**
 	 * 
 	 */
@@ -105,7 +104,7 @@ public class MqttThread extends Helper.Runnable {
 				}
 			}
 		} catch (Throwable t) {
-			logger.fatal("Unexpected throw", t);
+			logger.error("Unexpected throw", t);
 		}
 
 	}

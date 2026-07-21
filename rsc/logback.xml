@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback-Konfiguration (SLF4J-Backend).
+
+  Ausgabe auf die Konsole (stdout) — passend fuer Container-/Dienstbetrieb, wo
+  systemd/journald bzw. Docker die Standardausgabe einsammeln. Datei-Logging
+  liesse sich hier bei Bedarf ueber einen RollingFileAppender ergaenzen.
+
+  Frueher schrieb tinylog in den Schreibpfad aus base.xml; diese Umstellung ist
+  eine bewusste Vereinfachung (siehe CHANGELOG-fork.md / MODERNISIERUNG.md).
+-->
+<configuration>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE" />
+  </root>
+</configuration>

@@ -26,7 +26,7 @@ public enum Strategy implements IType {
 
 	DATE(new Date()), UNSIGNED(new Integer(false)), SIGNED(new Integer(true)), BOOLEAN(new Boolean());
 
-	// private static final Logger logger = LogManager.getLogger(Strategy.class);
+	// (Logger bei Bedarf: private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Strategy.class);)
 
 	private final IType type;
 

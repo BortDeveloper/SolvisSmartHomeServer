@@ -63,7 +63,7 @@ final class Callback implements MqttCallbackExtended {
 			} catch (MqttConnectionLost e) {
 				Mqtt.logger.error("Connection lost on reconnection. Mqqt message ignored.");
 			} catch (Throwable e) {
-				Mqtt.logger.errorExt("Unexpected error on connectComplete. Mqqt message ignored.", e);
+				Mqtt.logger.error("Unexpected error on connectComplete. Mqqt message ignored.", e);
 			}
 		}
 	}
@@ -130,7 +130,7 @@ final class Callback implements MqttCallbackExtended {
 				Mqtt.logger.error("Error: On command handling", e);
 			}
 		} catch (Throwable e) {
-			Mqtt.logger.errorExt("Unexpected error on messageArrived. Mqqt message ignored.", e);
+			Mqtt.logger.error("Unexpected error on messageArrived. Mqqt message ignored.", e);
 		}
 	}
 
@@ -140,6 +140,6 @@ final class Callback implements MqttCallbackExtended {
 
 	@Override
 	public void connectionLost(final Throwable cause) {
-		Mqtt.logger.errorExt("Connection to MQTT broker lost.", cause);
+		Mqtt.logger.error("Connection to MQTT broker lost.", cause);
 	}
 }

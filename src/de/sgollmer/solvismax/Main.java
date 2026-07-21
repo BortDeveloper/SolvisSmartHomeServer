@@ -32,10 +32,12 @@ import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.Helper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
-import de.sgollmer.solvismax.log.LogManager.LogErrors;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
+import de.sgollmer.solvismax.log.Diagnostics.LogErrors;
 import de.sgollmer.solvismax.model.Instances;
 import de.sgollmer.solvismax.smarthome.IoBroker;
 import de.sgollmer.solvismax.windows.Task;
@@ -44,7 +46,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Main {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Main.class);
+	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
 	public static Main getInstance() {
 		Main main = MainHolder.INSTANCE;
@@ -161,7 +163,6 @@ public class Main {
 		}
 
 		BaseData baseData = null;
-		LogManager logManager = LogManager.getInstance();
 		try {
 			baseData = new BaseControlFileReader(baseXml).read();
 			if (baseData == null) {
@@ -169,28 +170,19 @@ public class Main {
 			}
 		} catch (IOException | XmlException | XMLStreamException e) {
 			e.printStackTrace();
-			logger.log(Level.FATAL, "base.xml couldn't be read.", null, ExitCodes.READING_CONFIGURATION_FAIL);
-			LogManager.exit(ExitCodes.READING_CONFIGURATION_FAIL);
+			Diagnostics.record(logger, Level.FATAL, "base.xml couldn't be read.", null,
+					ExitCodes.READING_CONFIGURATION_FAIL);
+			Diagnostics.exit(ExitCodes.READING_CONFIGURATION_FAIL);
 		}
 
 		String path = baseData.getWritablePath();
 
-		LogErrors error = LogErrors.INIT;
-
-		try {
-			error = logManager.createInstance(path);
-		} catch (IOException | FileException e) {
-			error = LogErrors.INIT;
-			e.printStackTrace();
+		// Das SLF4J-/Logback-Backend ist von Beginn an ausgabebereit;
+		// createInstance ist nur noch ein Kompatibilitaets-No-op (siehe Diagnostics).
+		LogErrors error = Diagnostics.createInstance(path);
+		if (error == LogErrors.PREVIOUS) {
+			Diagnostics.exit(0);
 		}
-
-		if (error == LogErrors.INIT) {
-			System.err.println("Log4j couldn't initalized");
-		} else if (error == LogErrors.PREVIOUS) {
-			LogManager.exit(0);
-		}
-
-		Level.getLevel("LEARN");
 
 		ExecutionMode executionMode = ExecutionMode.STANDARD;
 		boolean semicolon = false;
@@ -429,7 +421,7 @@ public class Main {
 			logger.info("Unexpected error on restart: " + e.getMessage());
 		}
 		logger.info("Restart finished");
-		LogManager.exit(ExitCodes.OK);
+		Diagnostics.exit(ExitCodes.OK);
 	}
 
 	private void serverTerminateAndExit(final BaseData baseData) {
@@ -440,10 +432,10 @@ public class Main {
 		} catch (IOException | JsonException | PackageException e) {
 			e.printStackTrace();
 			System.err.println("Terminate not successfull.");
-			LogManager.exit(ExitCodes.SERVER_TERMINATION_FAIL);
+			Diagnostics.exit(ExitCodes.SERVER_TERMINATION_FAIL);
 		}
 		logger.info("Termination finished.");
-		LogManager.exit(ExitCodes.OK);
+		Diagnostics.exit(ExitCodes.OK);
 
 	}
 
@@ -452,7 +444,7 @@ public class Main {
 		Restart restart = new Restart();
 		restart.startRestartProcess();
 		logger.info("Server terminated (started at " + Main.this.startTime + ")");
-		LogManager.exit(ExitCodes.OK);
+		Diagnostics.exit(ExitCodes.OK);
 	}
 
 	void shutDownHandling(final boolean out) {

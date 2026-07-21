@@ -35,9 +35,10 @@ import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.FileHelper;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.HumanAccess.Status;
 import de.sgollmer.solvismax.model.WatchDog.Event;
 import de.sgollmer.solvismax.model.command.Command;
@@ -76,7 +77,7 @@ public class Solvis {
 	private static final boolean DEBUG_POWER_ON = Constants.Debug.SOLVIS_RESULT_NULL;
 	private static final Level LEARN = Level.getLevel("LEARN");
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Solvis.class);
+	private static final Logger logger = LoggerFactory.getLogger(Solvis.class);
 
 	private final SolvisState solvisState;
 	private final HumanAccess humanAccess;
@@ -517,9 +518,9 @@ public class Solvis {
 		if (this.mustLearn || force) {
 			this.learning = true;
 			this.getGrafics().clear();
-			logger.log(LEARN, "Learning initialized.");
+			logger.info( "Learning initialized.");
 			this.initConfigurationMask();
-			logger.log(LEARN, "Configuration mask: 0x" + Long.toHexString(this.configurationMask));
+			logger.info( "Configuration mask: 0x" + Long.toHexString(this.configurationMask));
 			this.getGrafics().setConfigurationMask(this.configurationMask);
 			this.getGrafics().setBaseConfigurationMask(
 					this.getUnit().getConfiguration().getConfigurationMask(this.solvisDescription));
@@ -545,7 +546,7 @@ public class Solvis {
 				} catch (IOException e) {
 				}
 			}
-			logger.log(LEARN, "Learning finished.");
+			logger.info( "Learning finished.");
 			this.learning = false;
 
 			this.closeZip();

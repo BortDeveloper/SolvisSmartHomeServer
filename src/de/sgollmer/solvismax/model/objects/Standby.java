@@ -10,8 +10,9 @@ import de.sgollmer.solvismax.error.PowerOnException;
 import de.sgollmer.solvismax.error.SolvisErrorException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.data.SingleData;
 import de.sgollmer.solvismax.model.objects.data.SolvisData;
@@ -22,7 +23,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Standby {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Standby.class);
+	private static final Logger logger = LoggerFactory.getLogger(Standby.class);
 
 	private static final String XML_STANDBY_CHANNEL = "Channel";
 

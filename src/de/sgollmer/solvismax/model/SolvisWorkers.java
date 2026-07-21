@@ -15,8 +15,9 @@ import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.Helper;
 import de.sgollmer.solvismax.helper.Helper.Times;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.command.Command;
 import de.sgollmer.solvismax.model.command.CommandControl;
 import de.sgollmer.solvismax.model.command.CommandObserver;
@@ -35,7 +36,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class SolvisWorkers {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(SolvisWorkers.class);
+	private static final Logger logger = LoggerFactory.getLogger(SolvisWorkers.class);
 
 	private final Solvis solvis;
 	private final WatchDog watchDog;

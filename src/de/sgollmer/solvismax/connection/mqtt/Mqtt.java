@@ -26,9 +26,8 @@ import de.sgollmer.solvismax.error.CryptException.Type;
 import de.sgollmer.solvismax.error.MqttConnectionLost;
 import de.sgollmer.solvismax.error.MqttInterfaceException;
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Instances;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
@@ -39,7 +38,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Mqtt {
 
-	static final ILogger logger = LogManager.getInstance().getLogger(Mqtt.class);
+	static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Mqtt.class);
 
 	private static final String XML_SSL = "Ssl";
 	static final Charset UTF_8 = StandardCharsets.UTF_8;
@@ -145,7 +144,7 @@ public class Mqtt {
 				if (e.getType() == Type.DEFAULT) {
 					level = Level.WARN;
 				}
-				logger.log(level, m);
+				Diagnostics.log(logger, level, m);
 			}
 
 		}

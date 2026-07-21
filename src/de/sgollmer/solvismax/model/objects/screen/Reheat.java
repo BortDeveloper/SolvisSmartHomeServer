@@ -12,8 +12,9 @@ import javax.imageio.ImageIO;
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.pattern.Pattern;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.objects.Coordinate;
 import de.sgollmer.solvismax.objects.Rectangle;
 
@@ -22,7 +23,7 @@ public class Reheat {
 	private final Rectangle activeField;
 
 	@SuppressWarnings("unused")
-	private static final ILogger logger = LogManager.getInstance().getLogger(Reheat.class);
+	private static final Logger logger = LoggerFactory.getLogger(Reheat.class);
 
 	public Reheat(final Rectangle activeField) {
 		this.activeField = activeField;

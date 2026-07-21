@@ -4,8 +4,9 @@ import de.sgollmer.solvismax.error.AliasException;
 import de.sgollmer.solvismax.error.AssignmentException;
 import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.SolvisDataHelper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.AllSolvisData;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
@@ -14,7 +15,7 @@ import de.sgollmer.solvismax.model.objects.data.SingleData;
 import de.sgollmer.solvismax.model.objects.data.SolvisData;
 
 public class Starts extends Strategy<Starts> {
-	private static final ILogger logger = LogManager.getInstance().getLogger(Starts.class);
+	private static final Logger logger = LoggerFactory.getLogger(Starts.class);
 
 	private Starts(final Calculation calculation) {
 		super(calculation);

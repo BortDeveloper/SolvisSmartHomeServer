@@ -26,8 +26,9 @@ import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.Constants.Debug;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.xmllibrary.ArrayXml;
 import de.sgollmer.xmllibrary.BaseCreator;
 import de.sgollmer.xmllibrary.CreatorByXML;
@@ -35,7 +36,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Mail {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Mail.class);
+	private static final Logger logger = LoggerFactory.getLogger(Mail.class);
 
 	enum Security {
 		TLS, SSL, NONE

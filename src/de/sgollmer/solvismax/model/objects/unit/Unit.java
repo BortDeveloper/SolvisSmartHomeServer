@@ -14,9 +14,10 @@ import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.connection.IAccountInfo;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.error.CryptException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.objects.AllDurations;
 import de.sgollmer.solvismax.model.objects.ChannelAssignment;
 import de.sgollmer.solvismax.model.objects.Duration;
@@ -28,7 +29,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class Unit implements IAccountInfo {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Unit.class);
+	private static final Logger logger = LoggerFactory.getLogger(Unit.class);
 
 	private static final String XML_FEATURES = "Features";
 	private static final String XML_URLS = "Urls";
@@ -256,7 +257,7 @@ public class Unit implements IAccountInfo {
 				}
 			} catch (CryptException e) {
 				String m = "base.xml error of passwordCrypt in Unit tag: " + e.getMessage();
-				logger.log(Level.ERROR, m, null, Constants.ExitCodes.CRYPTION_FAIL);
+				Diagnostics.record(logger, Level.ERROR, m, null, Constants.ExitCodes.CRYPTION_FAIL);
 			}
 			this.configurationCreator.setAttribute(name, value);
 

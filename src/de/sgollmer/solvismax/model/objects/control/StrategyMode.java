@@ -16,9 +16,10 @@ import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.SolvisDataHelper;
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.pattern.Pattern;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.IChannelSource.SetResult;
 import de.sgollmer.solvismax.model.objects.IChannelSource.UpperLowerStep;
@@ -38,7 +39,7 @@ import de.sgollmer.xmllibrary.XmlException;
 
 public class StrategyMode extends AbstractStrategy {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(StrategyMode.class);
+	private static final Logger logger = LoggerFactory.getLogger(StrategyMode.class);
 	private static final Level LEARN = Level.getLevel("LEARN");
 
 	private static final String XML_MODE_ENTRY = "ModeEntry";
@@ -214,7 +215,7 @@ public class StrategyMode extends AbstractStrategy {
 				AbortHelper.getInstance().sleep(touch.getReleaseTime(solvis) * (this.learnWaitFactor - 1));
 				boolean changed = !former.equals(grafic.getImage(solvis));
 				if (!changed) {
-					logger.learn("Mode symbol not changed after touch, it will be waited a little longer.");
+					logger.info("Mode symbol not changed after touch, it will be waited a little longer.");
 					AbortHelper.getInstance().sleep(touch.getReleaseTime(solvis));
 					++this.learnWaitFactor;
 					solvis.clearCurrentScreen();
@@ -225,14 +226,14 @@ public class StrategyMode extends AbstractStrategy {
 				solvis.clearCurrentScreen();
 				SingleData<ModeEntry> data = this.getValue(solvis.getCurrentScreen(), solvis, false);
 				if (data == null || !mode.equals(data.get())) {
-					logger.log(LEARN, "Learning of <" + mode.getId() + "> not successfull, will be retried");
+					logger.info( "Learning of <" + mode.getId() + "> not successfull, will be retried");
 					successfull = false;
 					break;
 				}
 			}
 		} catch (IOException e) {
 			successfull = false;
-			logger.log(LEARN, "Learning of <" + mode.getId() + "> not successfull (IOError), will be retried");
+			logger.info( "Learning of <" + mode.getId() + "> not successfull (IOError), will be retried");
 		}
 		return successfull;
 	}
@@ -255,7 +256,7 @@ public class StrategyMode extends AbstractStrategy {
 						solvis.clearCurrentScreen();
 						SingleData<ModeEntry> data = this.getValue(solvis.getCurrentScreen(), solvis, false);
 						if (data == null || !mode.equals(data.get())) {
-							logger.log(LEARN, "Learning of <" + mode.getId() + "> not successfull, will be retried");
+							logger.info( "Learning of <" + mode.getId() + "> not successfull, will be retried");
 							successfull = false;
 							abort = true;
 						} else {
@@ -266,14 +267,14 @@ public class StrategyMode extends AbstractStrategy {
 					}
 				}
 				if (!found) {
-					logger.log(LEARN, "Learning of <" + toLearn.get(0).getId() + "> not successfull, will be retried");
+					logger.info( "Learning of <" + toLearn.get(0).getId() + "> not successfull, will be retried");
 					successfull = false;
 					abort = true;
 				}
 			}
 		} catch (IOException e) {
 			successfull = false;
-			logger.log(LEARN,
+			logger.info(
 					"Learning of <" + toLearn.get(0).getId() + "> not successfull (IOError), will be retried");
 
 		}
@@ -295,7 +296,7 @@ public class StrategyMode extends AbstractStrategy {
 				for (ListIterator<ModeEntry> itI = this.getModes().listIterator(itO.nextIndex()); itI.hasNext();) {
 					ModeEntry modeI = itI.next();
 					if (modeO.getGuiSet().getGrafic().equals(modeI.getGuiSet().getGrafic())) {
-						logger.log(LEARN,
+						logger.info(
 								"Learning of <" + modeI.getId() + "> not successfull (not unique), will be retried");
 						successfull = false;
 						break;

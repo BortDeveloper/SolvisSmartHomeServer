@@ -24,8 +24,9 @@ import de.sgollmer.solvismax.error.JsonException;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.error.TypeException;
 import de.sgollmer.solvismax.helper.Helper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Instances;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.WatchDog.Event;
@@ -40,7 +41,7 @@ import de.sgollmer.solvismax.model.objects.screen.Screen;
 
 public class CommandHandler {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(CommandHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(CommandHandler.class);
 
 	private final Collection<ClientAssignments> clients;
 	private final Instances instances;
@@ -184,10 +185,10 @@ public class CommandHandler {
 				assignments.debugClear(solvis);
 				break;
 			case LOG_STANDARD:
-				LogManager.getInstance().setBufferedMessages(false);
+				Diagnostics.setBufferedMessages(false);
 				break;
 			case LOG_BUFFERED:
-				LogManager.getInstance().setBufferedMessages(true);
+				Diagnostics.setBufferedMessages(true);
 				break;
 
 			default:

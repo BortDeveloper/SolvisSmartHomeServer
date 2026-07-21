@@ -25,15 +25,16 @@ import de.sgollmer.solvismax.connection.transfer.ConnectionState;
 import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.Helper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.SolvisState;
 import de.sgollmer.solvismax.model.objects.Observer;
 import de.sgollmer.solvismax.objects.Coordinate;
 
 public class SolvisConnection extends Observer.Observable<ConnectionState> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(SolvisConnection.class);
+	private static final Logger logger = LoggerFactory.getLogger(SolvisConnection.class);
 
 	private final Collection<UrlBase> urlBases;
 	private UrlBase urlBase = null;

@@ -2,7 +2,8 @@ package de.sgollmer.solvismax.model.objects.screen;
 
 import java.util.Set;
 
-import org.tinylog.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.sgollmer.solvismax.BaseData;
 import de.sgollmer.solvismax.error.FatalError;
@@ -19,8 +20,7 @@ import de.sgollmer.solvismax.objects.Rectangle;
  *
  */
 public class SolvisScreen {
-	// private static final ILogger logger =
-	// LogManager.getInstance().getLogger(SolvisScreen.class);
+	private static final Logger logger = LoggerFactory.getLogger(SolvisScreen.class);
 
 	private final Solvis solvis;
 	private final MyImage image;
@@ -45,7 +45,7 @@ public class SolvisScreen {
 				this.screen = this.solvis.getSolvisDescription().getScreens().getScreen(this.image, this.solvis);
 
 				if (BaseData.DEBUG && this.screen != null && previousScreen != null) {
-					Logger.error("Warning: Error within the xml file? Screen <" + this.screen
+					logger.error("Warning: Error within the xml file? Screen <" + this.screen
 							+ "> not found arround the previous screen <" + previousScreen + ">.");
 				}
 			}

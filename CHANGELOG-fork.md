@@ -8,6 +8,36 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Modernisierung Stufe 2.2: Logging auf SLF4J umgestellt
+
+Die eigene Logger-Fassade wurde durch den Standard **SLF4J** (+ **Logback**)
+ersetzt — an allen Aufrufstellen (Betreiber-Entscheid: volle Umstellung).
+
+- **Ausgangslage:** `LogManager`/`ILogger` war eine Eigenabstraktion über
+  64 Dateien / ~348 Aufrufe, die zwei Dinge vermischte: Logging **und**
+  App-Lebenszyklus (Vor-Init-Pufferung, **Exit-Code-Kopplung**, eigene Level
+  `FATAL`/`LEARN`) mit zwei Backends (tinylog aktiv, log4j als toter Pfad).
+- **Anpassung:**
+  - **Logging → SLF4J:** `LoggerFactory.getLogger(X.class)` statt der eigenen
+    Fassade; `error/info/warn/debug(msg[,t])` sind SLF4J-nativ (~266 Fälle
+    unverändert), `fatal→error`, `learn→info`, `*Ext(msg,t)→<level>(msg,t)`
+    (SLF4J loggt den Stacktrace ohnehin), `log(Level.X,…)`/`log(level,…)`
+    gemappt.
+  - **App-Logik extrahiert:** neue Klasse `Diagnostics` trägt die
+    Exit-Code-Kopplung (`record(...)`, `exit(code)`), die Level-Abbildung und
+    die Helfer (`log`, `out`, `debugOrInfo`). Die tinylog-bedingte
+    Vor-Init-**Pufferung entfällt** (Logback ist von der ersten Meldung an
+    ausgabebereit — bewusste Vereinfachung).
+  - **Abhängigkeiten:** `slf4j-api` + `logback-classic` neu; **tinylog und
+    log4j vollständig entfernt**. Logausgabe auf die Konsole
+    (`rsc/logback.xml`) — passend für Container/Dienst; früher schrieb tinylog
+    in den Schreibpfad aus `base.xml`.
+  - `LogManager.java`, `TinyLog.java`, `Logger4j2.java` gelöscht; der
+    Paho-Log-Adapter (`connection/mqtt/Logger.java`) auf SLF4J umgestellt.
+- **Verifikation (2026-07-21, JDK 17):** `mvn clean package` → BUILD SUCCESS,
+  **37 Tests grün**; im Uber-Jar sind SLF4J + Logback enthalten, **tinylog und
+  log4j nicht mehr** (0 Klassen); Laufzeit-Smoke ohne Binding-Warnung.
+
 ## Modernisierung Stufe 1: Maven-Build, CI, Aufräumen
 
 Fundament für langfristige Wartbarkeit. Fahrplan aller Stufen und Status:

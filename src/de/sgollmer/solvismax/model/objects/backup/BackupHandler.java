@@ -19,15 +19,16 @@ import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.FileHelper;
 import de.sgollmer.solvismax.helper.Helper.Reference;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.xmllibrary.XmlException;
 import de.sgollmer.xmllibrary.XmlStreamReader;
 
 public class BackupHandler {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(BackupHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(BackupHandler.class);
 
 	private static final String NAME_XSD_MEASUREMENTS_FILE = "measurements.xsd";
 	private static final String NAME_XML_MEASUREMENTS_FILE = "measurements.xml";

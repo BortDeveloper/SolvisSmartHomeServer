@@ -5,8 +5,9 @@ import java.io.IOException;
 import de.sgollmer.solvismax.BaseData;
 import de.sgollmer.solvismax.Constants.Debug;
 import de.sgollmer.solvismax.error.TerminationException;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.WatchDog.Event;
 import de.sgollmer.solvismax.model.objects.Observer;
 import de.sgollmer.solvismax.model.objects.screen.SolvisScreen;
@@ -14,7 +15,7 @@ import de.sgollmer.solvismax.model.objects.unit.Unit;
 
 public class HumanAccess extends Observer.Observable<HumanAccess.Status> {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(HumanAccess.class);
+	private static final Logger logger = LoggerFactory.getLogger(HumanAccess.class);
 
 	public enum Status {
 		USER(false, "User", SolvisStatus.USER_ACCESS_DETECTED),

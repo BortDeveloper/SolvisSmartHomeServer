@@ -14,9 +14,10 @@ import de.sgollmer.solvismax.error.AssignmentException;
 import de.sgollmer.solvismax.error.FileException;
 import de.sgollmer.solvismax.error.ReferenceException;
 import de.sgollmer.solvismax.helper.FileHelper;
-import de.sgollmer.solvismax.log.LogManager;
-import de.sgollmer.solvismax.log.LogManager.ILogger;
-import de.sgollmer.solvismax.log.LogManager.Level;
+import de.sgollmer.solvismax.log.Diagnostics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.objects.SolvisDescription;
 import de.sgollmer.solvismax.model.objects.control.Control;
 import de.sgollmer.xmllibrary.XmlException;
@@ -24,7 +25,7 @@ import de.sgollmer.xmllibrary.XmlStreamReader;
 
 public class ControlFileReader {
 
-	private static final ILogger logger = LogManager.getInstance().getLogger(Control.class);
+	private static final Logger logger = LoggerFactory.getLogger(Control.class);
 	private static final Level LEARN = Level.getLevel("LEARN");
 
 	private static final String NAME_XML_CONTROLFILE = "control.xml";
@@ -190,7 +191,7 @@ public class ControlFileReader {
 				boolean validated = reader.validate(new FileInputStream(xml), xsd);
 				if (!validated) {
 					if (!mustWrite) {
-						LogManager.exit(Constants.ExitCodes.READING_CONFIGURATION_FAIL);
+						Diagnostics.exit(Constants.ExitCodes.READING_CONFIGURATION_FAIL);
 					} else {
 						logger.warn("Not valid control.xml will be overwriten by a newer version");
 					}
@@ -211,12 +212,12 @@ public class ControlFileReader {
 
 				FileHelper.renameDuplicates(xml, Constants.NUMBER_OF_CONTROL_FILE_DUPLICATES);
 
-				logger.log(LEARN, "***********************************************************************");
-				logger.log(LEARN, "                     A T T E N T I O N");
-				logger.log(LEARN, "");
-				logger.log(LEARN, "The file <control.xml> was manually changed. It's renamed to");
-				logger.log(LEARN, "<control.xml.1>.The new one of the new server version is used!");
-				logger.log(LEARN, "***********************************************************************");
+				logger.info( "***********************************************************************");
+				logger.info( "                     A T T E N T I O N");
+				logger.info( "");
+				logger.info( "The file <control.xml> was manually changed. It's renamed to");
+				logger.info( "<control.xml.1>.The new one of the new server version is used!");
+				logger.info( "***********************************************************************");
 			}
 
 			this.copyFiles(true);
@@ -226,7 +227,7 @@ public class ControlFileReader {
 		} else if (e != null) {
 			logger.error(
 					"Error on reading control.xml. Learning is necessary, start parameter \"--server-learn\" must be used.");
-			LogManager.exit(Constants.ExitCodes.READING_CONFIGURATION_FAIL);
+			Diagnostics.exit(Constants.ExitCodes.READING_CONFIGURATION_FAIL);
 			return null;
 		} else {
 			return new Result(fromFile, newResourceHash, fileHash, mustLearn);

@@ -8,6 +8,24 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Modernisierung Stufe 3.4: jakarta.mail + Windows-Ballast isoliert
+
+- **`javax.mail` → `jakarta.mail`:** Das EOL-gegangene `com.sun.mail` 1.6.2
+  (mailapi + smtp) und `com.sun.activation:javax.activation` durch
+  **`org.eclipse.angus:angus-mail:2.0.3`** ersetzt (Referenzimplementierung,
+  bringt `jakarta.mail-api` + `jakarta.activation` transitiv). Alle Importe in
+  `mail/Mail.java`, `mail/ExceptionMail.java` u. a. auf `jakarta.*` umgestellt
+  (die JDK-Zeichenkette `javax.net.ssl.SSLSocketFactory` blieb korrekt
+  unberührt). Im Uber-Jar jetzt `jakarta.mail`/`jakarta.activation`, kein
+  `javax.mail` mehr.
+- **Windows-Ballast isoliert:** Das `windows`-Paket (`Task` erzeugt eine
+  Windows-Task-Scheduler-XML über `--create-task-xml`) per `package-info.java`
+  als **optionale, JDK-only Windows-Hilfe** dokumentiert und klar abgegrenzt.
+  Bewusst **nicht gelöscht** (bräche die CLI-Option; kein Windows-natives API,
+  auf anderen Plattformen einfach ungenutzt). Der InnoSetup-Installer bleibt
+  unter `SmartHome/Windows/`, außerhalb des Maven-Builds.
+- **Verifikation (JDK 17):** BUILD SUCCESS, 41 Tests grün.
+
 ## Modernisierung Stufe 3.1: OCR-Kern isoliert
 
 - **Schichtungs-Leck entfernt:** Das Bildmodul (`MyImage`) hing über

@@ -29,7 +29,7 @@
  * geteilten Geometrie-Wertetypen {@code objects.Coordinate}/{@code objects.Rectangle}
  * und das Logging ({@code log.Diagnostics}/SLF4J). Es haengt <b>nicht</b> vom
  * Solvis-Modell, der Konfiguration, der MQTT- oder der Mail-Schicht ab. (Die
- * fruehere Kopplung an {@code javax.mail} im Bildmodul wurde entfernt, Fork 3.1.)
+ * fruehere Kopplung an {@code jakarta.mail} im Bildmodul wurde entfernt, Fork 3.1.)
  *
  * <h2>Regressionsschutz</h2>
  * Die Zeichenerkennung ist durch Golden-Tests abgesichert:

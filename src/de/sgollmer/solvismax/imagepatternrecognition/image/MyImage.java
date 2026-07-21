@@ -530,7 +530,7 @@ public class MyImage {
 	 *
 	 * <p>
 	 * Modul-Isolierung (Fork): Frueher lieferte diese Methode direkt einen
-	 * {@code javax.mail.util.ByteArrayDataSource} und koppelte damit das
+	 * {@code jakarta.mail.util.ByteArrayDataSource} und koppelte damit das
 	 * Bildmodul an die Mail-Bibliothek. Sie liefert jetzt nur noch die rohen
 	 * Bytes; das Einpacken fuer den Mail-Anhang uebernimmt der Aufrufer
 	 * ({@code mail.Mail}). Siehe MODERNISIERUNG.md (3.1).

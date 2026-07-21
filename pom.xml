@@ -72,21 +72,14 @@
       <version>1.2.5</version>
     </dependency>
 
-    <!-- E-Mail (Fehlerbenachrichtigung). javax.mail-API + SMTP-Provider. -->
+    <!-- E-Mail (Fehlerbenachrichtigung): Jakarta Mail (jakarta.mail.*).
+         Ersetzt das EOL-gegangene javax.mail (com.sun.mail 1.6.2). angus-mail
+         ist die Referenzimplementierung und bringt jakarta.mail-api +
+         jakarta.activation transitiv mit. -->
     <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>mailapi</artifactId>
-      <version>1.6.2</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>smtp</artifactId>
-      <version>1.6.2</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.activation</groupId>
-      <artifactId>javax.activation</artifactId>
-      <version>1.2.0</version>
+      <groupId>org.eclipse.angus</groupId>
+      <artifactId>angus-mail</artifactId>
+      <version>2.0.3</version>
     </dependency>
 
     <!-- Eigenbibliothek des Autors (vendored, s. o.) -->

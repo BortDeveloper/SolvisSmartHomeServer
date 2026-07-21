@@ -3,7 +3,7 @@ package de.sgollmer.solvismax.mail;
 import java.io.IOException;
 import java.util.Collection;
 
-import javax.mail.MessagingException;
+import jakarta.mail.MessagingException;
 import javax.xml.namespace.QName;
 
 import de.sgollmer.solvismax.BaseData;

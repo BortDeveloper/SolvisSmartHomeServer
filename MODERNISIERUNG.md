@@ -27,6 +27,9 @@ durch die vorher aufgebauten Tests.
 | 2.1 | **JUnit 5 + erste Tests**: `CryptAes`-Round-Trip + Schlüssel-Stabilität, `Ssl`-PKCS#8 (Laden/Ablehnung), **OCR-Golden-Tests** (31 Referenzbilder aus `testFiles/images/` → erwartetes Zeichen). 37 Tests, grün (lokal + CI). | ✅ erledigt |
 | 2.2 | **Logging auf SLF4J umgestellt** (volle Umstellung an allen ~348 Aufrufstellen / 64 Dateien). Eigenabstraktion `LogManager`/`ILogger`/`TinyLog`/`Logger4j2` gelöscht; Logging über **SLF4J** + **Logback**. Die App-Logik (Exit-Code-Kopplung, Level-Abbildung, Helfer) in die neue Klasse `Diagnostics` extrahiert; tinylog-bedingte Vor-Init-Pufferung entfällt (Logback sofort ausgabebereit). **tinylog + log4j vollständig entfernt.** BUILD SUCCESS, 37 Tests grün, Uber-Jar ohne tinylog/log4j. | ✅ erledigt |
 
+> **Explorations-Erkenntnisse zur JAXB-Umstellung** (mit Sicherheitsgraden
+> ✅ gesichert / ⚠️ unsicher): [docs/jaxb-exploration.md](docs/jaxb-exploration.md).
+
 ## Stufe 3 — Modernisierung (nach dem Test-Netz)
 
 | # | Maßnahme | Status |

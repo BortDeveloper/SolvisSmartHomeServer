@@ -85,6 +85,18 @@ public class Features {
 		this.checkInteractiveGUIAccess();
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). {@code Features} bleibt als reiner Wert-Typ erhalten — die
+	 * Feature-Semantik (Defaults je Feature, Regel „genau eines von
+	 * InteractiveGUIAccess/OnlyMeasurements", abgeleitete Abfragen) lebt damit
+	 * nur an einer Stelle; der Mapper liefert lediglich die Map aus dem DTO.
+	 * Validiert wie der alte Parser (wirft bei Regelverletzung).
+	 */
+	public static Features of(final Map<String, Boolean> features) throws XmlException {
+		return new Features(features);
+	}
+
 	public boolean get(String feature, boolean missingValue) {
 		Boolean result = this.features.get(feature);
 		if (result == null) {

@@ -1,6 +1,8 @@
 package de.sgollmer.solvismax.xml.jaxb;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import de.sgollmer.solvismax.ExecutionConfig;
@@ -10,7 +12,10 @@ import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.crypt.CryptAes;
 import de.sgollmer.solvismax.crypt.Ssl;
 import de.sgollmer.solvismax.error.CryptException;
+import de.sgollmer.solvismax.model.objects.unit.AllChannelOptions;
+import de.sgollmer.solvismax.model.objects.unit.Features;
 import de.sgollmer.solvismax.model.objects.unit.UnitConfig;
+import de.sgollmer.xmllibrary.XmlException;
 
 /**
  * Überführt die kanonisch von JAXB gebundenen {@link BaseDataDto DTO-Strukturen}
@@ -355,6 +360,51 @@ public final class Mapper {
 			default:
 				return null;
 		}
+	}
+
+	/**
+	 * Baut den Wert-Typ {@link Features} aus dem DTO (Weg B, Aggregat-Zweige):
+	 * {@code Features} bleibt als reiner Wert-Typ erhalten, damit die
+	 * Feature-Semantik (Defaults je Feature, Regel „genau eines von
+	 * InteractiveGUIAccess/OnlyMeasurements", abgeleitete Abfragen wie
+	 * {@code isSendMailOnErrorsCleared}) nur an <b>einer</b> Stelle lebt. Der
+	 * Mapper liefert nur die kanonische Map; die Validierung wirft — wie der
+	 * alte Parser — bei Regelverletzung.
+	 */
+	public static Features toFeatures(final BaseDataDto.FeaturesDto dto) throws XmlException {
+		return Features.of(featuresToMap(dto));
+	}
+
+	/**
+	 * Abgeleitete Sicht: {@code powerOnDelay_s} → Millisekunden (×1000), Default
+	 * −1 bei fehlendem Attribut (Creator-Semantik von {@code ChannelOption}).
+	 */
+	public static int powerOnDelayMs(final BaseDataDto.ChannelDto channel) {
+		return channel.powerOnDelay_s != null ? channel.powerOnDelay_s * 1000 : -1;
+	}
+
+	/**
+	 * Bildet die kanonisch gebundene {@code <Channel>}-Liste auf
+	 * {@link AllChannelOptions.ChannelOption}-Wert-Objekte ab (Weg B,
+	 * Aggregat-Zweige). {@code fix}/{@code factor}/{@code offset} sind nullable
+	 * ({@code null} = nicht gesetzt — steuert die {@code modify()}-Semantik),
+	 * {@code powerOnDelay_s} wird über {@link #powerOnDelayMs} abgeleitet.
+	 */
+	public static List<AllChannelOptions.ChannelOption> toChannelOptionList(final BaseDataDto.ChannelOptionsDto dto) {
+		final List<AllChannelOptions.ChannelOption> options = new ArrayList<>();
+		if (dto != null && dto.channel != null) {
+			for (final BaseDataDto.ChannelDto c : dto.channel) {
+				// 5. Parameter wie im alten Creator (dort ungenutzt uebergeben).
+				options.add(new AllChannelOptions.ChannelOption(c.id, c.fix, c.factor, c.offset, c.factor,
+						powerOnDelayMs(c)));
+			}
+		}
+		return options;
+	}
+
+	/** Baut den Wert-Typ {@link AllChannelOptions} aus dem DTO (via Factory). */
+	public static AllChannelOptions toChannelOptions(final BaseDataDto.ChannelOptionsDto dto) {
+		return AllChannelOptions.of(toChannelOptionList(dto));
 	}
 
 	/**

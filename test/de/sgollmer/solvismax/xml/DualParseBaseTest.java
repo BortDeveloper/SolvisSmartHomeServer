@@ -138,12 +138,81 @@ class DualParseBaseTest {
 
 		final BaseDataDto.ChannelDto erster = ud.channelOptions.channel.get(0);
 		assertEquals("C47.Puffer_dT_Start", erster.id);
-		assertEquals(12, erster.fix);
+		// Nullable Bindung (wie der alte Parser: Double, null = nicht gesetzt).
+		assertEquals(Double.valueOf(12), erster.fix);
+		assertNull(erster.offset, "nur fix gesetzt -> offset nicht gebunden");
+		assertNull(erster.powerOnDelay_s, "nur fix gesetzt -> powerOnDelay nicht gebunden");
 		// Kanal mit powerOnDelay_s (Aussentemperatur = 900).
 		final boolean hatPowerOnDelay = ud.channelOptions.channel.stream()
-				.anyMatch(c -> "S10.Aussentemperatur".equals(c.id) && c.powerOnDelay_s == 900);
+				.anyMatch(c -> "S10.Aussentemperatur".equals(c.id) && Integer.valueOf(900).equals(c.powerOnDelay_s));
 		org.junit.jupiter.api.Assertions.assertTrue(hatPowerOnDelay,
 				"Kanal S10.Aussentemperatur mit powerOnDelay_s=900 erwartet");
+	}
+
+	/**
+	 * <b>Aggregat-Zweig als Wert-Typ (Weg B):</b> {@code Features} bleibt als
+	 * reiner Wert-Typ erhalten (die Feature-Semantik lebt nur dort);
+	 * {@code Mapper.toFeatures} baut ihn über die neue Factory
+	 * {@code Features.of} aus dem DTO. Der Test vergleicht ALLE semantischen
+	 * Abfragen des gemappten Objekts mit dem des alten Parsers.
+	 */
+	@Test
+	void featuresWertTypAusDtoIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final de.sgollmer.solvismax.model.objects.unit.Features ausDomaene =
+				alt.getUnits().getUnits().iterator().next().getFeatures();
+		final de.sgollmer.solvismax.model.objects.unit.Features ausDto =
+				Mapper.toFeatures(neu.units.unit.get(0).features);
+
+		assertEquals(ausDomaene.isClockTuning(), ausDto.isClockTuning());
+		assertEquals(ausDomaene.isEquipmentTimeSynchronisation(), ausDto.isEquipmentTimeSynchronisation());
+		assertEquals(ausDomaene.isUpdateAfterUserAccess(), ausDto.isUpdateAfterUserAccess());
+		assertEquals(ausDomaene.isDetectServiceAccess(), ausDto.isDetectServiceAccess());
+		assertEquals(ausDomaene.isClearErrorMessageAfterMail(), ausDto.isClearErrorMessageAfterMail());
+		assertEquals(ausDomaene.isPowerOffIsServiceAccess(), ausDto.isPowerOffIsServiceAccess());
+		assertEquals(ausDomaene.isSendMailOnError(), ausDto.isSendMailOnError());
+		assertEquals(ausDomaene.isSendMailOnErrorsCleared(), ausDto.isSendMailOnErrorsCleared());
+		assertEquals(ausDomaene.isEndOfUserByScreenSaver(), ausDto.isEndOfUserByScreenSaver());
+		assertEquals(ausDomaene.isAdmin(), ausDto.isAdmin());
+		assertEquals(ausDomaene.isInteractiveGUIAccess(), ausDto.isInteractiveGUIAccess());
+		assertEquals(ausDomaene.getMap(), ausDto.getMap());
+	}
+
+	/**
+	 * Die fachliche Regel „genau eines von InteractiveGUIAccess/OnlyMeasurements"
+	 * (Validierung außerhalb der XSD) greift auch beim DTO-Weg: {@code Features.of}
+	 * wirft — wie der alte Parser — bei Verletzung.
+	 */
+	@Test
+	void featuresRegelVerletzungWirft() {
+		org.junit.jupiter.api.Assertions.assertThrows(de.sgollmer.xmllibrary.XmlException.class,
+				() -> de.sgollmer.solvismax.model.objects.unit.Features.of(java.util.Map.of()));
+	}
+
+	/**
+	 * <b>Aggregat-Zweig als Wert-Typ (Weg B):</b> {@code ChannelOption}-Liste aus
+	 * dem DTO. Charakterisierung (die Domäne legt fix/factor/offset nicht offen):
+	 * 7 Optionen aus dem Template; die ×1000-Ableitung von {@code powerOnDelay_s}
+	 * und der Default −1 (Attribut fehlt) entsprechen der Creator-Semantik.
+	 */
+	@Test
+	void channelOptionsWertTypGemappt() throws Exception {
+		assumeTemplate();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+
+		final java.util.List<de.sgollmer.solvismax.model.objects.unit.AllChannelOptions.ChannelOption> optionen =
+				Mapper.toChannelOptionList(neu.units.unit.get(0).channelOptions);
+
+		assertEquals(7, optionen.size());
+		// S10.Aussentemperatur: powerOnDelay_s=900 -> 900000 ms (x1000).
+		org.junit.jupiter.api.Assertions.assertTrue(
+				optionen.stream().anyMatch(o -> o.getPowerOnDelay() == 900_000),
+				"Kanal mit powerOnDelay 900 s -> 900000 ms erwartet");
+		// Erster Kanal (nur fix gesetzt): Default -1 wie im alten Creator.
+		assertEquals(-1, optionen.get(0).getPowerOnDelay());
 	}
 
 	/**
@@ -386,6 +455,20 @@ class DualParseBaseTest {
 
 		// 1:1 gegen den alten Parser — Defaults beider Seiten identisch.
 		assertUnitConfigIdentisch(ausDomaene, ausDto);
+
+		// Auch die per-Feature-Defaults (missingValue je Feature) sind identisch:
+		// fast alle Features fehlen in der Fixture, z. B. defaultet
+		// ClearErrorMessageAfterMail auf true, SendMailOnError auf false.
+		final de.sgollmer.solvismax.model.objects.unit.Features featuresDomaene =
+				alt.getUnits().getUnits().iterator().next().getFeatures();
+		final de.sgollmer.solvismax.model.objects.unit.Features featuresDto =
+				Mapper.toFeatures(neu.units.unit.get(0).features);
+		org.junit.jupiter.api.Assertions.assertTrue(featuresDto.isClearErrorMessageAfterMail());
+		assertFalse(featuresDto.isSendMailOnError());
+		assertEquals(featuresDomaene.isClearErrorMessageAfterMail(), featuresDto.isClearErrorMessageAfterMail());
+		assertEquals(featuresDomaene.isSendMailOnError(), featuresDto.isSendMailOnError());
+		assertEquals(featuresDomaene.isInteractiveGUIAccess(), featuresDto.isInteractiveGUIAccess());
+		assertEquals(featuresDomaene.isAdmin(), featuresDto.isAdmin());
 	}
 
 	/**

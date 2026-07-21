@@ -29,6 +29,17 @@ public class AllChannelOptions {
 		this.values = values;
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). {@code AllChannelOptions}/{@code ChannelOption} bleiben als
+	 * Wert-Typen erhalten (die Options-Semantik — {@code modify},
+	 * Fix-Werte, PowerOn-Delay — lebt nur hier); der Mapper baut die
+	 * Options-Liste aus dem DTO.
+	 */
+	public static AllChannelOptions of(final Collection<ChannelOption> values) {
+		return new AllChannelOptions(values);
+	}
+
 	public void initialize(Solvis solvis) {
 		for (ChannelOption channelValue : this.values) {
 			channelValue.initialize(solvis);

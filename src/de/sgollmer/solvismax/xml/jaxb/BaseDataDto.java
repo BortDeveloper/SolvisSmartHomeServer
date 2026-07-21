@@ -117,16 +117,21 @@ public class BaseDataDto {
 
 	/**
 	 * JAXB-Bean für {@code <Channel>} — Kanal-Sonderoption. Pro Eintrag ist i. d. R.
-	 * nur eines von {@code fix}/{@code offset}/{@code powerOnDelay_s} gesetzt; die
-	 * nicht gesetzten int-Attribute sind kanonisch {@code 0}.
+	 * nur eines von {@code fix}/{@code offset}/{@code powerOnDelay_s} gesetzt.
+	 * Nullable Wrapper-Typen ({@code null} = Attribut fehlt), weil der alte
+	 * Parser {@code fix}/{@code factor}/{@code offset} als {@code Double} mit
+	 * {@code null}-Semantik bindet — {@code ChannelOption.modify()} unterscheidet
+	 * „nicht gesetzt" von {@code 0}. {@code powerOnDelay_s}: Sekunden-Rohwert,
+	 * die ×1000-Ableitung (Default −1 bei fehlendem Attribut) liegt in
+	 * {@code Mapper.powerOnDelayMs}.
 	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class ChannelDto {
 		@XmlAttribute(name = "id") public String id;
-		@XmlAttribute(name = "fix") public int fix;
-		@XmlAttribute(name = "factor") public int factor;
-		@XmlAttribute(name = "offset") public int offset;
-		@XmlAttribute(name = "powerOnDelay_s") public int powerOnDelay_s;
+		@XmlAttribute(name = "fix") public Double fix;
+		@XmlAttribute(name = "factor") public Double factor;
+		@XmlAttribute(name = "offset") public Double offset;
+		@XmlAttribute(name = "powerOnDelay_s") public Integer powerOnDelay_s;
 	}
 
 	/** JAXB-Bean für {@code <Features>}. */

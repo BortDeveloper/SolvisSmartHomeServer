@@ -333,3 +333,32 @@ AllChannelDescriptions), `getChannelAssignment` (ChannelInstance),
 `getChannelOptions`/`getDuration` (Solvis), `getUrls`/`getUrl`/`IAccountInfo`
 (SolvisConnection-Verdrahtung), Identitäts-/Sonderfälle (`isAdmin`, `isCsvUnit`,
 `getComment`, `getForcedConfigMask` — Laufzeit-Zustand).
+
+### Aggregat-Zweige als Wert-Typen (✅ Features + ChannelOptions, grün)
+
+Erkenntnis der Bestandsaufnahme: Zweige wie `Features` und
+`AllChannelOptions`/`ChannelOption` sind **reine Wert-Typen mit Fachsemantik**
+(Feature-Defaults, `isInteractiveGUIAccess`-Regel, `modify()`-Arithmetik) —
+keine Laufzeit-Kopplung. Für sie gilt daher ein einfacherer Schnitt als das
+Sicht-Interface-Muster:
+
+- **Der Wert-Typ bleibt erhalten** (die Semantik lebt nur an einer Stelle,
+  keine Duplikation in einer DTO-Sicht), seine Konsumenten bleiben unberührt.
+- **Nur der Creator fällt später weg**; der Mapper baut den Wert-Typ aus dem
+  DTO über eine neue öffentliche Factory: `Features.of(Map)` →
+  `Mapper.toFeatures`, `AllChannelOptions.of(Collection)` →
+  `Mapper.toChannelOptions`/`toChannelOptionList`.
+- ✅ **Nullable-Bindung nachgezogen:** `ChannelDto.fix/factor/offset` sind jetzt
+  `Double` (null = nicht gesetzt — der alte Parser unterscheidet das in
+  `modify()`), `powerOnDelay_s` als `Integer` mit ×1000-Ableitung und Default
+  −1 in `Mapper.powerOnDelayMs` (Creator-Semantik).
+- ✅ **Grün:** Features aus Domäne UND DTO in allen 11 semantischen Abfragen +
+  Map identisch (Template und Minimal-Fixture inkl. per-Feature-Defaults); die
+  Regel „genau eines von InteractiveGUIAccess/OnlyMeasurements" wirft auch am
+  DTO-Weg (`Features.of`); ChannelOption-Liste charakterisiert (7 Optionen,
+  ×1000, Default −1).
+
+⚠️ **Offen bei Features:** Die XSD erlaubt alternativ **benannte Elemente**
+(`<ClockTuning>true</ClockTuning>` statt `<Feature id="ClockTuning" …/>`); das
+DTO bindet bisher nur die `<Feature>`-Form (Template nutzt nur diese). Vor dem
+Reader-Umstieg binden oder Alt-Form deprecaten.

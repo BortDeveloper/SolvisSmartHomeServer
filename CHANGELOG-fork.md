@@ -8,6 +8,23 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Container-Betrieb (Docker)
+
+Neue Artefakte: [`Dockerfile`](Dockerfile) (Zwei-Stufen-Build JDK+Ant →
+temurin-JRE), [`docker-compose.yml`](docker-compose.yml),
+[`.dockerignore`](.dockerignore), [`docs/DOCKER.md`](docs/DOCKER.md).
+
+- **Begründung/Fallstricke:** reine Java-App, headless-tauglich; das
+  Runtime-Image braucht das JDK-Modul **`java.desktop`** (OCR nutzt
+  `java.awt.image`/`ImageIO`) — im vollen temurin-JRE enthalten, in
+  jlink-/distroless-Minimalimages nicht. Persistentes **`/data`-Volume** für
+  `LearnedImages`/`writablePathLinux`, `--init`/tini für sauberes SIGTERM,
+  armhf-Alternative dokumentiert.
+- **Verifikation (2026-07-21, `ransible`/arm64, Docker 26.1.5):** `docker build`
+  → Image `solvissmarthomeserver:fork` (**348 MB**); Container-Smoke
+  `docker run … --string-to-crypt=probe` liefert den AES-Wert; `--list-modules`
+  bestätigt `java.desktop@21.0.11` im Runtime-Image.
+
 ## MQTT über TLS/mTLS nativ implementiert
 
 Ziel: Der Server verbindet sich direkt mit einem mTLS-gehärteten Broker, ohne

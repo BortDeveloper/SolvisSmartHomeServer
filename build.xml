@@ -96,11 +96,19 @@
 	<target depends="createjar" name="Build complete">
 		<jar jarfile="${dist.dir}/${dist.base}.jar">
 			<zipfileset src="${dist.dir}/${dist.base}_woLib.jar" excludes="META-INF/*" />
-			<!-- Fork: alle Laufzeit-Bibliotheken aus lib/ in das Uber-Jar
-			     buendeln (log4j 2.13.2, tinylog 2.4.1, Paho-MQTT, javax.mail
-			     via mailapi/smtp, javax.activation, XMLLibrary). Ersetzt die
-			     veralteten 2.12.1-Einzelverweise. -->
-			<zipgroupfileset dir="lib" includes="*.jar" />
+			<!-- Fork: Laufzeit-Bibliotheken aus lib/ in das Uber-Jar buendeln
+			     (tinylog 2.4.1, Paho-MQTT, javax.mail via mailapi/smtp,
+			     javax.activation, XMLLibrary).
+			     log4j wird BEWUSST AUSGESCHLOSSEN (excludes="log4j-*.jar"):
+			     Aktiver Logger ist tinylog (LogManager.loggerName="TinyLog"),
+			     der Log4j2-Backend (Logger4j2) ist zur Laufzeit inaktiv. Damit
+			     landet die Log4Shell-verwundbare log4j-core 2.13.2
+			     (CVE-2021-44228) NICHT im ausgelieferten Jar. Fuer die
+			     Kompilierung von Logger4j2 bleiben log4j-api/-core im
+			     Compile-Classpath (SolvisMax.classpath) erhalten. Wer den
+			     Log4j2-Backend wirklich nutzen will, muss log4j-core wieder
+			     mitbuendeln (und auf eine gepatchte Version >= 2.17.1 heben). -->
+			<zipgroupfileset dir="lib" includes="*.jar" excludes="log4j-*.jar" />
 			<manifest>
 				<attribute name="Main-Class" value="de.sgollmer.solvismax.Main" />
 			</manifest>

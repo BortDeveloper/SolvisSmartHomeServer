@@ -8,6 +8,36 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Log4Shell-Altlast aus dem Uber-Jar entfernt
+
+Ziel: Die für Log4Shell (CVE-2021-44228) anfällige `log4j-core 2.13.2` nicht
+mehr ausliefern.
+
+- **Ausgangslage:** Aktiver Logger ist **tinylog**
+  (`LogManager.loggerName="TinyLog"`); der Log4j2-Backend `Logger4j2` ist zur
+  Laufzeit **inaktiv** (wird nur bei `loggerName=="Log4j2"` geladen). Der
+  Fork-Build bündelte bisher via `zipgroupfileset lib/*.jar` trotzdem **alle**
+  log4j-Jars — inkl. der verwundbaren `log4j-core 2.13.2` (~1,7 MB tote,
+  scanbare Altlast).
+- **Anpassung:**
+  - `build.xml`, Target `Build complete`: Bündelung auf
+    `zipgroupfileset … excludes="log4j-*.jar"` umgestellt → **keine**
+    log4j-Klassen mehr im ausgelieferten Jar.
+  - `Logger4j2.java` importiert `org.apache.logging.log4j.core.config.*`,
+    braucht `log4j-core` also zum **Kompilieren**. Daher bleiben
+    `log4j-api`/`-core` im **Compile-Classpath** (`SolvisMax.classpath`
+    referenziert weiterhin `lib/*.jar`) — nur das Laufzeit-Bundle ist bereinigt.
+  - `lib/log4j-1.2-api-2.13.2.jar` **ganz entfernt** (im Code nirgends
+    referenziert); zugehörige Verweise in `build-user.xml` (Compile-Classpath
+    und `createLog4jJar`) entfernt.
+- **Konsequenz:** Wer den Log4j2-Backend tatsächlich nutzen will, muss
+  `log4j-core` wieder mitbündeln — dann bitte auf eine gepatchte Version
+  **≥ 2.17.1** heben.
+- **Verifikation (2026-07-21, `ransible`/OpenJDK 21):** `ant clean && ant` →
+  BUILD SUCCESSFUL; im Jar `jar tf … | grep 'org/apache/logging/log4j/core'`
+  liefert **nichts**; Laufzeit-Smoke `--string-to-crypt` weiterhin ok
+  (tinylog).
+
 ## Container-Betrieb (Docker)
 
 Neue Artefakte: [`Dockerfile`](Dockerfile) (Zwei-Stufen-Build JDK+Ant →

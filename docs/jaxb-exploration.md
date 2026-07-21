@@ -59,10 +59,25 @@ Template real befüllten Inhalt**. ⚠️ **Nicht modelliert (im Template leer/
 auskommentiert, keine Fixture-Daten):** `Unit/Extensions`, `Unit/Urls`,
 `Unit/IgnoredChannels`, `Unit/ChannelAssignments`, `Unit/Durations`,
 `Unit/Configuration` — sie sind erst mit einer Fixture, die sie befüllt,
-sinnvoll dual-parse-bar. ⚠️ **Parser-Mismatch:** Das Template-Attribut
-`forceUpdateAfterFastChangingIntervals` weicht vom Creator-Namen
-`forceUpdateInFastChangingAfterIntervals` ab → der alte Parser **ignoriert** den
-Template-Wert; bewusst nicht modelliert (latente Alt-Unstimmigkeit).
+sinnvoll dual-parse-bar.✅ **Parser-Inkonsistenz korrigiert:** Das Attribut heißt in **base.xsd UND
+base.xml** `forceUpdateAfterFastChangingIntervals`, der `Unit.Creator`-`case`
+hatte aber einen **Tippfehler** (`forceUpdateInFastChangingAfterIntervals`) —
+der konfigurierte Wert wurde nie gelesen (Default griff). **Korrigiert**
+(Creator an XSD/Template angeglichen), im DTO modelliert und jetzt **1:1
+dual-parse-verglichen** (Template-Wert `3`, beide Parser).
+
+### Prinzip: Dual-Parse **ist** der Omissions-/Inkonsistenz-Detektor
+
+✅ **gesichert:** Ein Attribut, das der alte Parser auslässt oder falsch liest,
+fällt beim Dual-Parse-Vergleich sofort auf (Domäne = Default ≠ DTO =
+Template-Wert). So wurde `forceUpdate…` gefunden. **Vorgehen bei Fund:**
+(a) den alten Parser an XSD/Template **korrigieren** und ins 1:1 aufnehmen; oder
+(b) falls eine Korrektur nicht eindeutig/sicher ist, das Element **ausnahmsweise
+aus dem 1:1-Vergleich nehmen** und hier begründet vermerken.
+
+⚠️ **aus dem 1:1 genommen** (mangels Domänen-Getter, kein Auslassen): `Unit`-
+`resetErrorDelayTime_ms` wird vom Parser gelesen, aber nicht über einen Getter
+offengelegt → nur per Charakterisierung am DTO absicherbar.
 
 ### Abgeleitete Werte (Derivate, nicht 1:1)
 

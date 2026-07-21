@@ -88,6 +88,37 @@ public final class Mapper {
 		return unit.measurementsInterval_s * 1000;
 	}
 
+	/** Abgeleitete Sicht: schnelles Mess-Intervall in Millisekunden (×1000). */
+	public static int measurementsIntervalFastMs(final BaseDataDto.UnitDto unit) {
+		return unit.measurementsIntervalFast_s * 1000;
+	}
+
+	/**
+	 * Abgeleitete Sicht: das gebundene {@code type}-Attribut ({@code TO|CC|BCC})
+	 * eines Empfängers als {@link jakarta.mail.Message.RecipientType}.
+	 *
+	 * <p>
+	 * Weg B: Das Enum-Mapping — das der alte Parser inline vornahm — wird hier als
+	 * explizite Sicht bereitgestellt. {@code null} bei fehlendem/unbekanntem Typ
+	 * (wie die frühere {@code recipientTypeMap.get(...)}-Semantik).
+	 * </p>
+	 */
+	public static jakarta.mail.Message.RecipientType recipientType(final BaseDataDto.RecipientDto recipient) {
+		if (recipient == null || recipient.type == null) {
+			return null;
+		}
+		switch (recipient.type) {
+			case "TO":
+				return jakarta.mail.Message.RecipientType.TO;
+			case "CC":
+				return jakarta.mail.Message.RecipientType.CC;
+			case "BCC":
+				return jakarta.mail.Message.RecipientType.BCC;
+			default:
+				return null;
+		}
+	}
+
 	/**
 	 * Bildet die kanonisch gebundene {@code <Ssl>}-Struktur auf das Domänenobjekt
 	 * {@link Ssl} ab (mTLS-Konfiguration). {@code null}, wenn kein Ssl-Element

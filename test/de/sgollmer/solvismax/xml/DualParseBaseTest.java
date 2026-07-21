@@ -83,6 +83,12 @@ class DualParseBaseTest {
 		assertEquals(u.getReleaseBlockingAfterServiceAccess_ms(), ud.releaseBlockingAfterServiceAccess_ms);
 		assertEquals(u.getReheatingNotRequiredActiveTime_ms(), ud.reheatingNotRequiredActiveTime_ms);
 		assertEquals(u.isDelayAfterSwitchingOnEnable(), ud.delayAfterSwitchingOnEnable);
+
+		// forceUpdateAfterFastChangingIntervals: nach der Korrektur des
+		// Creator-Tippfehlers liest der alte Parser den Template-Wert (3) —
+		// vorher wurde er ignoriert. Jetzt 1:1-vergleichbar.
+		assertEquals(3, ud.forceUpdateAfterFastChangingIntervals, "Template setzt den Wert 3");
+		assertEquals(u.getForceUpdateAfterFastChangingIntervals(), ud.forceUpdateAfterFastChangingIntervals);
 	}
 
 	@Test
@@ -170,6 +176,29 @@ class DualParseBaseTest {
 
 		final Unit u = alt.getUnits().getUnits().iterator().next();
 		assertEquals(u.getMeasurementsInterval_ms(), Mapper.measurementsIntervalMs(neu.units.unit.get(0)));
+	}
+
+	/** Abgeleitete Sicht (Weg B): schnelles Mess-Intervall ×1000 gegen die Domäne. */
+	@Test
+	void measurementsIntervalFastAbleitungIdentisch() throws Exception {
+		assumeTemplate();
+		final BaseData alt = new BaseControlFileReader(TEMPLATE).read();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+		final Unit u = alt.getUnits().getUnits().iterator().next();
+		assertEquals(u.getMeasurementsIntervalFast_ms(), Mapper.measurementsIntervalFastMs(neu.units.unit.get(0)));
+	}
+
+	/**
+	 * Abgeleitete Sicht (Weg B): {@code Recipient.type} → {@code RecipientType}.
+	 * Charakterisierung (die Domäne legt die Empfänger nicht offen): In der Vorlage
+	 * sind beide Empfänger vom Typ {@code TO}.
+	 */
+	@Test
+	void recipientTypeAbleitung() throws Exception {
+		assumeTemplate();
+		final BaseDataDto neu = JaxbBaseReader.read(TEMPLATE);
+		final BaseDataDto.RecipientDto erster = neu.exceptionMail.recipients.recipient.get(0);
+		assertEquals(jakarta.mail.Message.RecipientType.TO, Mapper.recipientType(erster));
 	}
 
 	/**

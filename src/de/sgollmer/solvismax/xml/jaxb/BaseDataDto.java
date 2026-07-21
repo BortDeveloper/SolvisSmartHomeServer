@@ -80,6 +80,9 @@ public class BaseDataDto {
 		// Rohwert in Sekunden — die Domäne rechnet nach Millisekunden um; diese
 		// Ableitung liefert Mapper.measurementsIntervalMs (Weg B: abgeleitete Sicht).
 		@XmlAttribute(name = "measurementsInterval_s") public int measurementsInterval_s;
+		@XmlAttribute(name = "measurementsIntervalFast_s") public int measurementsIntervalFast_s;
+		// Nach der Fork-Korrektur des Creator-Tippfehlers wieder 1:1-vergleichbar.
+		@XmlAttribute(name = "forceUpdateAfterFastChangingIntervals") public int forceUpdateAfterFastChangingIntervals;
 		// Hinweis: measurementsInterval_s (Sekunden) wird von der Domaene nach
 		// _ms umgerechnet und resetErrorDelayTime_ms hat keinen Getter -> beide
 		// werden spaeter ueber den Mapper bzw. Charakterisierung abgesichert.

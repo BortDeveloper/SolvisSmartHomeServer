@@ -215,7 +215,11 @@ public class Unit implements IAccountInfo {
 					case "measurementsIntervalFast_s":
 						this.defaultMeasurementsIntervalFast_ms = Integer.parseInt(value) * 1000;
 						break;
-					case "forceUpdateInFastChangingAfterIntervals":
+					// Fork-Korrektur: Tippfehler ("In...After" statt "After") — das
+					// Attribut heisst in base.xsd UND base.xml
+					// "forceUpdateAfterFastChangingIntervals" und wurde daher nie
+					// gelesen (Default griff). Angeglichen. Siehe jaxb-exploration.md.
+					case "forceUpdateAfterFastChangingIntervals":
 						this.forceUpdateAfterFastChangingIntervals = Integer.parseInt(value);
 						break;
 					case "forcedUpdateInterval_ms":

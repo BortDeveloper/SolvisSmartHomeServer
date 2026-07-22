@@ -140,4 +140,96 @@ public class ControlDto {
 		@XmlAttribute(name = "channelId") public String channelId;
 		@XmlAttribute(name = "value") public boolean value;
 	}
+
+	@XmlElement(name = "FallBack")
+	public FallBackDto fallBack;
+
+	@XmlElement(name = "Preparations")
+	public PreparationsDto preparations;
+
+	@XmlElement(name = "ScreenGrafics")
+	public ScreenGraficsDto screenGrafics;
+
+	/**
+	 * JAXB-Bean für {@code <FallBack>}: die Tastenfolge, mit der der Server aus
+	 * einem unbekannten Bildschirm zurück zum Home-Screen findet. Die Folge ist
+	 * eine <b>geordnete Mischsequenz</b> aus {@code <Back/>} und
+	 * {@code <ScreenRef id="..."/>} — gebunden als polymorphe Liste
+	 * ({@code @XmlElements}), damit die Reihenfolge erhalten bleibt.
+	 * {@code <LastChance>} ist die Eskalationsfolge mit derselben Struktur.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class FallBackDto {
+		@jakarta.xml.bind.annotation.XmlElements({
+				@XmlElement(name = "Back", type = BackDto.class),
+				@XmlElement(name = "ScreenRef", type = ScreenRefDto.class) })
+		public java.util.List<Object> step;
+
+		@XmlElement(name = "LastChance")
+		public LastChanceDto lastChance;
+	}
+
+	/** JAXB-Bean für {@code <LastChance>} (gleiche Schrittstruktur wie FallBack). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class LastChanceDto {
+		@jakarta.xml.bind.annotation.XmlElements({
+				@XmlElement(name = "Back", type = BackDto.class),
+				@XmlElement(name = "ScreenRef", type = ScreenRefDto.class) })
+		public java.util.List<Object> step;
+	}
+
+	/** JAXB-Bean für {@code <Back/>} (Zurück-Taste, keine Attribute). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class BackDto {
+	}
+
+	/** JAXB-Bean für {@code <ScreenRef id="..."/>} (Verweis auf einen Screen). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreenRefDto {
+		@XmlAttribute(name = "id") public String id;
+	}
+
+	/** JAXB-Bean für {@code <Preparations>} — GUI-Vorbereitungs-Sequenzen. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class PreparationsDto {
+		@XmlElement(name = "Preparation")
+		public java.util.List<PreparationDto> preparation;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Preparation id="...">}: ein Touch-Punkt plus die
+	 * Grafik, an der der Erfolg der Vorbereitung erkannt wird.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class PreparationDto {
+		@XmlAttribute(name = "id") public String id;
+
+		@XmlElement(name = "TouchPoint")
+		public TouchPointDto touchPoint;
+
+		@XmlElement(name = "ScreenGrafic")
+		public ScreenGraficDescriptionDto screenGrafic;
+	}
+
+	/** JAXB-Bean für {@code <ScreenGrafics>} — die Grafik-Beschreibungen. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreenGraficsDto {
+		@XmlElement(name = "ScreenGrafic")
+		public java.util.List<ScreenGraficDescriptionDto> screenGrafic;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <ScreenGrafic id="..." [exact]>[Rectangle]}: die
+	 * <b>Beschreibung</b> einer zu lernenden Grafik (Bereich + Vergleichsmodus);
+	 * die gelernten Bilddaten selbst liegen in {@code graficData.xml}.
+	 * {@code exact} als {@link Boolean}-Wrapper ({@code null} = Attribut fehlt).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreenGraficDescriptionDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "exact") public Boolean exact;
+
+		@XmlElement(name = "Rectangle")
+		public RectangleDto rectangle;
+	}
 }

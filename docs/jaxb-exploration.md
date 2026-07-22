@@ -505,6 +505,14 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   `RangeDto`, Rechtecke `RectangleDto`, Fehlerbedingung) — die Domäne legt die
   meisten dieser Werte nicht über Getter offen, daher Charakterisierung gegen
   die Vorlage (wie seinerzeit ExceptionMail/Iobroker bei base.xml).
+- ✅ **FallBack, Preparations, ScreenGrafics gebunden und grün:** `FallBack`
+  ist eine <b>geordnete Mischsequenz</b> aus `Back`/`ScreenRef` — als
+  polymorphe `@XmlElements`-Liste gebunden, der Test fixiert die
+  Reihenfolge-Erhaltung (inkl. `LastChance`-Eskalationsfolge).
+  `Preparations` (Touch-Punkt + Erfolgs-Grafik je Vorbereitung) und die
+  `ScreenGrafics`-Beschreibungen (`exact` als Boolean-Wrapper, optionales
+  Rectangle) nutzen die wiederverwendbaren Beans; Charakterisierung gegen
+  die Vorlage, da die Domäne keine Getter offenlegt.
 - **Noch nicht modelliert** (die tiefen Blöcke): `Configurations` (mit
   ConfigurationTypes/HeaterLoops/Solar/NotValid/Csv), `Screens` (der größte:
   Screen/ScreenRef/ScreenSequence mit Identifications, TouchPoints,

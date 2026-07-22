@@ -137,6 +137,62 @@ class ControlDualParseTest {
 	}
 
 	/**
+	 * {@code FallBack}: Die Tastenfolge ist eine <b>geordnete Mischsequenz</b>
+	 * aus {@code Back}/{@code ScreenRef} — der Test fixiert, dass die
+	 * polymorphe {@code @XmlElements}-Bindung die Reihenfolge der Vorlage exakt
+	 * erhält (4× Back; LastChance: 4× Back, ScreenRef "Warmwasser", 2× Back).
+	 */
+	@Test
+	void fallBackReihenfolgeGebunden() throws Exception {
+		final ControlDto neu = parseNeu();
+
+		assertNotNull(neu.fallBack);
+		assertEquals(4, neu.fallBack.step.size());
+		org.junit.jupiter.api.Assertions.assertTrue(
+				neu.fallBack.step.stream().allMatch(s -> s instanceof ControlDto.BackDto));
+
+		assertNotNull(neu.fallBack.lastChance);
+		assertEquals(7, neu.fallBack.lastChance.step.size());
+		// Position 4 (0-basiert) ist der ScreenRef - die Reihenfolge zaehlt!
+		final Object fuenfter = neu.fallBack.lastChance.step.get(4);
+		org.junit.jupiter.api.Assertions.assertTrue(fuenfter instanceof ControlDto.ScreenRefDto);
+		assertEquals("Warmwasser", ((ControlDto.ScreenRefDto) fuenfter).id);
+	}
+
+	/**
+	 * {@code Preparations} und {@code ScreenGrafics}: Charakterisierung der
+	 * Bindung gegen die Vorlage (die Domäne legt die Werte nicht über Getter
+	 * offen). Die wiederverwendeten Beans (TouchPointDto, RectangleDto)
+	 * tragen hier erneut.
+	 */
+	@Test
+	void preparationsUndScreenGraficsGebunden() throws Exception {
+		final ControlDto neu = parseNeu();
+
+		assertNotNull(neu.preparations);
+		final ControlDto.PreparationDto erste = neu.preparations.preparation.get(0);
+		assertEquals("Button_HK1", erste.id);
+		assertEquals("Standard", erste.touchPoint.pushTimeRefId);
+		assertEquals(60, erste.touchPoint.coordinate.x);
+		assertEquals(15, erste.touchPoint.coordinate.y);
+		assertEquals("Button_HK1", erste.screenGrafic.id);
+		assertEquals(47, erste.screenGrafic.rectangle.topLeft.x);
+		assertEquals(76, erste.screenGrafic.rectangle.bottomRight.x);
+
+		assertNotNull(neu.screenGrafics);
+		org.junit.jupiter.api.Assertions.assertTrue(neu.screenGrafics.screenGrafic.size() >= 3);
+		final ControlDto.ScreenGraficDescriptionDto sonstiges = neu.screenGrafics.screenGrafic.stream()
+				.filter(g -> "Sonstiges".equals(g.id)).findFirst().orElseThrow();
+		assertEquals(Boolean.TRUE, sonstiges.exact);
+		assertEquals(108, sonstiges.rectangle.topLeft.y);
+		// "Heizkreis": weder exact-Attribut noch Rectangle -> null/null.
+		final ControlDto.ScreenGraficDescriptionDto heizkreis = neu.screenGrafics.screenGrafic.stream()
+				.filter(g -> "Heizkreis".equals(g.id)).findFirst().orElseThrow();
+		assertNull(heizkreis.exact);
+		assertNull(heizkreis.rectangle);
+	}
+
+	/**
 	 * {@code ChannelAssignments}: das Domänen-Aggregat ({@code
 	 * AllChannelAssignments}) hängt an der OfConfigs-Maschinerie; hier wird
 	 * zunächst die <b>Bindung</b> charakterisiert (Id → SmartHome-Name).

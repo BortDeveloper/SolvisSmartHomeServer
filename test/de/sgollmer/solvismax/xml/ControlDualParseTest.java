@@ -318,6 +318,174 @@ class ControlDualParseTest {
 	}
 
 	/**
+	 * {@code Screens} — <b>Dual-Parse des Grundgerüsts</b>: homeId, die
+	 * OfConfigs-Gruppierung (jede Id muss in der Domäne existieren und exakt
+	 * gleich viele Konfigurations-Varianten haben wie das DTO
+	 * {@code Screen}-Vorkommen zählt) und — wo die Anwahl-Strategie ein
+	 * Touch-Punkt ist und die Id eindeutig — die Koordinaten des
+	 * Select-TouchPoints gegen {@code getSelectScreenStrategy()}.
+	 */
+	@Test
+	void screensDualParse() throws Exception {
+		final SolvisDescription alt = parseAlt();
+		final ControlDto neu = parseNeu();
+
+		final ControlDto.ScreensDto screens = neu.screens;
+		assertNotNull(screens);
+		assertEquals(alt.getScreens().getHomeId(), screens.homeId);
+		// Vorlage: 73 Screens + 1 ScreenSequence, Reihenfolge erhalten.
+		assertEquals(74, screens.screen.size());
+
+		final java.util.Map<String, Integer> anzahlJeId = new java.util.LinkedHashMap<>();
+		for (final Object o : screens.screen) {
+			final String id = o instanceof ControlDto.ScreenDto ? ((ControlDto.ScreenDto) o).id
+					: ((ControlDto.ScreenSequenceDto) o).id;
+			anzahlJeId.merge(id, 1, Integer::sum);
+		}
+		for (final var eintrag : anzahlJeId.entrySet()) {
+			final var ofConfigs = alt.getScreens().get(eintrag.getKey());
+			assertNotNull(ofConfigs, "Domäne kennt Screen-Id " + eintrag.getKey());
+			assertEquals(ofConfigs.getElements().size(), eintrag.getValue(),
+					"Varianten-Anzahl von " + eintrag.getKey());
+		}
+
+		// Select-TouchPoint-Koordinaten dual-parse (eindeutige Ids, Touch-Strategie):
+		int verglichen = 0;
+		for (final var eintrag : anzahlJeId.entrySet()) {
+			if (eintrag.getValue() != 1) {
+				continue;
+			}
+			final var ausDomaene = alt.getScreens().get(eintrag.getKey()).getIfSingle();
+			final java.util.List<ControlDto.ScreenDto> ausDto = neu.screens.screens(eintrag.getKey());
+			if (ausDto.size() != 1 || ausDto.get(0).touchPoint == null) {
+				continue;
+			}
+			final var strategie = ausDomaene.getSelectScreenStrategy();
+			if (strategie instanceof de.sgollmer.solvismax.model.objects.TouchPointStrategy) {
+				final var koordinate = ((de.sgollmer.solvismax.model.objects.TouchPointStrategy) strategie)
+						.getTouchPoint().getCoordinate();
+				assertEquals(koordinate.getX(), ausDto.get(0).touchPoint.coordinate.x,
+						"TouchPoint-X von " + eintrag.getKey());
+				assertEquals(koordinate.getY(), ausDto.get(0).touchPoint.coordinate.y,
+						"TouchPoint-Y von " + eintrag.getKey());
+				++verglichen;
+			}
+		}
+		org.junit.jupiter.api.Assertions.assertTrue(verglichen >= 50,
+				"genügend TouchPoints dual-parse-verglichen: " + verglichen);
+	}
+
+	/**
+	 * {@code Screens} — Charakterisierung der Bindung einzelner Vorlagen-
+	 * Screens: leere Navigations-Ids (Home), Reihenfolge der polymorphen
+	 * Identifications-Teile, Ocr-Identifikation, Konfigurations-Masken samt
+	 * Mehrfach-Varianten derselben Id, {@code MustBeWhite} mit
+	 * {@code invertFunction} und die Preparation-Verweise.
+	 */
+	@Test
+	void screensCharakterisiert() throws Exception {
+		final ControlDto neu = parseNeu();
+
+		// Home: leere backId/previousId — kanonisch "", Sicht null; 2 Identifications.
+		final ControlDto.ScreenDto home = neu.screens.screens("Home").get(0);
+		assertEquals("", home.backId);
+		assertNull(home.backIdOrNull());
+		assertNull(home.previousIdOrNull());
+		assertEquals(2, home.identification.size());
+		final var home1 = (ControlDto.ScreenGraficDescriptionDto) home.identification.get(0).part.get(0);
+		assertEquals("Home1", home1.id);
+		assertEquals(Boolean.TRUE, home1.exact);
+		assertEquals(2, home.identification.get(1).part.size());
+		assertEquals(2, home.ignoreRectangle.size());
+		assertEquals(190, home.ignoreRectangle.get(0).topLeft.x);
+
+		// Sonstiges-1: Reihenfolge GraficRef vor Grafic bleibt erhalten.
+		final ControlDto.ScreenDto sonstiges = neu.screens.screens("Sonstiges-1").get(0);
+		final var teile = sonstiges.identification.get(0).part;
+		assertEquals("Sonstiges", ((ControlDto.GraficRefDto) teile.get(0)).refId);
+		assertEquals("Sonstiges-1", ((ControlDto.ScreenGraficDescriptionDto) teile.get(1)).id);
+
+		// Heizkreis-1-1_5: sortId, ignoreChanges, Ocr-Identifikation.
+		final ControlDto.ScreenDto heizkreis = neu.screens.screens("Heizkreis-1-1_5").get(0);
+		assertEquals("Heizkreis-05-1_1", heizkreis.sortId);
+		org.junit.jupiter.api.Assertions.assertTrue(heizkreis.ignoreChanges);
+		final var ocr = (ControlDto.OcrDto) heizkreis.identification.get(0).part.get(0);
+		assertEquals("11/5", ocr.value);
+		org.junit.jupiter.api.Assertions.assertTrue(ocr.right);
+		assertEquals(2, ocr.maxPixelsOfEmptyLine);
+		assertEquals(5, ocr.rectangle.topLeft.x);
+		assertEquals("Heizkreis", ocr.screenGraficRef.refId);
+
+		// Tagestemperatur_HK1, 2. Variante: 2 Masken (Hex-Ableitung),
+		// Preparation-Verweise, noRestore (1. Variante hat nur 1 Maske).
+		final ControlDto.ScreenDto tagesTemp = neu.screens.screens("Tagestemperatur_HK1").get(1);
+		org.junit.jupiter.api.Assertions.assertTrue(tagesTemp.noRestore);
+		assertEquals(2, tagesTemp.configuration.configurationMask.size());
+		assertEquals(0x02L, tagesTemp.configuration.configurationMask.get(0).andMaskValue());
+		assertEquals(0x04L, tagesTemp.configuration.configurationMask.get(1).compareMaskValue());
+		assertEquals("Button_HK1", tagesTemp.preparationRef.refId);
+		assertEquals("Button_HK1", tagesTemp.lastPreparationRef.refId);
+
+		// Anlagenstatus-WW: zwei Konfigurations-Varianten derselben Id.
+		final java.util.List<ControlDto.ScreenDto> statusWw = neu.screens.screens("Anlagenstatus-WW");
+		assertEquals(2, statusWw.size());
+		assertEquals(0x01000000L, statusWw.get(0).configuration.configurationMask.get(0).compareMaskValue());
+		assertEquals(2, statusWw.get(1).configuration.configurationMask.size());
+		assertEquals(0x04000000L, statusWw.get(1).configuration.configurationMask.get(1).compareMaskValue());
+		assertEquals(15, statusWw.get(0).sequenceUp.coordinate.x);
+		assertEquals(230, statusWw.get(0).sequenceDown.coordinate.x);
+
+		// Anlagenstatus-HK: MustBeWhite-Paar, zweites mit invertFunction.
+		final ControlDto.ScreenDto statusHk = neu.screens.screens("Anlagenstatus-HK").get(0);
+		final var hkTeile = statusHk.identification.get(0).part;
+		assertEquals(3, hkTeile.size());
+		final var weiss = (ControlDto.RectangleDto) hkTeile.get(1);
+		org.junit.jupiter.api.Assertions.assertFalse(weiss.invertFunction);
+		final var invertiert = (ControlDto.RectangleDto) hkTeile.get(2);
+		org.junit.jupiter.api.Assertions.assertTrue(invertiert.invertFunction);
+		assertEquals(45, invertiert.topLeft.x);
+		assertEquals(55, invertiert.bottomRight.x);
+	}
+
+	/**
+	 * {@code ScreenSequence} und {@code UserSelection}: die Blätter-Gruppe
+	 * Anlagenstatus (geordnete ScreenRefs) und die Code-Eingabe-Strategie des
+	 * Installateur-Menüs (admin-Konfiguration, vier Ziffern mit
+	 * Hoch-/Runter-Touch-Punkten).
+	 */
+	@Test
+	void screenSequenceUndUserSelectionGebunden() throws Exception {
+		final ControlDto neu = parseNeu();
+
+		final ControlDto.ScreenSequenceDto sequenz = (ControlDto.ScreenSequenceDto) neu.screens.screen.stream()
+				.filter(s -> s instanceof ControlDto.ScreenSequenceDto).findFirst().orElseThrow();
+		assertEquals("Anlagenstatus", sequenz.id);
+		assertEquals("Sonstiges-1", sequenz.previousId);
+		assertNull(sequenz.wrapArround);
+		assertEquals(220, sequenz.touchPoint.coordinate.x);
+		assertEquals(3, sequenz.screenRef.size());
+		assertEquals("Anlagenstatus-Solar", sequenz.screenRef.get(0).id);
+		assertEquals("Anlagenstatus-WW", sequenz.screenRef.get(1).id);
+		assertEquals("Anlagenstatus-HK", sequenz.screenRef.get(2).id);
+
+		final ControlDto.ScreenDto menue = neu.screens.screens("Installateur-Menue").get(0);
+		org.junit.jupiter.api.Assertions.assertTrue(menue.service);
+		assertEquals("ADMIN", menue.configuration.admin);
+		assertNull(menue.configuration.configurationMask);
+		assertNull(menue.touchPoint);
+		final ControlDto.UserSelectionDto auswahl = menue.userSelection;
+		assertNotNull(auswahl);
+		assertEquals("WindowChange", auswahl.waitTimeAfterLastDigitRefId);
+		assertEquals(4, auswahl.digit.size());
+		assertEquals(0, auswahl.digit.get(0).digit);
+		assertEquals(6, auswahl.digit.get(2).digit);
+		assertEquals(4, auswahl.digit.get(3).digit);
+		assertEquals(53, auswahl.digit.get(0).rectangle.topLeft.x);
+		assertEquals(65, auswahl.digit.get(0).upper.coordinate.x);
+		assertEquals("ValueChange", auswahl.digit.get(0).lower.releaseTimeRefId);
+	}
+
+	/**
 	 * {@code ChannelAssignments}: das Domänen-Aggregat ({@code
 	 * AllChannelAssignments}) hängt an der OfConfigs-Maschinerie; hier wird
 	 * zunächst die <b>Bindung</b> charakterisiert (Id → SmartHome-Name).

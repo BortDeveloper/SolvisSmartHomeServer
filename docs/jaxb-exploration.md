@@ -532,12 +532,30 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   das DTO bindet es kanonisch mit, Semantik hat es weiterhin keine.
   (Frühere Erwähnungen eines `Csv`-Unterzweigs waren ein Irrtum — die
   Erkennungs-Unterzweige heißen HeaterLoops und Solar.)
-- **Noch nicht modelliert** (die zwei großen Blöcke): `Screens` (der größte:
-  Screen/ScreenRef/ScreenSequence mit Identifications, TouchPoints,
-  Dependencies), `ChannelDescriptions` (polymorphe ChannelSources: Control mit
-  Strategien, Measurement, Calculation). Für diese lohnt ggf. eine
-  Voll-Graph-Absicherung über `ParseDiff` (wie beim base.xml-Reader-Umstieg),
-  sobald der DTO-Baum sie trägt.
+- ✅ **Screens gebunden und dual-parse-grün** (der größte Zweig, 73 Screens +
+  1 ScreenSequence): `<Screens>` ist eine geordnete Mischsequenz aus
+  `Screen`/`ScreenSequence` (polymorphe `@XmlElements`-Liste — die
+  Dokumentreihenfolge trägt die OfConfigs-Gruppierung, mehrere Screens dürfen
+  dieselbe Id haben: Konfigurations-Varianten wie `Anlagenstatus-WW` für
+  SolvisMax6 vs. Max7). **Dual-Parse:** homeId, je Id die Varianten-Anzahl
+  gegen `AllScreens.get(id).getElements().size()` sowie die Koordinaten aller
+  eindeutigen Select-TouchPoints gegen `getSelectScreenStrategy()` (>50
+  Vergleiche). Bausteine: `ScreenConfigurationDto` (admin kanonisch als
+  String, `ConfigurationMaskDto` mit Hex-Masken + `Long.decode`-Ableitungen,
+  Feature aus base-DTO), `IdentificationDto` als geordnete Mischsequenz
+  (Grafic/GraficRef/MustBeWhite/Ocr), `OcrDto`, `UserSelectionDto` mit
+  `DigitDto` (Code-Eingabe Installateur-Menü), `ScreenSequenceDto`;
+  `RectangleDto` um `invertFunction` erweitert (MustBeWhite). Leere
+  `previousId`/`backId` behandelt der alte Parser als nicht gesetzt →
+  Sichten `previousIdOrNull()`/`backIdOrNull()`. **Befund:** das
+  `wrapArround`-Attribut der ScreenSequence liest der alte Parser über
+  `Boolean.getBoolean(value)` — ein System-Property-Lookup, liefert immer
+  `false` (Alt-Parser-Bug; Attribut in der Vorlage ungenutzt, daher ohne
+  Verhaltensfolge).
+- **Noch nicht modelliert** (der letzte große Block): `ChannelDescriptions`
+  (polymorphe ChannelSources: Control mit Strategien, Measurement,
+  Calculation). Danach lohnt die Voll-Graph-Absicherung über `ParseDiff`
+  (wie beim base.xml-Reader-Umstieg) vor dem Reader-Umstieg.
 - ⚠️ **Wichtiger Reader-Befund für den späteren Umstieg:** `ControlFileReader`
   nutzt `XmlStreamReader.ReadData.getHash()` — der alte Parser berechnet beim
   Lesen einen **Inhalts-Hash**, über den Resource-/Datei-Version verglichen

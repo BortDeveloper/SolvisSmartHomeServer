@@ -127,9 +127,16 @@ public class ControlDto {
 		@XmlAttribute(name = "higherLimit") public int higherLimit;
 	}
 
-	/** JAXB-Bean für Rechtecke ({@code TopLeft}/{@code BottomRight}). */
+	/**
+	 * JAXB-Bean für Rechtecke ({@code TopLeft}/{@code BottomRight}).
+	 * {@code invertFunction} entspricht dem gleichnamigen Attribut des
+	 * Domänen-{@code Rectangle} (Default {@code false} wie im alten Creator);
+	 * genutzt wird es nur an {@code MustBeWhite}-Vorkommen im Screens-Zweig.
+	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class RectangleDto {
+		@XmlAttribute(name = "invertFunction") public boolean invertFunction = false;
+
 		@XmlElement(name = "TopLeft") public CoordinateDto topLeft;
 		@XmlElement(name = "BottomRight") public CoordinateDto bottomRight;
 	}
@@ -328,6 +335,211 @@ public class ControlDto {
 	public static class ScreenGraficsDto {
 		@XmlElement(name = "ScreenGrafic")
 		public java.util.List<ScreenGraficDescriptionDto> screenGrafic;
+	}
+
+	@XmlElement(name = "Screens")
+	public ScreensDto screens;
+
+	/**
+	 * JAXB-Bean für {@code <Screens homeId="...">} — der größte Zweig der
+	 * control.xml. Die Kinder sind eine <b>geordnete Mischsequenz</b> aus
+	 * {@code <Screen>} und {@code <ScreenSequence>}; die Reihenfolge bleibt
+	 * erhalten (polymorphe {@code @XmlElements}-Liste wie bei FallBack), denn
+	 * der alte Parser baut daraus in Dokumentreihenfolge die
+	 * {@code OfConfigs}-Gruppen (mehrere Screens dürfen dieselbe Id tragen —
+	 * z.&nbsp;B. SolvisMax6- vs. SolvisMax7-Variante, unterschieden per
+	 * {@code Configuration}-Maske).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreensDto {
+		@XmlAttribute(name = "homeId") public String homeId;
+
+		@jakarta.xml.bind.annotation.XmlElements({
+				@XmlElement(name = "Screen", type = ScreenDto.class),
+				@XmlElement(name = "ScreenSequence", type = ScreenSequenceDto.class) })
+		public java.util.List<Object> screen;
+
+		/** Sicht: alle {@code <Screen>}-Vorkommen einer Id in Dokumentreihenfolge (OfConfigs-Analogon). */
+		public java.util.List<ScreenDto> screens(final String id) {
+			if (this.screen == null) {
+				return java.util.Collections.emptyList();
+			}
+			return this.screen.stream().filter(s -> s instanceof ScreenDto).map(s -> (ScreenDto) s)
+					.filter(s -> id.equals(s.id)).collect(java.util.stream.Collectors.toList());
+		}
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Screen>}: Navigations-Attribute, optionale
+	 * Konfigurations-Einschränkung, die Anwahl-Strategie ({@code TouchPoint}
+	 * <b>oder</b> {@code UserSelection}), Blätter-Tasten einer Sequenz,
+	 * Identifikations-Merkmale und Ignore-Bereiche. Die booleschen Attribute
+	 * spiegeln die Creator-Defaults ({@code false}). Der alte Parser behandelt
+	 * <b>leere</b> {@code previousId}/{@code backId} als nicht gesetzt —
+	 * kanonisch bleibt der Vorlagen-String, die Ableitung liefern
+	 * {@link #previousIdOrNull()}/{@link #backIdOrNull()}.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreenDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "sortId") public String sortId;
+		@XmlAttribute(name = "previousId") public String previousId;
+		@XmlAttribute(name = "backId") public String backId;
+		@XmlAttribute(name = "ignoreChanges") public boolean ignoreChanges = false;
+		@XmlAttribute(name = "mustSave") public boolean mustSave = false;
+		@XmlAttribute(name = "noRestore") public boolean noRestore = false;
+		@XmlAttribute(name = "service") public boolean service = false;
+
+		@XmlElement(name = "Configuration") public ScreenConfigurationDto configuration;
+		@XmlElement(name = "TouchPoint") public TouchPointDto touchPoint;
+		@XmlElement(name = "UserSelection") public UserSelectionDto userSelection;
+		@XmlElement(name = "SequenceUp") public TouchPointDto sequenceUp;
+		@XmlElement(name = "SequenceDown") public TouchPointDto sequenceDown;
+
+		@XmlElement(name = "Identification")
+		public java.util.List<IdentificationDto> identification;
+
+		@XmlElement(name = "IgnoreRectangle")
+		public java.util.List<RectangleDto> ignoreRectangle;
+
+		@XmlElement(name = "PreparationRef") public PreparationRefDto preparationRef;
+		@XmlElement(name = "LastPreparationRef") public PreparationRefDto lastPreparationRef;
+
+		public String previousIdOrNull() {
+			return this.previousId == null || this.previousId.isEmpty() ? null : this.previousId;
+		}
+
+		public String backIdOrNull() {
+			return this.backId == null || this.backId.isEmpty() ? null : this.backId;
+		}
+	}
+
+	/** JAXB-Bean für {@code <PreparationRef refId/>}/{@code <LastPreparationRef refId/>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class PreparationRefDto {
+		@XmlAttribute(name = "refId") public String refId;
+	}
+
+	/**
+	 * JAXB-Bean für die Konfigurations-Einschränkung eines Screens
+	 * ({@code <Configuration [admin]>}): Bit-Masken gegen die
+	 * Konfigurationsmaske plus optionales Feature. {@code admin} bleibt
+	 * kanonisch der String der Vorlage (Domäne: {@code Admin.valueOf},
+	 * Default {@code NONE} bei fehlendem Attribut). Das {@code Feature}-Kind
+	 * nutzt die strukturgleiche base.xml-Bean.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreenConfigurationDto {
+		@XmlAttribute(name = "admin") public String admin;
+
+		@XmlElement(name = "ConfigurationMask")
+		public java.util.List<ConfigurationMaskDto> configurationMask;
+
+		@XmlElement(name = "Feature") public BaseDataDto.FeatureDto feature;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <ConfigurationMask andMask compareMask/>}. Die
+	 * Masken bleiben kanonisch Hex-Strings; die Ableitungen entsprechen dem
+	 * alten Parser ({@code Long.decode}).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ConfigurationMaskDto {
+		@XmlAttribute(name = "andMask") public String andMask;
+		@XmlAttribute(name = "compareMask") public String compareMask;
+
+		public long andMaskValue() {
+			return Long.decode(this.andMask);
+		}
+
+		public long compareMaskValue() {
+			return Long.decode(this.compareMask);
+		}
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Identification>}: eine <b>geordnete
+	 * Mischsequenz</b> der Vergleichs-Merkmale {@code Grafic},
+	 * {@code GraficRef}, {@code MustBeWhite} (Rechteck, ggf. mit
+	 * {@code invertFunction}) und {@code Ocr} — polymorphe
+	 * {@code @XmlElements}-Liste, damit die Dokumentreihenfolge der
+	 * {@code screenCompares} des alten Parsers erhalten bleibt.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class IdentificationDto {
+		@jakarta.xml.bind.annotation.XmlElements({
+				@XmlElement(name = "Grafic", type = ScreenGraficDescriptionDto.class),
+				@XmlElement(name = "GraficRef", type = GraficRefDto.class),
+				@XmlElement(name = "MustBeWhite", type = RectangleDto.class),
+				@XmlElement(name = "Ocr", type = OcrDto.class) })
+		public java.util.List<Object> part;
+	}
+
+	/** JAXB-Bean für Grafik-Verweise ({@code <GraficRef refId/>}, {@code <ScreenGraficRef refId/>}). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class GraficRefDto {
+		@XmlAttribute(name = "refId") public String refId;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Ocr value [right] [maxPixelsOfEmptyLine]>}: der
+	 * OCR-Vergleich einer Identifikation (Scan-Rechteck + optionaler Verweis
+	 * auf die Vergleichs-Grafik). Defaults wie im alten Creator
+	 * ({@code right=false}, {@code maxPixelsOfEmptyLine=0}).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class OcrDto {
+		@XmlAttribute(name = "value") public String value;
+		@XmlAttribute(name = "right") public boolean right = false;
+		@XmlAttribute(name = "maxPixelsOfEmptyLine") public int maxPixelsOfEmptyLine = 0;
+
+		@XmlElement(name = "Rectangle") public RectangleDto rectangle;
+		@XmlElement(name = "ScreenGraficRef") public GraficRefDto screenGraficRef;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <ScreenSequence>}: eine Gruppe durchblätterbarer
+	 * Screens (Anlagenstatus). <b>Befund:</b> das {@code wrapArround}-Attribut
+	 * liest der alte Parser über {@code Boolean.getBoolean(value)} — das ist
+	 * ein System-Property-Lookup, liefert also immer {@code false}
+	 * (Alt-Parser-Bug; in der Vorlage wird das Attribut nicht genutzt). Hier
+	 * kanonisch als Wrapper gebunden ({@code null} = Attribut fehlt).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreenSequenceDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "previousId") public String previousId;
+		@XmlAttribute(name = "wrapArround") public Boolean wrapArround;
+
+		@XmlElement(name = "Configuration") public ScreenConfigurationDto configuration;
+		@XmlElement(name = "TouchPoint") public TouchPointDto touchPoint;
+		@XmlElement(name = "PreparationRef") public PreparationRefDto preparationRef;
+
+		@XmlElement(name = "ScreenRef")
+		public java.util.List<ScreenRefDto> screenRef;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <UserSelection waitTimeAfterLastDigitRefId>}: die
+	 * alternative Anwahl-Strategie über eine Code-Eingabe (Installateur-Menü)
+	 * — je Ziffer OCR-Rechteck plus Hoch-/Runter-Touch-Punkte.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class UserSelectionDto {
+		@XmlAttribute(name = "waitTimeAfterLastDigitRefId") public String waitTimeAfterLastDigitRefId;
+
+		@XmlElement(name = "Digit")
+		public java.util.List<DigitDto> digit;
+	}
+
+	/** JAXB-Bean für {@code <Digit digit="...">} (Rectangle + Upper/Lower). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class DigitDto {
+		@XmlAttribute(name = "digit") public int digit;
+
+		@XmlElement(name = "Rectangle") public RectangleDto rectangle;
+		@XmlElement(name = "Upper") public TouchPointDto upper;
+		@XmlElement(name = "Lower") public TouchPointDto lower;
 	}
 
 	@XmlElement(name = "Clock")

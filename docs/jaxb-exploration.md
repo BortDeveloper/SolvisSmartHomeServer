@@ -479,3 +479,37 @@ Der zweite Baum ist komplett umgestellt (kleinster Baum; etabliert das
   liefern identische Werte (alle vier Wert-Typen), Schreib-/Wieder-Lese-
   Roundtrip verlustfrei in aktueller Wurzelform, `BackupHandler`-Integration
   (Lesen beim Konstruieren) grün.
+
+## 11. control.xml — Einstieg in den dritten (großen) Baum (🔄 begonnen)
+
+Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
+
+- ✅ **Struktur:** 5103 Zeilen, Wurzel `SolvisDescription` mit **13 Zweigen**
+  (Configurations, Standby, ScreenSaver, Screens, FallBack, ScreenGrafics,
+  ChannelDescriptions, Preparations, Clock, Durations, Miscellaneous,
+  ErrorDetection, ChannelAssignments). `control.xsd` nutzt **denselben
+  Namespace wie base.xsd** → die DTOs liegen im selben `xml.jaxb`-Paket und
+  strukturgleiche Beans werden wiederverwendet (`DurationsDto`,
+  `ChannelAssignmentsDto`).
+- ✅ **DTO-Kern grün** (`ControlDto`, `JaxbControlReader`,
+  `ControlDualParseTest`): `Miscellaneous` (alle 8 Attribute dual-parse-
+  identisch, `Miscellaneous.of` + `Mapper.toMiscellaneous`), `Durations`
+  (alle 8 Vorlagen-Einträge identisch über `Mapper.toDurations` — die
+  base.xml-Maschinerie trägt direkt), `ChannelAssignments` (Bindung
+  charakterisiert; das Domänen-Aggregat `AllChannelAssignments` hängt an der
+  OfConfigs-Maschinerie und folgt später).
+- ⚠️ **Wichtiger Reader-Befund für den späteren Umstieg:** `ControlFileReader`
+  nutzt `XmlStreamReader.ReadData.getHash()` — der alte Parser berechnet beim
+  Lesen einen **Inhalts-Hash**, über den Resource-/Datei-Version verglichen
+  und `mustLearn` entschieden wird (gekoppelt an `AllSolvisGrafics`-
+  Invalidierung). Beim JAXB-Umstieg muss diese Hash-Berechnung nachgebildet
+  werden — oder ein einmaliges Neu-Lernen wird bewusst in Kauf genommen
+  (zu entscheiden). Dazu kommt die Resource-vs-Datei-Merge-Logik
+  (modifiedByUser, renameDuplicates), die erhalten bleiben muss.
+- **Fahrplan wie bei base.xml:** DTO-Baum Zweig für Zweig erweitern (nächste
+  Kandidaten: die flachen/mittleren Zweige ScreenSaver, ErrorDetection,
+  Standby, Configurations-Grundgerüst; zuletzt die tiefen Screens/
+  ChannelDescriptions), je Zweig Dual-Parse; erst danach Reader-Umstieg +
+  Creator-Abbau. Die im base.xml-Abbau verbliebenen geteilten Creators
+  (`Duration`, `ChannelAssignment`, `unit.Configuration`, `Feature`) fallen
+  mit diesem Baum.

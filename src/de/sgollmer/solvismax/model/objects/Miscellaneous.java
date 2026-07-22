@@ -33,6 +33,16 @@ public class Miscellaneous {
 		this.clientTimeoutTime_ms = clientTimeoutTime_ms;
 	}
 
+	/** Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md 3.3, Weg B). */
+	public static Miscellaneous of(final int measurementsBackupTime_ms, final int powerOffDetectedAfterIoErrors,
+			final int powerOffDetectedAfterTimeout_ms, final int unsuccessfullWaitTime_ms,
+			final int connectionHoldTime_ms, final int solvisConnectionTimeout_ms, final int solvisReadTimeout_ms,
+			final int clientTimeoutTime_ms) {
+		return new Miscellaneous(measurementsBackupTime_ms, powerOffDetectedAfterIoErrors,
+				powerOffDetectedAfterTimeout_ms, unsuccessfullWaitTime_ms, connectionHoldTime_ms,
+				solvisConnectionTimeout_ms, solvisReadTimeout_ms, clientTimeoutTime_ms);
+	}
+
 	public int getPowerOffDetectedAfterIoErrors() {
 		return this.powerOffDetectedAfterIoErrors;
 	}

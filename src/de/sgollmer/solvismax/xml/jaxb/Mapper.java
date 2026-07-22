@@ -664,6 +664,18 @@ public final class Mapper {
 	}
 
 	/**
+	 * Baut den Wert-Typ {@link de.sgollmer.solvismax.model.objects.Miscellaneous}
+	 * aus dem control.xml-DTO (MODERNISIERUNG.md 3.3, dritter Baum — Einstieg).
+	 */
+	public static de.sgollmer.solvismax.model.objects.Miscellaneous toMiscellaneous(
+			final ControlDto.MiscellaneousDto dto) {
+		return de.sgollmer.solvismax.model.objects.Miscellaneous.of(dto.measurementsBackupTime_ms,
+				dto.powerOffDetectedAfterIoErrors, dto.powerOffDetectedAfterTimeout_ms, dto.unsuccessfullWaitTime_ms,
+				dto.connectionHoldTime_ms, dto.solvisConnectionTimeout_ms, dto.solvisReadTimeout_ms,
+				dto.clientTimeoutTime_ms);
+	}
+
+	/**
 	 * Bildet die kanonisch gebundene {@code <Ssl>}-Struktur auf das Domänenobjekt
 	 * {@link Ssl} ab (mTLS-Konfiguration). {@code null}, wenn kein Ssl-Element
 	 * vorhanden ist.

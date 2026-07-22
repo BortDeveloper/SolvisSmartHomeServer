@@ -498,6 +498,21 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   base.xml-Maschinerie trägt direkt), `ChannelAssignments` (Bindung
   charakterisiert; das Domänen-Aggregat `AllChannelAssignments` hängt an der
   OfConfigs-Maschinerie und folgt später).
+- ✅ **Weitere Zweige gebunden und grün:** `ScreenSaver` (Rücksetz-Touch-Punkt
+  dual-parse gegen `getResetScreenSaver().getCoordinate()`, Rest gegen
+  Vorlagenwerte charakterisiert; wiederverwendbare Beans `CoordinateDto`,
+  `TouchPointDto`), `Standby` (Kanal-Liste) und `ErrorDetection` (Grenzbereiche
+  `RangeDto`, Rechtecke `RectangleDto`, Fehlerbedingung) — die Domäne legt die
+  meisten dieser Werte nicht über Getter offen, daher Charakterisierung gegen
+  die Vorlage (wie seinerzeit ExceptionMail/Iobroker bei base.xml).
+- **Noch nicht modelliert** (die tiefen Blöcke): `Configurations` (mit
+  ConfigurationTypes/HeaterLoops/Solar/NotValid/Csv), `Screens` (der größte:
+  Screen/ScreenRef/ScreenSequence mit Identifications, TouchPoints,
+  Dependencies), `ChannelDescriptions` (polymorphe ChannelSources: Control mit
+  Strategien, Measurement, Calculation), `Clock`, `Preparations`, `FallBack`,
+  `ScreenGrafics`-Beschreibungen. Für diese lohnt ggf. eine
+  Voll-Graph-Absicherung über `ParseDiff` (wie beim base.xml-Reader-Umstieg),
+  sobald der DTO-Baum sie trägt.
 - ⚠️ **Wichtiger Reader-Befund für den späteren Umstieg:** `ControlFileReader`
   nutzt `XmlStreamReader.ReadData.getHash()` — der alte Parser berechnet beim
   Lesen einen **Inhalts-Hash**, über den Resource-/Datei-Version verglichen

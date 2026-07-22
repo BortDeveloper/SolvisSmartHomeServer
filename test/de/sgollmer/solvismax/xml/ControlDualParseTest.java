@@ -85,6 +85,58 @@ class ControlDualParseTest {
 	}
 
 	/**
+	 * {@code ScreenSaver}: Der Rücksetz-Touch-Punkt ist über die Domäne
+	 * vergleichbar ({@code getResetScreenSaver().getCoordinate()}); die übrigen
+	 * Werte (x-Koordinate der Uhr, maximale Grafikgröße, Duration-Referenzen)
+	 * werden gegen die Vorlagenwerte charakterisiert, weil die Domäne sie nicht
+	 * über Getter offenlegt.
+	 */
+	@Test
+	void screenSaverIdentischBzwCharakterisiert() throws Exception {
+		final SolvisDescription alt = parseAlt();
+		final ControlDto neu = parseNeu();
+
+		assertNotNull(neu.screenSaver);
+		// Dual-Parse, wo die Domäne Getter bietet:
+		assertEquals(alt.getSaver().getResetScreenSaver().getCoordinate().getX(),
+				neu.screenSaver.resetScreenSaver.coordinate.x);
+		assertEquals(alt.getSaver().getResetScreenSaver().getCoordinate().getY(),
+				neu.screenSaver.resetScreenSaver.coordinate.y);
+		// Charakterisierung der Vorlagenwerte:
+		assertEquals(80, neu.screenSaver.xCoordinateWithinTimedate);
+		assertEquals(150, neu.screenSaver.maxGraficSize.x);
+		assertEquals(80, neu.screenSaver.maxGraficSize.y);
+		assertEquals("Standard", neu.screenSaver.resetScreenSaver.pushTimeRefId);
+		assertEquals("WindowChange", neu.screenSaver.resetScreenSaver.releaseTimeRefId);
+	}
+
+	/**
+	 * {@code Standby} und {@code ErrorDetection}: die Domäne legt diese Werte
+	 * nicht über Getter offen — Charakterisierung der Bindung gegen die
+	 * Vorlagenwerte (wie seinerzeit ExceptionMail/Iobroker bei base.xml).
+	 */
+	@Test
+	void standbyUndErrorDetectionGebunden() throws Exception {
+		final ControlDto neu = parseNeu();
+
+		assertNotNull(neu.standby);
+		assertEquals(3, neu.standby.channel.size());
+		assertEquals("C06", neu.standby.channel.get(0).id);
+		assertEquals("Standby", neu.standby.channel.get(0).value);
+
+		assertNotNull(neu.errorDetection);
+		assertEquals(51, neu.errorDetection.leftBorder.lowerLimit);
+		assertEquals(84, neu.errorDetection.leftBorder.higherLimit);
+		assertEquals(938, neu.errorDetection.rightBorder.higherLimit);
+		assertEquals(190, neu.errorDetection.hhMm.topLeft.x);
+		assertEquals(62, neu.errorDetection.hhMm.topLeft.y);
+		assertEquals(238, neu.errorDetection.ddMmYy.bottomRight.x);
+		assertEquals(91, neu.errorDetection.ddMmYy.bottomRight.y);
+		assertEquals("A14", neu.errorDetection.errorCondition.channelId);
+		org.junit.jupiter.api.Assertions.assertTrue(neu.errorDetection.errorCondition.value);
+	}
+
+	/**
 	 * {@code ChannelAssignments}: das Domänen-Aggregat ({@code
 	 * AllChannelAssignments}) hängt an der OfConfigs-Maschinerie; hier wird
 	 * zunächst die <b>Bindung</b> charakterisiert (Id → SmartHome-Name).

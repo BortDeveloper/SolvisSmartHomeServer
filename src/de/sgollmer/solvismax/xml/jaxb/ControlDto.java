@@ -46,4 +46,98 @@ public class ControlDto {
 		@XmlAttribute(name = "solvisReadTimeout_ms") public int solvisReadTimeout_ms;
 		@XmlAttribute(name = "clientTimeoutTime_ms") public int clientTimeoutTime_ms;
 	}
+
+	@XmlElement(name = "ScreenSaver")
+	public ScreenSaverDto screenSaver;
+
+	@XmlElement(name = "Standby")
+	public StandbyDto standby;
+
+	@XmlElement(name = "ErrorDetection")
+	public ErrorDetectionDto errorDetection;
+
+	/**
+	 * JAXB-Bean für {@code <ScreenSaver>}: Erkennungs-/Rücksetz-Parameter des
+	 * Bildschirmschoners. {@code ResetScreenSaver} ist ein Touch-Punkt
+	 * (Koordinate + Referenzen auf {@code <Duration>}-Ids für Druck-/
+	 * Loslass-Dauer).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ScreenSaverDto {
+		@XmlAttribute(name = "xCoordinateWithinTimedate") public int xCoordinateWithinTimedate;
+
+		@XmlElement(name = "MaxGraficSize")
+		public CoordinateDto maxGraficSize;
+
+		@XmlElement(name = "ResetScreenSaver")
+		public TouchPointDto resetScreenSaver;
+	}
+
+	/** JAXB-Bean für Koordinaten-Elemente ({@code X}/{@code Y}-Attribute). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class CoordinateDto {
+		@XmlAttribute(name = "X") public int x;
+		@XmlAttribute(name = "Y") public int y;
+	}
+
+	/** JAXB-Bean für Touch-Punkte ({@code <Coordinate>} + Duration-Referenzen). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class TouchPointDto {
+		@XmlAttribute(name = "pushTimeRefId") public String pushTimeRefId;
+		@XmlAttribute(name = "releaseTimeRefId") public String releaseTimeRefId;
+
+		@XmlElement(name = "Coordinate")
+		public CoordinateDto coordinate;
+	}
+
+	/** JAXB-Bean für {@code <Standby>} — Kanäle, deren Wert Standby anzeigt. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class StandbyDto {
+		@XmlElement(name = "Channel")
+		public java.util.List<StandbyChannelDto> channel;
+	}
+
+	/** JAXB-Bean für {@code <Channel id="..." value="..."/>} unter Standby. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class StandbyChannelDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "value") public String value;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <ErrorDetection>}: Rahmen-Grenzbereiche des
+	 * Fehler-Popups, Uhrzeit-/Datums-Rechtecke und der Fehler-Kanal.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ErrorDetectionDto {
+		@XmlElement(name = "LeftBorder") public RangeDto leftBorder;
+		@XmlElement(name = "RightBorder") public RangeDto rightBorder;
+		@XmlElement(name = "TopBorder") public RangeDto topBorder;
+		@XmlElement(name = "MiddleBorder") public RangeDto middleBorder;
+		@XmlElement(name = "BottomBorder") public RangeDto bottomBorder;
+		@XmlElement(name = "HhMm") public RectangleDto hhMm;
+		@XmlElement(name = "DdMmYy") public RectangleDto ddMmYy;
+		@XmlElement(name = "ErrorCondition") public ErrorConditionDto errorCondition;
+	}
+
+	/** JAXB-Bean für Grenzbereiche ({@code lowerLimit}/{@code higherLimit}). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class RangeDto {
+		@XmlAttribute(name = "lowerLimit") public int lowerLimit;
+		@XmlAttribute(name = "higherLimit") public int higherLimit;
+	}
+
+	/** JAXB-Bean für Rechtecke ({@code TopLeft}/{@code BottomRight}). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class RectangleDto {
+		@XmlElement(name = "TopLeft") public CoordinateDto topLeft;
+		@XmlElement(name = "BottomRight") public CoordinateDto bottomRight;
+	}
+
+	/** JAXB-Bean für {@code <ErrorCondition channelId="..." value="..."/>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ErrorConditionDto {
+		@XmlAttribute(name = "channelId") public String channelId;
+		@XmlAttribute(name = "value") public boolean value;
+	}
 }

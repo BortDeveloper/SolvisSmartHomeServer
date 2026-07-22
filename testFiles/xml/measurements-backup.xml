@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Aktuelle Form der Backup-Datei (Wurzel SolvisBackup, Kinder SystemBackup,
+     ohne Namespace) - exakt so schrieb sie der alte XMLStreamWriter-Pfad. -->
+<SolvisBackup>
+  <SystemBackup id="mySolvis">
+    <Measurement id="A1">
+      <BooleanValue>true</BooleanValue>
+    </Measurement>
+    <Measurement id="A2">
+      <IntegerValue>42</IntegerValue>
+    </Measurement>
+    <Measurement id="A3">
+      <StringValue>abc</StringValue>
+    </Measurement>
+    <Measurement id="A4">
+      <ModeValue>Auto</ModeValue>
+    </Measurement>
+  </SystemBackup>
+</SolvisBackup>

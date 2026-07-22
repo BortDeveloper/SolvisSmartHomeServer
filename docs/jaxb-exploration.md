@@ -445,9 +445,37 @@ ausgenommen (OS-Weiche, Snapshots laufen auch in der Linux-CI) und separat in
 als Konsistenztests weiter (DTO-Sicht ↔ Domänenkonstruktion — prüft die
 `toUnit`/`toBaseData`-Verdrahtung).
 
-**In XMLLibrary-Nutzung verbleiben** (control.xml-/graficData-/Backup-Pfad):
+**In XMLLibrary-Nutzung verbleiben** (control.xml-/graficData-Pfad):
 `unit.Configuration.Creator` (von `NotValidConfigurations` genutzt),
 `Feature`/`Feature.Creator` (SystemGrafics, configuration.Configuration),
 `Duration.Creator`/`AllDurations.Creator` (SolvisDescription),
 `ChannelAssignment.Creator` (AllChannelAssignments) — sie fallen mit der
-Umstellung der übrigen drei XML-Bäume.
+Umstellung der übrigen XML-Bäume.
+
+## 10. measurements.xml auf JAXB umgestellt — Lesen UND Schreiben (✅)
+
+Der zweite Baum ist komplett umgestellt (kleinster Baum; etabliert das
+**Marshalling-Muster** für Dateien, die der Server auch schreibt):
+
+- **DTO im eigenen Paket `xml.jaxb.backup`** — bewusst ohne `@XmlSchema`:
+  Das Eltern-Paket ist auf den base.xsd-Namespace qualifiziert (dessen
+  `package-info` erklärt auch, warum die base.xml-Bindung namespace-korrekt
+  funktioniert); die Backup-Datei wird aber **ohne Namespace** geschrieben.
+- **Namespace-Toleranz des alten Parsers nachgebildet:** Der alte,
+  localPart-basierte Parser akzeptierte Dateien mit und ohne Namespace. Der
+  JAXB-Leser nutzt daher einen **namespace-strippenden SAX-Filter** +
+  `declaredType`-Unmarshalling — damit sind alle Generationen lesbar: aktuelle
+  Wurzel `SolvisBackup` (namespace-los), Legacy `SolvisMeasurements` mit
+  measurements-Namespace. Der frühere Zwei-Pass-Fallback im `BackupHandler`
+  entfällt (beide Kind-Formen sind gebunden).
+- **Schreiben per JAXB-Marshalling** (`JaxbBackupReader.write`), Wurzel- und
+  Elementformen identisch zum alten `XMLStreamWriter`-Pfad; die
+  `writeXml`-Methoden und das `IValue.writeXml`-Interface-Relikt sind entfernt.
+- **Abbildung im backup-Paket** (`BackupMapper`, paketprivat verzahnt):
+  Wert-Semantik wie der alte `ValueCreator` (Roh-String → typisierter
+  `SingleData`, Zeitstempel −1; die `Mode`-Klasse ist aus dem ValueCreator in
+  `Measurement` gewandert). Alle Backup-Creators sind entfernt.
+- ✅ **Tests** (`BackupJaxbTest`, im backup-Paket): Legacy- und aktuelle Form
+  liefern identische Werte (alle vier Wert-Typen), Schreib-/Wieder-Lese-
+  Roundtrip verlustfrei in aktueller Wurzelform, `BackupHandler`-Integration
+  (Lesen beim Konstruieren) grün.

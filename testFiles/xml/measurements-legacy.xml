@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Legacy-Form der Backup-Datei (Wurzel SolvisMeasurements, Kinder
+     SystemMeasurements, mit Namespace) - wie sie aeltere Server-Versionen
+     geschrieben haben. Deckt alle vier Wert-Typen ab. -->
+<tns:SolvisMeasurements xmlns:tns="http://www.example.org/measurements">
+  <tns:SystemMeasurements id="mySolvis">
+    <tns:Measurement id="A1">
+      <tns:BooleanValue>true</tns:BooleanValue>
+    </tns:Measurement>
+    <tns:Measurement id="A2">
+      <tns:IntegerValue>42</tns:IntegerValue>
+    </tns:Measurement>
+    <tns:Measurement id="A3">
+      <tns:StringValue>abc</tns:StringValue>
+    </tns:Measurement>
+    <tns:Measurement id="A4">
+      <tns:ModeValue>Auto</tns:ModeValue>
+    </tns:Measurement>
+  </tns:SystemMeasurements>
+</tns:SolvisMeasurements>

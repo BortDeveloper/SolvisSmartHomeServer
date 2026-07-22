@@ -180,6 +180,88 @@ class ControlDualParseTest {
 	}
 
 	/**
+	 * {@code Configurations}-Erkennungs-Unterzweige {@code HeaterLoops} und
+	 * {@code Solar}: die Domäne hält die Werte in privaten Feldern hinter dem
+	 * {@code IConfiguration}-Interface (nur {@code getConfiguration(Solvis)})
+	 * — Charakterisierung der Bindung gegen die Vorlagenwerte.
+	 */
+	@Test
+	void configurationsErkennungsZweigeGebunden() throws Exception {
+		final ControlDto neu = parseNeu();
+
+		final ControlDto.HeaterLoopsDto loops = neu.configurations.heaterLoops;
+		assertNotNull(loops);
+		assertEquals("Home", loops.screenRef);
+		assertEquals(55, loops.hk1Button.topLeft.x);
+		assertEquals(10, loops.hk1Button.topLeft.y);
+		assertEquals(65, loops.hk1Button.bottomRight.x);
+		assertEquals(23, loops.hk1Button.bottomRight.y);
+		assertEquals(40, loops.hk2Button.topLeft.y);
+		assertEquals(53, loops.hk2Button.bottomRight.y);
+		assertEquals(70, loops.hk3Button.topLeft.y);
+		assertEquals(83, loops.hk3Button.bottomRight.y);
+
+		final ControlDto.SolarDto solar = neu.configurations.solar;
+		assertNotNull(solar);
+		assertEquals("Solar", solar.screenRef);
+		assertEquals(2499, solar.maxTemperatureX10);
+		assertEquals("^([+-]{0,1}\\d+).(\\d)..$", solar.format);
+		assertEquals(170, solar.returnTemperature.topLeft.x);
+		assertEquals(30, solar.returnTemperature.topLeft.y);
+		assertEquals(235, solar.returnTemperature.bottomRight.x);
+		assertEquals(40, solar.returnTemperature.bottomRight.y);
+		assertEquals(45, solar.outgoingTemperature.topLeft.y);
+		assertEquals(55, solar.outgoingTemperature.bottomRight.y);
+	}
+
+	/**
+	 * {@code Clock}: die Uhr-Stell-Maschinerie ({@code ClockMonitor}) hält
+	 * alle Werte in privaten Feldern — Charakterisierung der Bindung gegen
+	 * die Vorlage. Fixiert außerdem, dass das {@code least}-Attribut (nur am
+	 * {@code Year}) mitgebunden wird, obwohl der alte Parser es ignoriert
+	 * (leeres {@code setAttribute} in {@code DatePart.Creator}).
+	 */
+	@Test
+	void clockGebunden() throws Exception {
+		final ControlDto neu = parseNeu();
+
+		final ControlDto.ClockDto clock = neu.clock;
+		assertNotNull(clock);
+		assertEquals("X06", clock.timeChannelId);
+		assertEquals("Zeiteinstellung", clock.screenId);
+		assertEquals("Uhrzeit/Datum", clock.okScreenId);
+
+		// Datums-Teile: Rechteck + Touch + Erkennungs-Grafik (Stichproben).
+		assertEquals(Integer.valueOf(2008), clock.year.least);
+		assertEquals(101, clock.year.rectangle.topLeft.x);
+		assertEquals(76, clock.year.rectangle.bottomRight.y);
+		assertEquals("Standard", clock.year.touch.pushTimeRefId);
+		assertEquals("WindowChange", clock.year.touch.releaseTimeRefId);
+		assertEquals(125, clock.year.touch.coordinate.x);
+		assertEquals("Zeiteinstellung_YYYY", clock.year.screenGrafic.id);
+		assertEquals(96, clock.year.screenGrafic.rectangle.topLeft.x);
+		assertNull(clock.month.least);
+		assertEquals("Zeiteinstellung_MM", clock.month.screenGrafic.id);
+		assertEquals("Zeiteinstellung_DD", clock.day.screenGrafic.id);
+		assertEquals("Zeiteinstellung_hh", clock.hour.screenGrafic.id);
+		assertEquals("Zeiteinstellung_min", clock.minute.screenGrafic.id);
+		assertEquals(101, clock.minute.rectangle.topLeft.x);
+		assertEquals(51, clock.minute.rectangle.bottomRight.y);
+
+		// Stell-Tasten: die drei Touch-Punkte samt Duration-Referenzen.
+		assertEquals(185, clock.upper.coordinate.x);
+		assertEquals(40, clock.upper.coordinate.y);
+		assertEquals("WindowChange", clock.upper.releaseTimeRefId);
+		assertEquals(100, clock.lower.coordinate.y);
+		assertEquals("ValueChange", clock.lower.releaseTimeRefId);
+		assertEquals(70, clock.ok.coordinate.y);
+		assertEquals("WindowChange", clock.ok.releaseTimeRefId);
+
+		assertEquals("A12", clock.disableClockSetting.burnerId);
+		assertEquals("A02", clock.disableClockSetting.hotWaterPumpId);
+	}
+
+	/**
 	 * {@code FallBack}: Die Tastenfolge ist eine <b>geordnete Mischsequenz</b>
 	 * aus {@code Back}/{@code ScreenRef} — der Test fixiert, dass die
 	 * polymorphe {@code @XmlElements}-Bindung die Reihenfolge der Vorlage exakt

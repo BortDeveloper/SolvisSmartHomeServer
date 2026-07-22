@@ -147,9 +147,10 @@ public class ControlDto {
 	/**
 	 * JAXB-Bean für {@code <Configurations>}: die Zuordnung von Anlagen-Typ,
 	 * Hauptheizung, Heizkreisen, Solar-Typ und Erweiterungen zu Bits der
-	 * <b>Konfigurationsmaske</b> (hex), plus die als ungültig definierten
-	 * Kombinationen. {@code <Solar>}/{@code <Csv>}-Unterzweige folgen später
-	 * (siehe docs/jaxb-exploration.md).
+	 * <b>Konfigurationsmaske</b> (hex), die als ungültig definierten
+	 * Kombinationen sowie die beiden <b>Erkennungs-Unterzweige</b>
+	 * {@code <HeaterLoops>} und {@code <Solar>} (OCR-Bereiche, über die der
+	 * Server beim Lernen die tatsächliche Anlagen-Konfiguration abliest).
 	 */
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class ConfigurationsDto {
@@ -159,6 +160,40 @@ public class ControlDto {
 		@XmlElement(name = "SolarTypes") public TypeListDto solarTypes;
 		@XmlElement(name = "Extensions") public TypeListDto extensions;
 		@XmlElement(name = "NotValid") public NotValidDto notValid;
+		@XmlElement(name = "HeaterLoops") public HeaterLoopsDto heaterLoops;
+		@XmlElement(name = "Solar") public SolarDto solar;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <HeaterLoops screenRef="...">}: die drei
+	 * Heizkreis-Buttons auf dem Home-Screen, an deren Beschriftung (Ziffern
+	 * 1–3 per OCR) die Anzahl der Heizkreise erkannt wird.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class HeaterLoopsDto {
+		@XmlAttribute(name = "screenRef") public String screenRef;
+
+		@XmlElement(name = "HK1Button") public RectangleDto hk1Button;
+		@XmlElement(name = "HK2Button") public RectangleDto hk2Button;
+		@XmlElement(name = "HK3Button") public RectangleDto hk3Button;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Solar screenRef maxTemperatureX10 format>}: die
+	 * beiden OCR-Temperaturbereiche des Solar-Screens, über die die
+	 * Solar-Konfiguration erkannt wird. {@code format} bleibt kanonisch der
+	 * Regex-String der Vorlage (die Domäne kapselt ihn in
+	 * {@code Helper.Format}); {@code maxTemperatureX10} ist die
+	 * Plausibilitätsgrenze in Zehntelgrad.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class SolarDto {
+		@XmlAttribute(name = "screenRef") public String screenRef;
+		@XmlAttribute(name = "maxTemperatureX10") public int maxTemperatureX10;
+		@XmlAttribute(name = "format") public String format;
+
+		@XmlElement(name = "ReturnTemperature") public RectangleDto returnTemperature;
+		@XmlElement(name = "OutgoingTemperature") public RectangleDto outgoingTemperature;
 	}
 
 	/** JAXB-Bean für die Typ-Gruppen ({@code <Type id configuration [dontCare]/>}-Listen). */
@@ -293,6 +328,62 @@ public class ControlDto {
 	public static class ScreenGraficsDto {
 		@XmlElement(name = "ScreenGrafic")
 		public java.util.List<ScreenGraficDescriptionDto> screenGrafic;
+	}
+
+	@XmlElement(name = "Clock")
+	public ClockDto clock;
+
+	/**
+	 * JAXB-Bean für {@code <Clock>}: die Uhr-Stell-Maschinerie
+	 * ({@code ClockMonitor}) — der Zeit-Kanal, der Einstell- und der
+	 * Bestätigungs-Screen, die fünf Datums-Teile (Jahr…Minute, jeweils
+	 * OCR-Bereich + Anwahl-Touch + Erkennungs-Grafik), die drei Stell-Tasten
+	 * und die Sperrbedingungen ({@code DisableClockSetting}).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ClockDto {
+		@XmlAttribute(name = "timeChannelId") public String timeChannelId;
+		@XmlAttribute(name = "screenId") public String screenId;
+		@XmlAttribute(name = "okScreenId") public String okScreenId;
+
+		@XmlElement(name = "Year") public DatePartDto year;
+		@XmlElement(name = "Month") public DatePartDto month;
+		@XmlElement(name = "Day") public DatePartDto day;
+		@XmlElement(name = "Hour") public DatePartDto hour;
+		@XmlElement(name = "Minute") public DatePartDto minute;
+
+		@XmlElement(name = "Upper") public TouchPointDto upper;
+		@XmlElement(name = "Lower") public TouchPointDto lower;
+		@XmlElement(name = "Ok") public TouchPointDto ok;
+
+		@XmlElement(name = "DisableClockSetting")
+		public DisableClockSettingDto disableClockSetting;
+	}
+
+	/**
+	 * JAXB-Bean für die Datums-Teile ({@code Year}/{@code Month}/{@code Day}/
+	 * {@code Hour}/{@code Minute}): OCR-Rechteck, Anwahl-Touch-Punkt
+	 * ({@code <Touch>} — gleiche Struktur wie {@code TouchPointDto}) und die
+	 * Grafik, an der die Anwahl erkannt wird. Das {@code least}-Attribut der
+	 * Vorlage (nur am {@code Year}) wird vom <b>alten Parser ignoriert</b>
+	 * (leeres {@code setAttribute} in {@code DatePart.Creator}) — hier wird es
+	 * kanonisch mitgebunden ({@code null} = Attribut fehlt), Semantik hat es
+	 * weiterhin keine.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class DatePartDto {
+		@XmlAttribute(name = "least") public Integer least;
+
+		@XmlElement(name = "Rectangle") public RectangleDto rectangle;
+		@XmlElement(name = "Touch") public TouchPointDto touch;
+		@XmlElement(name = "ScreenGrafic") public ScreenGraficDescriptionDto screenGrafic;
+	}
+
+	/** JAXB-Bean für {@code <DisableClockSetting burnerId hotWaterPumpId/>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class DisableClockSettingDto {
+		@XmlAttribute(name = "burnerId") public String burnerId;
+		@XmlAttribute(name = "hotWaterPumpId") public String hotWaterPumpId;
 	}
 
 	/**

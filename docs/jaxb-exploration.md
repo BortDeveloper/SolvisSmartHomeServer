@@ -518,14 +518,24 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   Masken werden kanonisch als Hex-String gebunden, die Ableitung
   (`Long.decode`) liefert `TypeDto.configurationValue`; Vergleich gegen
   `Configurations.getConfiguration(id)` der Domäne über alle Vorlagen-Ids.
-  `dontCare`-Flag und `NotValid`-Kombinationen charakterisiert; die
-  `Solar`-/`Csv`-Unterzweige folgen später.
-- **Noch nicht modelliert** (die tiefen Blöcke): `Configurations`-Rest (mit
-  ConfigurationTypes/HeaterLoops/Solar/NotValid/Csv), `Screens` (der größte:
+  `dontCare`-Flag und `NotValid`-Kombinationen charakterisiert.
+- ✅ **Configurations-Erkennungs-Unterzweige + Clock gebunden und grün:**
+  `HeaterLoops` (drei HK-Button-Rechtecke des Home-Screens) und `Solar`
+  (zwei OCR-Temperaturbereiche; `format` bleibt kanonisch der Regex-String,
+  `maxTemperatureX10` die Zehntelgrad-Grenze) — damit ist `Configurations`
+  **komplett**. `Clock` (die ClockMonitor-Maschinerie): drei Id-Attribute,
+  fünf Datums-Teile (`DatePartDto`: Rectangle + Touch + Erkennungs-Grafik),
+  Stell-Tasten Upper/Lower/Ok als `TouchPointDto`, `DisableClockSetting`.
+  Die Domäne hält alle diese Werte in privaten Feldern → Charakterisierung.
+  **Befund:** das `least`-Attribut der Vorlage (nur am `Year`) wird vom
+  alten Parser **ignoriert** (leeres `setAttribute` in `DatePart.Creator`);
+  das DTO bindet es kanonisch mit, Semantik hat es weiterhin keine.
+  (Frühere Erwähnungen eines `Csv`-Unterzweigs waren ein Irrtum — die
+  Erkennungs-Unterzweige heißen HeaterLoops und Solar.)
+- **Noch nicht modelliert** (die zwei großen Blöcke): `Screens` (der größte:
   Screen/ScreenRef/ScreenSequence mit Identifications, TouchPoints,
   Dependencies), `ChannelDescriptions` (polymorphe ChannelSources: Control mit
-  Strategien, Measurement, Calculation), `Clock`, `Preparations`, `FallBack`,
-  `ScreenGrafics`-Beschreibungen. Für diese lohnt ggf. eine
+  Strategien, Measurement, Calculation). Für diese lohnt ggf. eine
   Voll-Graph-Absicherung über `ParseDiff` (wie beim base.xml-Reader-Umstieg),
   sobald der DTO-Baum sie trägt.
 - ⚠️ **Wichtiger Reader-Befund für den späteren Umstieg:** `ControlFileReader`

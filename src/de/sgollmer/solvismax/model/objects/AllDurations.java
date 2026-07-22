@@ -23,6 +23,19 @@ public class AllDurations {
 	private AllDurations() {
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). Doppelte Ids werden — wie beim alten Parser — geloggt, der
+	 * letzte Eintrag gewinnt.
+	 */
+	public static AllDurations of(final Iterable<Duration> durations) {
+		final AllDurations all = new AllDurations();
+		for (final Duration duration : durations) {
+			all.add(duration);
+		}
+		return all;
+	}
+
 	private void add(final Duration duration) {
 		Duration former = this.durations.put(duration.getId(), duration);
 		if (former != null) {

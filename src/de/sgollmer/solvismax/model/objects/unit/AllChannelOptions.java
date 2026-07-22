@@ -1,32 +1,34 @@
 package de.sgollmer.solvismax.model.objects.unit;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 
-import javax.xml.namespace.QName;
-
 import de.sgollmer.solvismax.error.TypeException;
-import de.sgollmer.solvismax.log.Diagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.data.DoubleValue;
 import de.sgollmer.solvismax.model.objects.data.SingleData;
 import de.sgollmer.solvismax.model.objects.data.SolvisData;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.XmlException;
 
 public class AllChannelOptions {
 
 	private static final Logger logger = LoggerFactory.getLogger(AllChannelOptions.class);
-	private static final String XML_CHANNEL_VALUE = "Channel";
 
 	private final Collection<ChannelOption> values;
 
 	private AllChannelOptions(final Collection<ChannelOption> values) {
 		this.values = values;
+	}
+
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). {@code AllChannelOptions}/{@code ChannelOption} bleiben als
+	 * Wert-Typen erhalten (die Options-Semantik — {@code modify},
+	 * Fix-Werte, PowerOn-Delay — lebt nur hier); der Mapper baut die
+	 * Options-Liste aus dem DTO.
+	 */
+	public static AllChannelOptions of(final Collection<ChannelOption> values) {
+		return new AllChannelOptions(values);
 	}
 
 	public void initialize(Solvis solvis) {
@@ -112,56 +114,6 @@ public class AllChannelOptions {
 			return data.getDescription().interpretSetData(doubleValue, true);
 		}
 
-		private static class Creator extends CreatorByXML<ChannelOption> {
-
-			private String id;
-			private Double fix = null;
-			private Double factor = null;
-			private Double offset = null;
-			private int powerOnDelay = -1;
-
-			public Creator(final String id, final BaseCreator<?> creator) {
-				super(id, creator);
-			}
-
-			@Override
-			public void setAttribute(final QName name, final String value) throws XmlException {
-				switch (name.getLocalPart()) {
-					case "id":
-						this.id = value;
-						break;
-					case "fix":
-						this.fix = Double.parseDouble(value);
-						break;
-					case "factor":
-						this.factor = Double.parseDouble(value);
-						break;
-					case "offset":
-						this.offset = Double.parseDouble(value);
-						break;
-					case "powerOnDelay_s":
-						this.powerOnDelay = Integer.parseInt(value) * 1000;
-						break;
-				}
-
-			}
-
-			@Override
-			public ChannelOption create() throws XmlException, IOException {
-				return new ChannelOption(this.id, this.fix, this.factor, this.offset, this.factor, this.powerOnDelay);
-			}
-
-			@Override
-			public CreatorByXML<?> getCreator(final QName name) {
-				return null;
-			}
-
-			@Override
-			public void created(final CreatorByXML<?> creator, final Object created) throws XmlException {
-			}
-
-		}
-
 		public SingleData<?> getFixValue(final SolvisData data) throws TypeException {
 			return this.getModifyValue(this.fix, data);
 		}
@@ -172,41 +124,4 @@ public class AllChannelOptions {
 
 	}
 
-	public static class Creator extends CreatorByXML<AllChannelOptions> {
-
-		private final Collection<ChannelOption> values = new ArrayList<>();
-
-		public Creator(final String id, final BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(QName name, String value) throws XmlException {
-		}
-
-		@Override
-		public AllChannelOptions create() throws XmlException, IOException {
-			return new AllChannelOptions(this.values);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(QName name) {
-			String id = name.getLocalPart();
-			switch (id) {
-				case XML_CHANNEL_VALUE:
-					return new ChannelOption.Creator(id, this.getBaseCreator());
-			}
-			return null;
-		}
-
-		@Override
-		public void created(CreatorByXML<?> creator, Object created) throws XmlException {
-			switch (creator.getId()) {
-				case XML_CHANNEL_VALUE:
-					this.values.add((ChannelOption) created);
-					break;
-			}
-		}
-
-	}
 }

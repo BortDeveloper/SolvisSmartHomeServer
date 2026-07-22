@@ -129,7 +129,7 @@ public class ScreenSaver {
 
 		private Exec(Solvis solvis) {
 			if (solvis != null) {
-				this.frameThickness = solvis.getUnit().getIgnoredFrameThicknesScreenSaver();
+				this.frameThickness = solvis.getUnitConfig().getIgnoredFrameThicknesScreenSaver();
 			} else {
 				this.frameThickness = Constants.SCREEN_IGNORED_FRAME_SIZE;
 			}

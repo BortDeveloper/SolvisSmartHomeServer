@@ -443,8 +443,8 @@ public class StrategyReheat extends AbstractStrategy {
 
 		@Override
 		public void run() {
-			int waitTime = this.data == null ? this.solvis.getUnit().getMeasurementsIntervalFast_ms()
-					: this.solvis.getUnit().getReheatingNotRequiredActiveTime_ms();
+			int waitTime = this.data == null ? this.solvis.getUnitConfig().getMeasurementsIntervalFast_ms()
+					: this.solvis.getUnitConfig().getReheatingNotRequiredActiveTime_ms();
 
 			try {
 				AbortHelper.getInstance().sleepAndLock(waitTime, this);

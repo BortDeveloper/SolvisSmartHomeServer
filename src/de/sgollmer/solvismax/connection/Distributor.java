@@ -20,7 +20,7 @@ import de.sgollmer.solvismax.model.objects.Observer;
 import de.sgollmer.solvismax.model.objects.Observer.IObserver;
 import de.sgollmer.solvismax.model.objects.Observer.Observable;
 import de.sgollmer.solvismax.model.objects.data.SolvisData.SmartHomeData;
-import de.sgollmer.solvismax.model.objects.unit.Unit;
+import de.sgollmer.solvismax.model.objects.unit.UnitConfig;
 
 public final class Distributor extends Observable<ISendData> {
 
@@ -41,7 +41,7 @@ public final class Distributor extends Observable<ISendData> {
 
 	public Distributor(Solvis solvis) {
 		this.solvis = solvis;
-		Unit unit = solvis.getUnit();
+		UnitConfig unit = solvis.getUnitConfig();
 		this.bufferedIntervall_ms = unit.getBufferedInterval_ms();
 		if (unit.isBuffered()) {
 			this.periodicBurstThread = new PeriodicBurstThread();

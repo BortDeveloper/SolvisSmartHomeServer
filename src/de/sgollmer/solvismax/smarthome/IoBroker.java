@@ -8,23 +8,19 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
-import javax.xml.namespace.QName;
-
-import de.sgollmer.solvismax.BaseData;
 import de.sgollmer.solvismax.Constants;
+import de.sgollmer.solvismax.connection.mqtt.MqttTopicConfig;
 import de.sgollmer.solvismax.connection.mqtt.TopicType;
 import de.sgollmer.solvismax.connection.mqtt.TopicType.TopicData;
 import de.sgollmer.solvismax.helper.FileHelper;
 import de.sgollmer.solvismax.helper.Helper;
 import de.sgollmer.solvismax.model.Instances;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.XmlException;
 
 public class IoBroker {
 	private final String mqttInterface;
 	private final String javascriptInterface;
-	private BaseData baseData;
+	// Schmale Config-Sicht (Weg B): IoBroker liest nur den Topic-Praefix.
+	private MqttTopicConfig topicConfig;
 	private boolean first = true;
 
 	private IoBroker(final String mqttInterface, final String javascriptInterface) {
@@ -35,6 +31,23 @@ public class IoBroker {
 	public IoBroker() {
 		this.mqttInterface = Constants.IoBroker.DEFAULT_MQTT_INTERFACE;
 		this.javascriptInterface = Constants.IoBroker.DEFAULT_JAVASCRIPT_INTERFACE;
+	}
+
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). Der Element-Default (fehlendes {@code <Iobroker>} →
+	 * Default-Interfaces) liegt in {@code Mapper.toIoBroker}.
+	 */
+	public static IoBroker of(final String mqttInterface, final String javascriptInterface) {
+		return new IoBroker(mqttInterface, javascriptInterface);
+	}
+
+	public String getMqttInterface() {
+		return this.mqttInterface;
+	}
+
+	public String getJavascriptInterface() {
+		return this.javascriptInterface;
 	}
 
 	public void writeObjectList(final Instances instances) throws IOException {
@@ -83,7 +96,7 @@ public class IoBroker {
 			first = false;
 		}
 
-		for (String p : this.baseData.getMqtt().getTopicPrefix().split("/")) {
+		for (String p : this.topicConfig.getTopicPrefix().split("/")) {
 			if (!first) {
 				builder.append(separator);
 			} else {
@@ -302,47 +315,8 @@ public class IoBroker {
 
 	}
 
-	public static class Creator extends CreatorByXML<IoBroker> {
-
-		private String mqttInterface = Constants.IoBroker.DEFAULT_MQTT_INTERFACE;
-		private String javascriptInterface = Constants.IoBroker.DEFAULT_JAVASCRIPT_INTERFACE;
-
-		public Creator(final String id, final BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) throws XmlException {
-			switch (name.getLocalPart()) {
-				case "mqttInterface":
-					this.mqttInterface = value;
-					break;
-				case "javascriptInterface":
-					this.javascriptInterface = value;
-					break;
-			}
-
-		}
-
-		@Override
-		public IoBroker create() throws XmlException, IOException {
-			return new IoBroker(this.mqttInterface, this.javascriptInterface);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			return null;
-		}
-
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) throws XmlException {
-
-		}
-
-	}
-
-	public void setBaseData(final BaseData baseData) {
-		this.baseData = baseData;
+	public void setTopicConfig(final MqttTopicConfig topicConfig) {
+		this.topicConfig = topicConfig;
 
 	}
 }

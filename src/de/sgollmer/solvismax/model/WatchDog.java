@@ -67,7 +67,7 @@ public class WatchDog {
 		this.solvis = solvis;
 		this.humanAccess = solvis.getHumanAccess();
 		this.saver = saver.createExecutable(solvis);
-		this.watchDogTime = this.solvis.getUnit().getWatchDogTime_ms();
+		this.watchDogTime = this.solvis.getUnitConfig().getWatchDogTime_ms();
 		this.solvis.registerAbortObserver(new IObserver<Boolean>() {
 
 			@Override

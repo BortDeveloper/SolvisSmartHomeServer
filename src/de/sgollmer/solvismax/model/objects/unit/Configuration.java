@@ -32,6 +32,17 @@ public class Configuration {
 		this.extensions = extensions;
 	}
 
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). Auch dies ist ein reiner Wert-Typ: die
+	 * {@code SolvisDescription} wird erst beim Maskenaufbau (Laufzeit) gebraucht,
+	 * nicht zur Konstruktion.
+	 */
+	public static Configuration of(final String solvisType, final String mainHeating, final Integer heaterCircuits,
+			final String solarType, final Collection<String> extensions) {
+		return new Configuration(solvisType, mainHeating, heaterCircuits, solarType, extensions);
+	}
+
 	public long getConfigurationMask(final SolvisDescription description) {
 		long mask = 0L;
 		Configurations configurations = description.getConfigurations();
@@ -55,6 +66,11 @@ public class Configuration {
 		return mask;
 	}
 
+	/**
+	 * Verbleibt trotz base.xml-Reader-Umstieg: wird noch vom
+	 * <b>control.xml</b>-Pfad genutzt ({@code NotValidConfigurations},
+	 * CsvConfigurations/NotPossible) und fällt erst mit dessen JAXB-Umstellung.
+	 */
 	public static class Creator extends CreatorByXML<Configuration> {
 
 		private String solvisType = null;

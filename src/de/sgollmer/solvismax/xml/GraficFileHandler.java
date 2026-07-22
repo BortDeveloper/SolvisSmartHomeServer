@@ -1,14 +1,9 @@
 package de.sgollmer.solvismax.xml;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.error.FileException;
@@ -19,9 +14,16 @@ import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.log.Diagnostics.Level;
 import de.sgollmer.solvismax.model.Solvis;
 import de.sgollmer.solvismax.model.objects.AllSolvisGrafics;
+import de.sgollmer.solvismax.model.objects.GraficsMapper;
+import de.sgollmer.solvismax.xml.jaxb.grafics.JaxbGraficsReader;
 import de.sgollmer.xmllibrary.XmlException;
-import de.sgollmer.xmllibrary.XmlStreamReader;
 
+/**
+ * Liest und schreibt die Grafik-Lerndaten {@code graficData.xml} — seit der
+ * JAXB-Umstellung (MODERNISIERUNG.md 3.3) über {@code JaxbGraficsReader} +
+ * {@code GraficsMapper}. Fehlerverhalten unverändert: eine fehlende oder
+ * unlesbare Datei führt zu leeren Lerndaten (Neu-Lernen), nie zum Abbruch.
+ */
 public class GraficFileHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(Solvis.class);
@@ -76,19 +78,15 @@ public class GraficFileHandler {
 			return grafics;
 		}
 
-		InputStream source = new FileInputStream(xml);
-
-		XmlStreamReader<AllSolvisGrafics> reader = new XmlStreamReader<>();
-
-		String rootId = "SolvisGrafics";
-
 		AllSolvisGrafics result;
 
 		try {
 
-			result = reader.read(source, rootId, new AllSolvisGrafics.Creator(rootId), xml.getName()).getObject();
+			result = GraficsMapper.toDomain(JaxbGraficsReader.read(xml));
 
-		} catch (IOException | XmlException | XMLStreamException e1) {
+		} catch (IOException | jakarta.xml.bind.JAXBException e1) {
+			// Wie zuvor: defekte Lerndaten sind kein Abbruchgrund - es wird
+			// einfach neu gelernt.
 			logger.error("Warning: Read error on grafics.xml file. A new one will be created.");
 			result = new AllSolvisGrafics();
 		} catch (Throwable e2) {
@@ -107,14 +105,11 @@ public class GraficFileHandler {
 
 		File output = new File(this.parent, NAME_XML_GRAFICSFILE);
 
-		XMLOutputFactory factory = XMLOutputFactory.newInstance();
-		XMLStreamWriter writer = factory.createXMLStreamWriter(new FileOutputStream(output), "UTF-8");
-		writer.writeStartDocument();
-		writer.writeStartElement("SolvisGrafics");
-		grafics.writeXml(writer);
-		writer.writeEndDocument();
-		writer.flush();
-		writer.close();
+		try {
+			JaxbGraficsReader.write(GraficsMapper.toDto(grafics), output);
+		} catch (jakarta.xml.bind.JAXBException e) {
+			throw new IOException("JAXB writing of " + output.getName() + " failed: " + e.getMessage(), e);
+		}
 	}
 
 }

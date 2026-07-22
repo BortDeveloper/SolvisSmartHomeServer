@@ -1,11 +1,16 @@
 package de.sgollmer.solvismax.xml;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.xml.XMLConstants;
 import javax.xml.stream.XMLStreamException;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+
+import org.xml.sax.SAXException;
 
 import de.sgollmer.solvismax.BaseData;
 import de.sgollmer.solvismax.Constants;
@@ -17,8 +22,11 @@ import de.sgollmer.solvismax.log.Diagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.log.Diagnostics.Level;
+import de.sgollmer.solvismax.xml.jaxb.JaxbBaseReader;
+import de.sgollmer.solvismax.xml.jaxb.Mapper;
 import de.sgollmer.xmllibrary.XmlException;
-import de.sgollmer.xmllibrary.XmlStreamReader;
+
+import jakarta.xml.bind.JAXBException;
 
 public class BaseControlFileReader {
 
@@ -26,7 +34,6 @@ public class BaseControlFileReader {
 
 	private static final String NAME_XML_BASEFILE = "base.xml";
 	private static final String NAME_XSD_BASEFILE = "base.xsd";
-	private static final String XML_ROOT_ID = "BaseData";
 
 	private final File parent;
 	private final File baseXml;
@@ -40,14 +47,16 @@ public class BaseControlFileReader {
 		}
 	}
 
+	/**
+	 * Liest die {@code base.xml} — seit dem <b>Reader-Umstieg</b>
+	 * (MODERNISIERUNG.md 3.3, Weg B) über den Standard-Stack: XSD-Validierung
+	 * per {@code javax.xml.validation}, Parsen per JAXB
+	 * ({@link JaxbBaseReader}), Konstruktion des Domänengraphen per
+	 * {@link Mapper#toBaseData}. Fehlerverhalten wie zuvor: fehlende XSD oder
+	 * invalide Datei → FATAL-Diagnose und {@code null}.
+	 */
 	public BaseData read()
 			throws IOException, XMLStreamException, AssignmentException, ReferenceException, XmlException {
-
-		FileInputStream source = new FileInputStream(this.baseXml);
-
-		XmlStreamReader<BaseData> reader = new XmlStreamReader<>();
-
-		String rootId = XML_ROOT_ID;
 
 		String resourcePath = Constants.Files.RESOURCE + '/' + NAME_XSD_BASEFILE;
 		InputStream xsd = Main.class.getResourceAsStream(resourcePath);
@@ -55,19 +64,25 @@ public class BaseControlFileReader {
 		if (xsd == null) {
 			Diagnostics.record(logger, Level.FATAL, "Getting of " + NAME_XSD_BASEFILE + " fails", null,
 					Constants.ExitCodes.BASE_XML_ERROR);
-			source.close();
 			return null;
 		}
 
-		boolean verified = reader.validate(source, xsd);
-		if (!verified) {
+		try (InputStream xsdStream = xsd) {
+			SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+			Schema schema = schemaFactory.newSchema(new StreamSource(xsdStream));
+			schema.newValidator().validate(new StreamSource(this.baseXml));
+		} catch (SAXException e) {
+			logger.error("XSD validation of " + this.baseXml.getName() + " failed: " + e.getMessage());
 			Diagnostics.record(logger, Level.FATAL, "Reading of " + NAME_XML_BASEFILE + " not successfull", null,
 					Constants.ExitCodes.BASE_XML_ERROR);
 			return null;
 		}
 
-		source = new FileInputStream(this.baseXml);
-		return reader.read(source, rootId, new BaseData.Creator(rootId), this.baseXml.getName()).getObject();
+		try {
+			return Mapper.toBaseData(JaxbBaseReader.read(this.baseXml.getPath()));
+		} catch (JAXBException e) {
+			throw new XmlException("JAXB parsing of " + this.baseXml.getName() + " failed: " + e.getMessage());
+		}
 	}
 
 	public static void main(final String[] args)

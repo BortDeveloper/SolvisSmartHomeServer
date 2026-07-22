@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.WatchDog.Event;
 import de.sgollmer.solvismax.model.objects.Observer;
 import de.sgollmer.solvismax.model.objects.screen.SolvisScreen;
-import de.sgollmer.solvismax.model.objects.unit.Unit;
+import de.sgollmer.solvismax.model.objects.unit.UnitConfig;
 
 public class HumanAccess extends Observer.Observable<HumanAccess.Status> {
 
@@ -64,11 +64,11 @@ public class HumanAccess extends Observer.Observable<HumanAccess.Status> {
 
 	public HumanAccess(final Solvis solvis) {
 		this.solvis = solvis;
-		Unit unit = solvis.getUnit();
-		this.endOfUserByScreenSaver = unit.getFeatures().isEndOfUserByScreenSaver();
+		this.endOfUserByScreenSaver = solvis.getUnit().getFeatures().isEndOfUserByScreenSaver();
+		UnitConfig unitConfig = solvis.getUnitConfig();
 		this.releaseBlockingAfterUserChange_ms = BaseData.DEBUG ? Debug.USER_ACCESS_TIME
-				: unit.getReleaseBlockingAfterUserAccess_ms();
-		this.releaseBlockingAfterServiceAccess_ms = unit.getReleaseBlockingAfterServiceAccess_ms();
+				: unitConfig.getReleaseBlockingAfterUserAccess_ms();
+		this.releaseBlockingAfterServiceAccess_ms = unitConfig.getReleaseBlockingAfterServiceAccess_ms();
 		this.detectServiceAccess = solvis.getFeatures().isDetectServiceAccess();
 
 	}

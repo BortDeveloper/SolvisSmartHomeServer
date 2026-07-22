@@ -19,11 +19,15 @@ public class MqttThread extends Helper.Runnable {
 	 * 
 	 */
 	private final Mqtt mqtt;
+	// Config-Lesen laeuft ueber die schmale Sicht (Weg B); an this.mqtt bleiben
+	// nur die Laufzeit-Zugriffe (Client, Callback, Last-Will).
+	private final MqttConnectionConfig config;
 	private boolean abort = false;
 
 	MqttThread(final Mqtt mqtt) {
 		super("Mqtt");
 		this.mqtt = mqtt;
+		this.config = mqtt;
 	}
 
 	@Override
@@ -33,15 +37,15 @@ public class MqttThread extends Helper.Runnable {
 
 			if (!this.mqtt.client.isConnected()) {
 				MqttConnectOptions options = new MqttConnectOptions();
-				if (this.mqtt.userName != null && this.mqtt.passwordCrypt != null) {
-					options.setUserName(this.mqtt.userName);
-					options.setPassword(this.mqtt.passwordCrypt.cP());
+				if (this.config.getUserName() != null && this.config.getPasswordCrypt() != null) {
+					options.setUserName(this.config.getUserName());
+					options.setPassword(this.config.getPasswordCrypt().cP());
 				}
 				options.setAutomaticReconnect(true);
 				options.setCleanSession(false);
-				if (this.mqtt.ssl != null && this.mqtt.ssl.isEnabled()) {
+				if (this.config.getSsl() != null && this.config.getSsl().isEnabled()) {
 					try {
-						SSLSocketFactory sslSocketFactory = this.mqtt.ssl.getSocketFactory();
+						SSLSocketFactory sslSocketFactory = this.config.getSsl().getSocketFactory();
 						options.setSocketFactory(sslSocketFactory);
 					} catch (GeneralSecurityException | IOException e) {
 						// Bei aktiviertem TLS niemals unverschluesselt weiterverbinden.
@@ -53,7 +57,7 @@ public class MqttThread extends Helper.Runnable {
 				}
 				MqttData lastWill = this.mqtt.getLastWill();
 				String topic = lastWill.getTopic(this.mqtt);
-				options.setWill(topic, lastWill.getPayLoad(), lastWill.getQoS(this.mqtt.publishQoS),
+				options.setWill(topic, lastWill.getPayLoad(), lastWill.getQoS(this.config.getPublishQoS()),
 						lastWill.isRetained());
 				options.setMaxInflight(Constants.Mqtt.MAX_INFLIGHT);
 				options.setAutomaticReconnect(true);
@@ -62,8 +66,8 @@ public class MqttThread extends Helper.Runnable {
 				String[] topicFilters = new String[length];
 				int[] qoSs = new int[length];
 				for (int i = 0; i < length; ++i) {
-					topicFilters[i] = this.mqtt.topicPrefix + Constants.Mqtt.CMND_SUFFIXES[i];
-					qoSs[i] = this.mqtt.subscribeQoS;
+					topicFilters[i] = this.config.getTopicPrefix() + Constants.Mqtt.CMND_SUFFIXES[i];
+					qoSs[i] = this.config.getSubscribeQoS();
 				}
 
 				boolean connected = false;

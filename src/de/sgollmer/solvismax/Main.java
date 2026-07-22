@@ -217,7 +217,7 @@ public class Main {
 							throw new Error(
 									"Sending mail not possible in case of mssing or invalid data in <base.xml>");
 						}
-						System.exit(baseData.getExceptionMail().sendTestMail(baseData));
+						System.exit(baseData.getExceptionMail().sendTestMail(baseData.getUnits()));
 						break;
 					case "documentation":
 						executionMode = ExecutionMode.DOCUMENTATION_OF_UNIT;
@@ -393,14 +393,14 @@ public class Main {
 		return argCollection;
 	}
 
-	private void serverRestartAndExit(final BaseData baseData, final String agentlibOption) {
+	private void serverRestartAndExit(final ExecutionConfig executionConfig, final String agentlibOption) {
 		try {
 			long unsuccessfullTime = System.currentTimeMillis() + Constants.MAX_WAIT_TIME_TERMINATING_OTHER_SERVER;
 			ServerSocket serverSocket = null;
 			logger.info("Wait for server termination");
 			while (System.currentTimeMillis() < unsuccessfullTime && serverSocket == null) {
 				try {
-					serverSocket = new ServerSocket(baseData.getPort());
+					serverSocket = new ServerSocket(executionConfig.getPort());
 					serverSocket.close();
 				} catch (IOException e) {
 					serverSocket = null;
@@ -424,8 +424,8 @@ public class Main {
 		Diagnostics.exit(ExitCodes.OK);
 	}
 
-	private void serverTerminateAndExit(final BaseData baseData) {
-		int port = baseData.getPort();
+	private void serverTerminateAndExit(final ExecutionConfig executionConfig) {
+		int port = executionConfig.getPort();
 		TerminateClient client = new TerminateClient(port);
 		try {
 			client.connectAndTerminateOtherServer();

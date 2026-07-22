@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import javax.xml.stream.XMLStreamException;
 
 import de.sgollmer.solvismax.BaseData;
+import de.sgollmer.solvismax.ExecutionConfig;
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.connection.SolvisConnection;
 import de.sgollmer.solvismax.connection.mqtt.Mqtt;
@@ -42,6 +43,10 @@ public class Instances {
 	private Collection<Solvis> units = new ArrayList<>();
 	private final SolvisDescription solvisDescription;
 	private final BaseData baseData;
+	// Config-Lesen der flachen Ausfuehrungswerte laeuft ueber die schmale Sicht
+	// (Weg B); an this.baseData bleiben nur die Aggregat-Zugriffe (Units, Mqtt,
+	// ExceptionMail, IoBroker).
+	private final ExecutionConfig executionConfig;
 	private final BackupHandler backupHandler;
 	private final AllSolvisGrafics graficDatas;
 	private final Hashes xmlHash;
@@ -52,7 +57,8 @@ public class Instances {
 	public Instances(final BaseData baseData, final boolean learn) throws IOException, XmlException, XMLStreamException,
 			AssignmentException, FileException, ReferenceException {
 		this.baseData = baseData;
-		this.writeablePath = new File(baseData.getWritablePath());
+		this.executionConfig = baseData;
+		this.writeablePath = new File(this.executionConfig.getWritablePath());
 		this.graficDatas = new GraficFileHandler(this.writeablePath).read();
 		ControlFileReader reader = new ControlFileReader(this.writeablePath);
 		ControlFileReader.Result result = reader.read(this.graficDatas.getControlHashCodes(), learn);
@@ -216,10 +222,10 @@ public class Instances {
 				misc.getSolvisConnectionTimeout_ms(), misc.getSolvisReadTimeout_ms(),
 				misc.getPowerOffDetectedAfterIoErrors(), misc.getPowerOffDetectedAfterTimeout_ms(),
 				unit.isFwLth2_21_02A());
-		String timeZone = this.baseData.getTimeZone();
+		String timeZone = this.executionConfig.getTimeZone();
 		Solvis solvis = new Solvis(unit, this.solvisDescription, this.graficDatas.get(unit.getId(), this.xmlHash),
 				connection, this.baseData.getMqtt(), this.backupHandler, timeZone,
-				this.baseData.getEchoInhibitTime_ms(), this.writeablePath, mustLearn);
+				this.executionConfig.getEchoInhibitTime_ms(), this.writeablePath, mustLearn);
 		if (this.baseData.getExceptionMail() != null && solvis.getFeatures().isSendMailOnError()) {
 			solvis.registerSolvisErrorObserver(this.baseData.getExceptionMail());
 		}

@@ -348,7 +348,9 @@
 		<attribute name="resetErrorDelayTime_ms" type="int"
 			use="optional">
 			<annotation>
-				<documentation>Default: 5min. Die SolvisMax5 scheint bestimmte
+				<documentation>Default: 0 (sofortiges Zurücksetzen; Fork-Korrektur:
+					die frühere Angabe "5min" entsprach nicht der Implementierung).
+					Die SolvisMax5 scheint bestimmte
 					Fehler regelmäßig zu prüfen. Dazu setzt sie den Fehler erst zurück
 					um dann nach ca. 1 Minute später den Test auszuführen. Das führt zu
 					unnötigen Fehler-behoben-Mails

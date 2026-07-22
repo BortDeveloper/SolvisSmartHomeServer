@@ -82,11 +82,25 @@
       <version>2.0.3</version>
     </dependency>
 
-    <!-- Eigenbibliothek des Autors (vendored, s. o.) -->
+    <!-- Eigenbibliothek des Autors (vendored, s. o.) — wird schrittweise durch
+         JAXB abgelöst (MODERNISIERUNG.md 3.3). -->
     <dependency>
       <groupId>de.sgollmer</groupId>
       <artifactId>xmllibrary</artifactId>
       <version>1.1.1</version>
+    </dependency>
+
+    <!-- JAXB (Jakarta XML Binding): loest die proprietaere XMLLibrary ab.
+         API + Glassfish-Laufzeitimplementierung. -->
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>4.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>4.0.5</version>
     </dependency>
 
     <!-- Tests (nur zur Testzeit, nicht im Uber-Jar) -->

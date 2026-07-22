@@ -1,23 +1,8 @@
 package de.sgollmer.solvismax.mail;
 
-import java.io.IOException;
-
-import javax.xml.namespace.QName;
-
 import de.sgollmer.solvismax.crypt.CryptAes;
-import de.sgollmer.solvismax.error.CryptException;
-import de.sgollmer.solvismax.error.CryptException.Type;
-import de.sgollmer.solvismax.log.Diagnostics;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import de.sgollmer.solvismax.log.Diagnostics.Level;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.XmlException;
 
 public class Proxy {
-
-	private static final Logger logger = LoggerFactory.getLogger(Proxy.class);;
 
 	private final String host;
 	private final int port;
@@ -29,6 +14,11 @@ public class Proxy {
 		this.port = port;
 		this.user = user;
 		this.password = password;
+	}
+
+	/** Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md 3.3, Weg B). */
+	public static Proxy of(final String host, final int port, final String user, final CryptAes password) {
+		return new Proxy(host, port, user, password);
 	}
 
 	public String getHost() {
@@ -47,60 +37,4 @@ public class Proxy {
 		return this.password;
 	}
 
-	public static class Creator extends CreatorByXML<Proxy> {
-
-		private String host;
-		private int port;
-		private String user = null;
-		private CryptAes password = null;
-
-		public Creator(final String id, final BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) {
-			switch (name.getLocalPart()) {
-				case "host":
-					this.host = value;
-					break;
-				case "port":
-					this.port = Integer.parseInt(value);
-					break;
-				case "user":
-					this.user = value;
-					break;
-				case "passwordCrypt":
-					this.password = new CryptAes();
-					try {
-						this.password.decrypt(value);
-					} catch (CryptException e) {
-						this.password = null;
-						String m = "base.xml error of passwordCrypt in proxy tag, mail password not used";
-						Level level = Level.ERROR;
-						if (e.getType() == Type.DEFAULT) {
-							level = Level.WARN;
-						}
-						Diagnostics.log(logger, level, m);
-					}
-					break;
-			}
-		}
-
-		@Override
-		public Proxy create() throws XmlException, IOException {
-			return new Proxy(this.host, this.port, this.user, this.password);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			return null;
-		}
-
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) throws XmlException {
-
-		}
-
-	}
 }

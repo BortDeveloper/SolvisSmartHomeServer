@@ -1,17 +1,9 @@
 package de.sgollmer.solvismax.model.objects.unit;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.namespace.QName;
-
-import de.sgollmer.solvismax.log.Diagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.StringElement;
 import de.sgollmer.xmllibrary.XmlException;
 
 public class Features {
@@ -83,6 +75,18 @@ public class Features {
 	private Features(final Map<String, Boolean> features) throws XmlException {
 		this.features = features;
 		this.checkInteractiveGUIAccess();
+	}
+
+	/**
+	 * Öffentliche Konstruktions-Factory für den JAXB-Mapper (MODERNISIERUNG.md
+	 * 3.3, Weg B). {@code Features} bleibt als reiner Wert-Typ erhalten — die
+	 * Feature-Semantik (Defaults je Feature, Regel „genau eines von
+	 * InteractiveGUIAccess/OnlyMeasurements", abgeleitete Abfragen) lebt damit
+	 * nur an einer Stelle; der Mapper liefert lediglich die Map aus dem DTO.
+	 * Validiert wie der alte Parser (wirft bei Regelverletzung).
+	 */
+	public static Features of(final Map<String, Boolean> features) throws XmlException {
+		return new Features(features);
 	}
 
 	public boolean get(String feature, boolean missingValue) {
@@ -162,53 +166,6 @@ public class Features {
 
 	public Boolean getFeature(final String id) {
 		return this.get(id, false);
-	}
-
-	static class Creator extends CreatorByXML<Features> {
-
-		private final Map<String, Boolean> features = new HashMap<>();
-
-		Creator(final String id, final BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) {
-		}
-
-		@Override
-		public Features create() throws XmlException, IOException {
-			return new Features(this.features);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			String id = name.getLocalPart();
-			FeatureSetting setting = FeatureSetting.get(id);
-			if (setting == null) {
-				return null;
-			} else if (setting.isFeature()) {
-				return new Feature.Creator(id, this.getBaseCreator());
-			} else {
-				return new StringElement.Creator(id, this.getBaseCreator());
-			}
-		}
-
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) {
-
-			FeatureSetting setting = FeatureSetting.get(creator.getId());
-
-			if (setting != null) {
-				if (setting.isFeature()) {
-					Feature feature = (Feature) created;
-					this.features.put(feature.getId(), feature.isSet());
-				} else {
-					this.features.put(setting.getId(), Boolean.parseBoolean(created.toString()));
-				}
-			}
-		}
-
 	}
 
 	public Map<String, Boolean> getMap() {

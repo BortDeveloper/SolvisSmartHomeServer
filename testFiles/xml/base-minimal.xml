@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Minimal-Fixture fuer den Default-Dual-Parse-Test: enthaelt NUR die laut
+     base.xsd erforderlichen Attribute/Elemente. Alle optionalen Attribute
+     (measurementsIntervalFast_s, forceUpdateAfterFastChangingIntervals,
+     reheatingNotRequiredActiveTime_ms, doubleUpdateInterval_ms,
+     resetErrorDelayTime_ms, fwLth2_21_02A, ...) fehlen bewusst, damit die
+     Default-Werte beider Parser (Creator-Feld vs. DTO-Initialisierer)
+     vergleichbar werden. -->
+<tns:BaseData xmlns:tns="http://www.example.org/control">
+	<tns:ExecutionData timeZone="Europe/Berlin" port="10735"
+		echoInhibitTime_ms="2000" />
+	<tns:Units>
+		<tns:Unit id="minimalUnit" type="SolvisMax6PurSolo"
+			mainHeating="OelBW" heatingCircuits="1" account="account"
+			defaultAverageCount="12" measurementHysteresisFactor="4"
+			measurementsInterval_s="10" forcedUpdateInterval_ms="0"
+			bufferedInterval_ms="0" watchDogTime_ms="30000"
+			releaseBlockingAfterUserAccess_ms="60000"
+			delayAfterSwitchingOnEnable="false"
+			ignoredFrameThicknesScreenSaver="3">
+			<!-- Fachliche Mindestanforderung des Parsers: genau eines der
+			     Features InteractiveGUIAccess/OnlyMeasurements muss gesetzt sein. -->
+			<tns:Features>
+				<tns:Feature id="InteractiveGUIAccess" value="false" />
+			</tns:Features>
+		</tns:Unit>
+	</tns:Units>
+</tns:BaseData>

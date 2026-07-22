@@ -1,15 +1,9 @@
 package de.sgollmer.solvismax.model.objects.backup;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
 
 import de.sgollmer.solvismax.Constants;
 import de.sgollmer.solvismax.error.AssignmentException;
@@ -19,12 +13,13 @@ import de.sgollmer.solvismax.error.TerminationException;
 import de.sgollmer.solvismax.helper.AbortHelper;
 import de.sgollmer.solvismax.helper.FileHelper;
 import de.sgollmer.solvismax.helper.Helper.Reference;
-import de.sgollmer.solvismax.log.Diagnostics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.sgollmer.solvismax.model.Solvis;
+import de.sgollmer.solvismax.xml.jaxb.backup.JaxbBackupReader;
 import de.sgollmer.xmllibrary.XmlException;
-import de.sgollmer.xmllibrary.XmlStreamReader;
+
+import jakarta.xml.bind.JAXBException;
 
 public class BackupHandler {
 
@@ -32,9 +27,6 @@ public class BackupHandler {
 
 	private static final String NAME_XSD_MEASUREMENTS_FILE = "measurements.xsd";
 	private static final String NAME_XML_MEASUREMENTS_FILE = "measurements.xml";
-
-	private static final String XML_MEASUREMENTS = "SolvisMeasurements";
-	private static final String XML_BACKUP = "SolvisBackup";
 
 	private final File parent;
 	private final BackupThread thread;
@@ -89,6 +81,13 @@ public class BackupHandler {
 		}
 	}
 
+	/**
+	 * Liest die {@code measurements.xml} — seit der JAXB-Umstellung
+	 * (MODERNISIERUNG.md 3.3) über {@code JaxbBackupReader} +
+	 * {@code BackupMapper}. Beide Wurzel-Generationen ({@code SolvisBackup},
+	 * legacy {@code SolvisMeasurements}) werden in einem Durchgang akzeptiert —
+	 * der frühere Zwei-Pass-Fallback entfällt.
+	 */
 	public void read() throws IOException, XmlException, XMLStreamException, AssignmentException, FileException,
 			ReferenceException {
 
@@ -102,21 +101,11 @@ public class BackupHandler {
 
 		this.timeOfLastBackup.set(xml.lastModified());
 
-		this.read(xml, XML_BACKUP);
-
-		if (this.measurements.getSystemBackups().isEmpty()) {
-			this.read(xml, XML_MEASUREMENTS);
+		try {
+			BackupMapper.merge(JaxbBackupReader.read(xml), this.measurements);
+		} catch (JAXBException e) {
+			throw new XmlException("JAXB parsing of " + xml.getName() + " failed: " + e.getMessage());
 		}
-
-	}
-
-	private void read(final File xml, final String rootId) throws IOException, XmlException, XMLStreamException {
-		InputStream source = new FileInputStream(xml);
-
-		XmlStreamReader<AllSystemBackups> reader = new XmlStreamReader<>();
-
-		reader.read(source, rootId, new AllSystemBackups.Creator(this.measurements, rootId, this.timeOfLastBackup),
-				xml.getName());
 
 	}
 
@@ -138,17 +127,11 @@ public class BackupHandler {
 
 		File output = new File(this.parent, NAME_XML_MEASUREMENTS_FILE);
 
-		XMLOutputFactory factory = XMLOutputFactory.newInstance();
-		OutputStream outputStream = new FileOutputStream(output);
-		XMLStreamWriter writer = factory.createXMLStreamWriter(outputStream, "UTF-8");
-		writer.writeStartDocument();
-		writer.writeStartElement(XML_BACKUP);
-		this.measurements.writeXml(writer);
-		writer.writeEndElement();
-		writer.writeEndDocument();
-		writer.flush();
-		writer.close();
-		outputStream.close();
+		try {
+			JaxbBackupReader.write(BackupMapper.toDto(this.measurements), output);
+		} catch (JAXBException e) {
+			throw new IOException("JAXB writing of " + output.getName() + " failed: " + e.getMessage(), e);
+		}
 
 		this.timeOfLastBackup.set(System.currentTimeMillis());
 

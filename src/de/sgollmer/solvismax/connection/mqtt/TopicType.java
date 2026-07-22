@@ -162,7 +162,7 @@ public enum TopicType {
 		return this.hasUnitId;
 	}
 
-	public String[] getTopicParts(final Mqtt mqtt, final Solvis solvis, final String channelId, boolean base) {
+	public String[] getTopicParts(final MqttTopicConfig mqtt, final Solvis solvis, final String channelId, boolean base) {
 		int length = this.partCnt - (base && this.suffix != null ? 1 : 0) - (base && this.hasClientId ? 1 : 0);
 		String[] parts = new String[length];
 		int i = 0;
@@ -203,7 +203,7 @@ public enum TopicType {
 		return parts;
 	}
 
-	public String[] getTopicParts(final Mqtt mqtt, final Solvis solvis, final String channelId) {
+	public String[] getTopicParts(final MqttTopicConfig mqtt, final Solvis solvis, final String channelId) {
 		return this.getTopicParts(mqtt, solvis, channelId, false);
 	}
 
@@ -267,7 +267,7 @@ public enum TopicType {
 		}
 	}
 
-	public TopicData getTopicData(final Mqtt mqtt, final Solvis solvis, final SolvisData data) {
+	public TopicData getTopicData(final MqttTopicConfig mqtt, final Solvis solvis, final SolvisData data) {
 		TopicData topicData = null;
 		if (this.hasChannelId()) {
 			if (data == null) {

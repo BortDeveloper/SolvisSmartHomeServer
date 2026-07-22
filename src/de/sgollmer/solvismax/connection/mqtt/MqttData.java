@@ -84,7 +84,7 @@ public class MqttData implements Cloneable {
 		return builder.toString();
 	}
 
-	String getTopic(Mqtt mqtt) {
+	String getTopic(MqttTopicConfig mqtt) {
 		String[] parts = this.topicType.getTopicParts(mqtt, this.solvis, this.channelId);
 		return Helper.cat(parts, "/");
 	}

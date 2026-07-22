@@ -506,12 +506,13 @@ public class SolvisData extends Observer.Observable<SolvisData> implements IObse
 
 			if (changed && fastChange && this.forceCnt == 0) {
 
-				boolean buffered = this.solvisData.getDescription().isBuffered() && this.solvis.getUnit().isBuffered();
+				boolean buffered = this.solvisData.getDescription().isBuffered()
+						&& this.solvis.getUnitConfig().isBuffered();
 
-				long intervall = buffered ? this.solvis.getUnit().getBufferedInterval_ms()
-						: this.solvis.getUnit().getMeasurementsInterval_ms();
+				long intervall = buffered ? this.solvis.getUnitConfig().getBufferedInterval_ms()
+						: this.solvis.getUnitConfig().getMeasurementsInterval_ms();
 
-				long forceUpdateAfterFastChangingIntervals = this.solvis.getUnit()
+				long forceUpdateAfterFastChangingIntervals = this.solvis.getUnitConfig()
 						.getForceUpdateAfterFastChangingIntervals();
 
 				if (forceUpdateAfterFastChangingIntervals != 0) {

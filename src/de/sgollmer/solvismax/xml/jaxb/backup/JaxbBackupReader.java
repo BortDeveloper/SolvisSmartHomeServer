@@ -6,15 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.sax.SAXSource;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.AttributesImpl;
-import org.xml.sax.helpers.XMLFilterImpl;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -42,7 +37,8 @@ public final class JaxbBackupReader {
 	public static BackupDto read(final File file) throws JAXBException, IOException {
 		final JAXBContext context = JAXBContext.newInstance(BackupDto.class);
 		try (InputStream input = new FileInputStream(file)) {
-			final SAXSource source = new SAXSource(namespaceStrippingReader(), new InputSource(input));
+			final SAXSource source = new SAXSource(de.sgollmer.solvismax.xml.jaxb.SaxNamespaceStripper.create(),
+					new InputSource(input));
 			return context.createUnmarshaller()
 					.unmarshal(source, BackupDto.class)
 					.getValue();
@@ -57,38 +53,5 @@ public final class JaxbBackupReader {
 		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
 		marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
 		marshaller.marshal(dto, file);
-	}
-
-	private static XMLReader namespaceStrippingReader()
-			throws ParserConfigurationException, SAXException {
-		final SAXParserFactory factory = SAXParserFactory.newInstance();
-		factory.setNamespaceAware(true);
-		final XMLReader reader = factory.newSAXParser().getXMLReader();
-		return new XMLFilterImpl(reader) {
-			@Override
-			public void startElement(final String uri, final String localName, final String qName,
-					final Attributes atts) throws SAXException {
-				super.startElement("", localName, localName, stripNamespaces(atts));
-			}
-
-			@Override
-			public void endElement(final String uri, final String localName, final String qName)
-					throws SAXException {
-				super.endElement("", localName, localName);
-			}
-
-			private Attributes stripNamespaces(final Attributes atts) {
-				final AttributesImpl stripped = new AttributesImpl();
-				for (int i = 0; i < atts.getLength(); i++) {
-					// Namespace-Deklarationen (xmlns...) nicht durchreichen.
-					if (atts.getQName(i).startsWith("xmlns")) {
-						continue;
-					}
-					stripped.addAttribute("", atts.getLocalName(i), atts.getLocalName(i), atts.getType(i),
-							atts.getValue(i));
-				}
-				return stripped;
-			}
-		};
 	}
 }

@@ -1,23 +1,20 @@
 package de.sgollmer.solvismax.model.objects;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
-
 import de.sgollmer.solvismax.xml.ControlFileReader.Hashes;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.IXmlWriteable;
-import de.sgollmer.xmllibrary.XmlException;
 
-public class AllSolvisGrafics implements IXmlWriteable {
-
-	private static final String XML_SYSTEM = "System";
+/**
+ * Gesamtheit der gelernten Grafik-Daten ({@code graficData.xml}): je Anlage
+ * ein {@link SystemGrafics}-Eintrag plus die Hashes der {@code control.xml},
+ * mit der gelernt wurde. Stimmen die Hashes nicht mehr mit der aktuellen
+ * control.xml überein, sind die Lerndaten ungültig und werden verworfen
+ * ({@link #get}). Persistiert über den JAXB-Pfad
+ * ({@code GraficsMapper}/{@code JaxbGraficsReader}, MODERNISIERUNG.md 3.3).
+ */
+public class AllSolvisGrafics {
 
 	private final Collection<SystemGrafics> systems;
 	private Long controlResourceHashCode;
@@ -36,6 +33,22 @@ public class AllSolvisGrafics implements IXmlWriteable {
 		this.controlFileHashCode = null;
 	}
 
+	/** Paketinterne Konstruktions-Factory für den {@code GraficsMapper} (JAXB-Weg). */
+	static AllSolvisGrafics of(final Collection<SystemGrafics> systems, final Long controlResourceHashCode,
+			final Long controlFileHashCode) {
+		return new AllSolvisGrafics(systems, controlResourceHashCode, controlFileHashCode);
+	}
+
+	/** Paketinterner Zugang für den {@code GraficsMapper} (Persistenz). */
+	Collection<SystemGrafics> getSystems() {
+		return this.systems;
+	}
+
+	/**
+	 * Liefert die Lerndaten der Anlage {@code unitId}; passt der gespeicherte
+	 * control.xml-Stand (Hashes) nicht mehr, werden alle Lerndaten verworfen
+	 * und ein leerer Eintrag geliefert (Neu-Lernen nötig).
+	 */
 	public SystemGrafics get(final String unitId, final Hashes hashes) {
 		if (this.controlResourceHashCode == null || !this.controlResourceHashCode.equals(hashes.getResourceHash())
 				|| this.controlFileHashCode == null || !this.controlFileHashCode.equals(hashes.getFileHash())) {
@@ -58,67 +71,6 @@ public class AllSolvisGrafics implements IXmlWriteable {
 		}
 
 		return result;
-	}
-
-	@Override
-	public void writeXml(final XMLStreamWriter writer) throws XMLStreamException, IOException {
-		for (SystemGrafics system : this.systems) {
-			writer.writeAttribute("controlResourceHashCode", Long.toString(this.controlResourceHashCode));
-			writer.writeAttribute("controlFileHashCode", Long.toString(this.controlFileHashCode));
-			writer.writeStartElement(XML_SYSTEM);
-			system.writeXml(writer);
-			writer.writeEndElement();
-		}
-
-	}
-
-	public static class Creator extends BaseCreator<AllSolvisGrafics> {
-
-		private Collection<SystemGrafics> systems = new ArrayList<>();
-		private Long controlResourceHashCode = null;
-		private Long controlFileHashCode = null;
-
-		public Creator(String id) {
-			super(id);
-		}
-
-		@Override
-		public void setAttribute(final QName name, final String value) {
-			switch (name.getLocalPart()) {
-				case "controlResourceHashCode":
-					this.controlResourceHashCode = Long.parseLong(value);
-					break;
-				case "controlFileHashCode":
-					this.controlFileHashCode = Long.parseLong(value);
-					break;
-			}
-		}
-
-		@Override
-		public AllSolvisGrafics create() throws XmlException, IOException {
-			return new AllSolvisGrafics(this.systems, this.controlResourceHashCode, this.controlFileHashCode);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(final QName name) {
-			String id = name.getLocalPart();
-			switch (id) {
-				case XML_SYSTEM:
-					return new SystemGrafics.Creator(id, this.getBaseCreator());
-			}
-			return null;
-		}
-
-		@Override
-		public void created(final CreatorByXML<?> creator, final Object created) {
-			switch (creator.getId()) {
-				case XML_SYSTEM:
-					this.systems.add((SystemGrafics) created);
-					break;
-			}
-
-		}
-
 	}
 
 	public Hashes getControlHashCodes() {

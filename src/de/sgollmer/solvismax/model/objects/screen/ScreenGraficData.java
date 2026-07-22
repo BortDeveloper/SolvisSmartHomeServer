@@ -5,21 +5,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
-import java.util.Base64.Encoder;
 
 import javax.imageio.ImageIO;
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
 
 import de.sgollmer.solvismax.imagepatternrecognition.image.MyImage;
 import de.sgollmer.solvismax.imagepatternrecognition.pattern.Pattern;
-import de.sgollmer.xmllibrary.BaseCreator;
-import de.sgollmer.xmllibrary.CreatorByXML;
-import de.sgollmer.xmllibrary.IXmlWriteable;
-import de.sgollmer.xmllibrary.XmlException;
 
-public class ScreenGraficData implements IXmlWriteable {
+/**
+ * Gelernte Grafik eines Bildschirmbereichs (Inhalt der
+ * {@code graficData.xml}). Die Persistenzform ist ein Base64-codiertes PNG;
+ * seit der JAXB-Umstellung (MODERNISIERUNG.md 3.3) liegt die Codierung/
+ * Decodierung als eigene API hier ({@link #of}, {@link #toBase64Png}) — vorher
+ * steckte sie im XML-Creator bzw. in {@code writeXml}.
+ */
+public class ScreenGraficData {
 	private final String id;
 	private final MyImage image;
 
@@ -28,19 +27,37 @@ public class ScreenGraficData implements IXmlWriteable {
 		this.image = image;
 	}
 
-	public String getId() {
-		return this.id;
+	/**
+	 * Konstruktion aus der Persistenzform (JAXB-Weg): decodiert das Base64-PNG
+	 * in ein {@link MyImage}; {@code isPattern} kennzeichnet gelernte
+	 * {@link Pattern}-Grafiken (identisch zur alten Creator-Semantik).
+	 */
+	public static ScreenGraficData of(final String id, final String base64Png, final boolean isPattern)
+			throws IOException {
+		final byte[] bytes = Base64.getDecoder().decode(base64Png.trim());
+		final BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(bytes));
+		MyImage image = new MyImage(bufferedImage);
+		if (isPattern) {
+			image = new Pattern(image);
+		}
+		return new ScreenGraficData(id, image);
 	}
 
-	@Override
-	public void writeXml(XMLStreamWriter writer) throws XMLStreamException, IOException {
-		writer.writeAttribute("id", this.id);
-		writer.writeAttribute("isPattern", Boolean.toString(this.image instanceof Pattern));
-		BufferedImage image = this.image.createBufferdImage();
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ImageIO.write(image, "png", bos);
-		Encoder base64 = Base64.getEncoder();
-		writer.writeCharacters(new String(base64.encode(bos.toByteArray()), "UTF-8"));
+	/** Persistenzform: das Bild als Base64-codiertes PNG (wie der alte Writer). */
+	public String toBase64Png() throws IOException {
+		final BufferedImage bufferedImage = this.image.createBufferdImage();
+		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ImageIO.write(bufferedImage, "png", bos);
+		return Base64.getEncoder().encodeToString(bos.toByteArray());
+	}
+
+	/** Kennzeichnung für die Persistenz (wie das alte {@code isPattern}-Attribut). */
+	public boolean isPattern() {
+		return this.image instanceof Pattern;
+	}
+
+	public String getId() {
+		return this.id;
 	}
 
 	/**
@@ -48,59 +65,6 @@ public class ScreenGraficData implements IXmlWriteable {
 	 */
 	MyImage getImage() {
 		return this.image;
-	}
-
-	public static class Creator extends CreatorByXML<ScreenGraficData> {
-
-		private String id;
-		private boolean isPattern = false;
-		private MyImage image;
-		private final StringBuilder base64 = new StringBuilder();
-
-		public Creator(String id, BaseCreator<?> creator) {
-			super(id, creator);
-		}
-
-		@Override
-		public void setAttribute(QName name, String value) {
-			switch (name.getLocalPart()) {
-				case "id":
-					this.id = value;
-					break;
-				case "isPattern":
-					this.isPattern = Boolean.parseBoolean(value);
-					break;
-			}
-
-		}
-
-		@Override
-		public ScreenGraficData create() throws XmlException, IOException {
-			byte[] bytes = Base64.getDecoder().decode(this.base64.toString());
-			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-			BufferedImage image = ImageIO.read(bis);
-			this.image = new MyImage(image);
-			if (this.isPattern) {
-				this.image = new Pattern(this.image);
-			}
-			return new ScreenGraficData(this.id, this.image);
-		}
-
-		@Override
-		public CreatorByXML<?> getCreator(QName name) {
-			return null;
-		}
-
-		@Override
-		public void created(CreatorByXML<?> creator, Object created) {
-
-		}
-
-		@Override
-		public void addCharacters(String data) {
-			this.base64.append(data);
-		}
-
 	}
 
 }

@@ -513,3 +513,32 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   Creator-Abbau. Die im base.xml-Abbau verbliebenen geteilten Creators
   (`Duration`, `ChannelAssignment`, `unit.Configuration`, `Feature`) fallen
   mit diesem Baum.
+
+## 12. graficData.xml auf JAXB umgestellt — Lesen UND Schreiben (✅)
+
+Der vierte Baum ist komplett umgestellt (nach dem measurements-Muster):
+
+- **DTO im eigenen Paket `xml.jaxb.grafics`** (ohne `@XmlSchema` — die Datei
+  wird namespace-los geschrieben); gelesen wird mit dem jetzt **gemeinsamen**
+  `SaxNamespaceStripper` (aus dem Backup-Leser extrahiert), damit auch
+  Bestände mit graficData-Namespace lesbar bleiben. Die Hash-Attribute sind
+  als `Long`-Wrapper gebunden (`null` = fehlt ⇒ Lerndaten verwerfen — wie
+  beim alten Parser).
+- **Bild-Codierung als Klassen-API:** Base64-PNG ↔ `MyImage`/`Pattern` liegt
+  jetzt in `ScreenGraficData.of`/`toBase64Png`/`isPattern` (vorher im
+  XML-Creator bzw. `writeXml` versteckt). Wichtiger Befund dabei:
+  `MyImage.createBufferdImage()` setzt das **4-Bit-Palettenmodell** der
+  Solvis-Anzeige voraus — der Schreibpfad funktioniert (wie schon der alte)
+  nur für die live erfassten Gerätebilder, nicht für beliebige RGB-Bilder.
+- **Abbildung als `GraficsMapper`** im model.objects-Paket (paketprivate
+  Verzahnung, analog `BackupMapper`); `GraficFileHandler` liest/schreibt über
+  JAXB, das Fehlerverhalten ist unverändert (defekte Datei ⇒ leere Lerndaten,
+  kein Abbruch). Alle Grafik-Creators und `writeXml`-Pfade sind entfernt
+  (inkl. `IXmlWriteable`).
+- **Nebeneffekt/Korrektur:** Der alte Writer schrieb die Wurzel-Attribute
+  je `<System>`-Schleifendurchlauf erneut — bei mehr als einer Anlage ein
+  Schreibfehler (StAX-Attribut nach Kind-Element). Das JAXB-Marshalling
+  schreibt die Attribute korrekt einmalig auf die Wurzel.
+- ✅ **Tests** (`GraficsJaxbTest`): Roundtrip über den echten
+  `GraficFileHandler` verlustfrei (Masken, Feature-Stand, Hashes,
+  Bild-Pixel), Namespace-Variante lesbar, defekte Datei ⇒ leere Lerndaten.

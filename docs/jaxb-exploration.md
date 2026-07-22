@@ -513,7 +513,14 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   `ScreenGrafics`-Beschreibungen (`exact` als Boolean-Wrapper, optionales
   Rectangle) nutzen die wiederverwendbaren Beans; Charakterisierung gegen
   die Vorlage, da die Domäne keine Getter offenlegt.
-- **Noch nicht modelliert** (die tiefen Blöcke): `Configurations` (mit
+- ✅ **Configurations gebunden und dual-parse-grün:** alle fünf Typ-Gruppen
+  (SolvisTypes, MainHeatings, HeaterCircuits, SolarTypes, Extensions) — die
+  Masken werden kanonisch als Hex-String gebunden, die Ableitung
+  (`Long.decode`) liefert `TypeDto.configurationValue`; Vergleich gegen
+  `Configurations.getConfiguration(id)` der Domäne über alle Vorlagen-Ids.
+  `dontCare`-Flag und `NotValid`-Kombinationen charakterisiert; die
+  `Solar`-/`Csv`-Unterzweige folgen später.
+- **Noch nicht modelliert** (die tiefen Blöcke): `Configurations`-Rest (mit
   ConfigurationTypes/HeaterLoops/Solar/NotValid/Csv), `Screens` (der größte:
   Screen/ScreenRef/ScreenSequence mit Identifications, TouchPoints,
   Dependencies), `ChannelDescriptions` (polymorphe ChannelSources: Control mit

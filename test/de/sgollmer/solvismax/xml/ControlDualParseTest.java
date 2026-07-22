@@ -137,6 +137,49 @@ class ControlDualParseTest {
 	}
 
 	/**
+	 * {@code Configurations}: <b>Dual-Parse</b> der Konfigurationsmasken — die
+	 * Domäne löst über {@code getConfiguration(id)} dieselben Bits auf, die das
+	 * DTO kanonisch als Hex-String bindet (Ableitung {@code Long.decode} in
+	 * {@code TypeDto.configurationValue}). Vergleich über alle fünf Typ-Gruppen
+	 * anhand der Vorlagen-Ids.
+	 */
+	@Test
+	void configurationsMaskenIdentisch() throws Exception {
+		final SolvisDescription alt = parseAlt();
+		final ControlDto neu = parseNeu();
+
+		assertNotNull(neu.configurations);
+		final var cfg = alt.getConfigurations();
+		for (final String id : new String[] { "SolvisMax6", "SolvisMax6PurSolo", "SolvisMax7" }) {
+			assertEquals(cfg.getSolvisTypes().getConfiguration(id),
+					neu.configurations.solvisTypes.configuration(id), "SolvisType " + id);
+		}
+		for (final String id : new String[] { "OelBW", "OelNT", "Gas", "Fern", "WaermeP", "Extern" }) {
+			assertEquals(cfg.getMainHeatings().getConfiguration(id),
+					neu.configurations.mainHeatings.configuration(id), "MainHeating " + id);
+		}
+		for (final String id : new String[] { "1", "2", "3" }) {
+			assertEquals(cfg.getHeaterCircuits().getConfiguration(id),
+					neu.configurations.heaterCircuits.configuration(id), "HeaterCircuits " + id);
+		}
+		for (final String id : new String[] { "None", "Normal", "OstWest" }) {
+			assertEquals(cfg.getSolarTypes().getConfiguration(id),
+					neu.configurations.solarTypes.configuration(id), "SolarType " + id);
+		}
+		for (final String id : new String[] { "Festbrennstoff", "Zaehlfunktion2Screens", "SolarOstWest" }) {
+			assertEquals(cfg.getExtensions().getConfiguration(id),
+					neu.configurations.extensions.configuration(id), "Extension " + id);
+		}
+		// Charakterisierung: dontCare-Flag und NotValid-Kombinationen.
+		assertEquals(Boolean.TRUE, neu.configurations.extensions.type.stream()
+				.filter(t -> "SolarOstWest".equals(t.id)).findFirst().orElseThrow().dontCare);
+		assertNotNull(neu.configurations.notValid);
+		final var ersteNotValid = neu.configurations.notValid.configuration.get(0);
+		assertEquals(Integer.valueOf(3), ersteNotValid.heatingCircuits);
+		assertEquals("SolarOstWest", ersteNotValid.extensions.extension.get(0).id);
+	}
+
+	/**
 	 * {@code FallBack}: Die Tastenfolge ist eine <b>geordnete Mischsequenz</b>
 	 * aus {@code Back}/{@code ScreenRef} — der Test fixiert, dass die
 	 * polymorphe {@code @XmlElements}-Bindung die Reihenfolge der Vorlage exakt

@@ -141,6 +141,83 @@ public class ControlDto {
 		@XmlAttribute(name = "value") public boolean value;
 	}
 
+	@XmlElement(name = "Configurations")
+	public ConfigurationsDto configurations;
+
+	/**
+	 * JAXB-Bean für {@code <Configurations>}: die Zuordnung von Anlagen-Typ,
+	 * Hauptheizung, Heizkreisen, Solar-Typ und Erweiterungen zu Bits der
+	 * <b>Konfigurationsmaske</b> (hex), plus die als ungültig definierten
+	 * Kombinationen. {@code <Solar>}/{@code <Csv>}-Unterzweige folgen später
+	 * (siehe docs/jaxb-exploration.md).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ConfigurationsDto {
+		@XmlElement(name = "SolvisTypes") public TypeListDto solvisTypes;
+		@XmlElement(name = "MainHeatings") public TypeListDto mainHeatings;
+		@XmlElement(name = "HeaterCircuits") public TypeListDto heaterCircuits;
+		@XmlElement(name = "SolarTypes") public TypeListDto solarTypes;
+		@XmlElement(name = "Extensions") public TypeListDto extensions;
+		@XmlElement(name = "NotValid") public NotValidDto notValid;
+	}
+
+	/** JAXB-Bean für die Typ-Gruppen ({@code <Type id configuration [dontCare]/>}-Listen). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class TypeListDto {
+		@XmlElement(name = "Type")
+		public java.util.List<TypeDto> type;
+
+		/** Sicht: Maske zur Id (kanonisch gebunden bleibt der Hex-String). */
+		public Long configuration(final String id) {
+			if (this.type == null) {
+				return null;
+			}
+			return this.type.stream().filter(t -> id.equals(t.id)).findFirst()
+					.map(TypeDto::configurationValue).orElse(null);
+		}
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Type>}. {@code configuration} bleibt kanonisch der
+	 * Hex-String der Vorlage ({@code 0x…}); die Ableitung zur Maske liefert
+	 * {@link #configurationValue()} ({@code Long.decode}, wie der alte Parser).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class TypeDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "configuration") public String configuration;
+		/** {@code true} = Bit zählt beim Vergleich nicht ({@code null} = Attribut fehlt). */
+		@XmlAttribute(name = "dontCare") public Boolean dontCare;
+
+		public long configurationValue() {
+			return Long.decode(this.configuration);
+		}
+	}
+
+	/** JAXB-Bean für {@code <NotValid>} — ungültige Konfigurations-Kombinationen. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class NotValidDto {
+		@XmlElement(name = "Configuration")
+		public java.util.List<ConfigurationRefDto> configuration;
+	}
+
+	/**
+	 * JAXB-Bean für einen {@code <Configuration>}-Verweis (Attribute wie in der
+	 * base.xsd-Configuration; {@code <Extensions>} wird aus dem base-DTO
+	 * wiederverwendet — gleiche Struktur, gleicher Namespace).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ConfigurationRefDto {
+		@XmlAttribute(name = "type") public String type;
+		@XmlAttribute(name = "mainHeating") public String mainHeating;
+		@XmlAttribute(name = "heatingCircuits") public Integer heatingCircuits;
+		@XmlAttribute(name = "admin") public Boolean admin;
+		@XmlAttribute(name = "comment") public String comment;
+
+		@XmlElement(name = "Extensions")
+		public BaseDataDto.ExtensionsDto extensions;
+	}
+
 	@XmlElement(name = "FallBack")
 	public FallBackDto fallBack;
 

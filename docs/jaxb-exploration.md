@@ -552,10 +552,38 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   `Boolean.getBoolean(value)` — ein System-Property-Lookup, liefert immer
   `false` (Alt-Parser-Bug; Attribut in der Vorlage ungenutzt, daher ohne
   Verhaltensfolge).
-- **Noch nicht modelliert** (der letzte große Block): `ChannelDescriptions`
-  (polymorphe ChannelSources: Control mit Strategien, Measurement,
-  Calculation). Danach lohnt die Voll-Graph-Absicherung über `ParseDiff`
-  (wie beim base.xml-Reader-Umstieg) vor dem Reader-Umstieg.
+- ✅ **ChannelDescriptions gebunden und dual-parse-grün** (der letzte Zweig —
+  damit sind alle 13 Zweige gebunden): ~114 `<ChannelDescription>`-Einträge,
+  wie bei den Screens mit **Konfigurations-Varianten derselben Id** (z. B.
+  C01–C03 für einen bzw. zwei Zählfunktions-Bildschirme; OfConfigs-Gruppierung
+  in Dokumentreihenfolge). Die Kanal-Quelle ist eine XSD-`choice` aus drei
+  Typen: **`Control`** (optional-Flag; `GuiAccess` mit Wert-Rechteck,
+  `PreparationRef`, `Dependency`-Liste [id/value/priority/standby]; genau eine
+  von fünf Strategien `TypeReadWrite`/`TypeRead`/`TypeMode`/`TypeButton`/
+  `TypeReheat`; `UpdateBy` mit `HumanAccess` bzw. `EquipmentOnOff` inkl.
+  `Trigger`-Kindern, factor-Default −1), **`Measurement`** (type kanonisch als
+  String [date/unsigned/signed/…], divisor/average/fast, `Field`-Bereiche im
+  Hex-String) und **`Calculation`** (strategy als String, `Alias`-Eingänge).
+  Wiederverwendte Beans tragen erneut (TouchPointDto, RectangleDto,
+  ScreenGraficDescriptionDto, ScreenConfigurationDto für die
+  Kanal-Configuration). **Dual-Parse** über die öffentlichen Domänen-Getter:
+  Id-Menge + Varianten-Anzahl, unit/buffered/glitchInhibitScanIntervals,
+  Quelltyp, Divisor (Strategie-abhängig), Schreibbarkeit (nur TypeRead
+  read-only), average/fast, Modus-Namen in Dokumentreihenfolge und die
+  abgeleiteten `UpperLowerStep`-Grenzen (most/least/increment/
+  incrementChange÷divisor) — >80 Kanäle vergleichen; Rest charakterisiert.
+  **Befunde:** (1) der alte Parser liest am `GuiAccess` ein
+  `restoreChannelId`-Attribut, das `control.xsd` **nicht deklariert** (eine
+  Datei, die es nutzt, wäre schema-invalide — relevant, sobald der
+  JAXB-Reader validiert; Vorlage nutzt es nicht). (2) das
+  `handling`-Attribut der `ModeEntry`: XSD erlaubt `READ/WRITE/BOTH`, der
+  alte Parser verlangt `Handling.valueOf` mit `RO/WO/RW` — ein
+  XSD-konformer Wert würde den Alt-Parser mit `IllegalArgumentException`
+  abbrechen (Vorlage nutzt das Attribut nicht). (3) `<SolvisHeatingData>`
+  unter `UpdateBy` existiert **nur in der XSD** — `UpdateStrategies`
+  kennt nur HumanAccess/EquipmentOnOff, das Element würde kommentarlos
+  ignoriert (DTO bindet es kanonisch mit). Vor dem Reader-Umstieg lohnt die
+  Voll-Graph-Absicherung über `ParseDiff` (wie beim base.xml-Umstieg).
 - ⚠️ **Wichtiger Reader-Befund für den späteren Umstieg:** `ControlFileReader`
   nutzt `XmlStreamReader.ReadData.getHash()` — der alte Parser berechnet beim
   Lesen einen **Inhalts-Hash**, über den Resource-/Datei-Version verglichen
@@ -564,13 +592,13 @@ Bestandsaufnahme und erster dual-parse-verifizierter DTO-Kern:
   werden — oder ein einmaliges Neu-Lernen wird bewusst in Kauf genommen
   (zu entscheiden). Dazu kommt die Resource-vs-Datei-Merge-Logik
   (modifiedByUser, renameDuplicates), die erhalten bleiben muss.
-- **Fahrplan wie bei base.xml:** DTO-Baum Zweig für Zweig erweitern (nächste
-  Kandidaten: die flachen/mittleren Zweige ScreenSaver, ErrorDetection,
-  Standby, Configurations-Grundgerüst; zuletzt die tiefen Screens/
-  ChannelDescriptions), je Zweig Dual-Parse; erst danach Reader-Umstieg +
-  Creator-Abbau. Die im base.xml-Abbau verbliebenen geteilten Creators
-  (`Duration`, `ChannelAssignment`, `unit.Configuration`, `Feature`) fallen
-  mit diesem Baum.
+- **Fahrplan:** alle Zweige sind gebunden — es folgt der
+  **control-Reader-Umstieg** (Voll-Graph-Absicherung per `ParseDiff` +
+  Golden-Snapshot, dann `ControlFileReader` auf JAXB; dabei die Hash-Frage
+  aus dem Reader-Befund oben lösen) und danach der Creator-/XMLLibrary-Abbau.
+  Die im base.xml-Abbau verbliebenen geteilten Creators (`Duration`,
+  `ChannelAssignment`, `unit.Configuration`, `Feature`) fallen mit diesem
+  Baum.
 
 ## 12. graficData.xml auf JAXB umgestellt — Lesen UND Schreiben (✅)
 

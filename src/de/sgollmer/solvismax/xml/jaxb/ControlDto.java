@@ -612,4 +612,333 @@ public class ControlDto {
 		@XmlElement(name = "Rectangle")
 		public RectangleDto rectangle;
 	}
+
+	@XmlElement(name = "ChannelDescriptions")
+	public ChannelDescriptionsDto channelDescriptions;
+
+	/**
+	 * JAXB-Bean für {@code <ChannelDescriptions>} — der letzte Zweig der
+	 * control.xml: die Definition aller Kanäle (Solvis-Daten). Wie bei den
+	 * Screens dürfen mehrere {@code <ChannelDescription>}-Einträge dieselbe Id
+	 * tragen (Konfigurations-Varianten, z.&nbsp;B. C01 für einen bzw. zwei
+	 * Zählfunktions-Bildschirme) — der alte Parser gruppiert sie in
+	 * Dokumentreihenfolge zu {@code OfConfigs}-Gruppen.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ChannelDescriptionsDto {
+		@XmlElement(name = "ChannelDescription")
+		public java.util.List<ChannelDescriptionDto> channelDescription;
+
+		/** Sicht: alle Vorkommen einer Id in Dokumentreihenfolge (OfConfigs-Analogon). */
+		public java.util.List<ChannelDescriptionDto> descriptions(final String id) {
+			if (this.channelDescription == null) {
+				return java.util.Collections.emptyList();
+			}
+			return this.channelDescription.stream().filter(d -> id.equals(d.id))
+					.collect(java.util.stream.Collectors.toList());
+		}
+	}
+
+	/**
+	 * JAXB-Bean für {@code <ChannelDescription>}: Kopf-Attribute plus optionale
+	 * Konfigurations-Einschränkung (strukturgleich zur Screen-Configuration —
+	 * {@link ScreenConfigurationDto} wird wiederverwendet) und die
+	 * <b>Kanal-Quelle</b> als XSD-{@code choice}: genau eines von
+	 * {@code <Control>}, {@code <Measurement>}, {@code <Calculation>}. Die
+	 * booleschen/numerischen Attribute spiegeln die Creator-Defaults
+	 * ({@code buffered=false}, {@code glitchInhibitScanIntervals=0}).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ChannelDescriptionDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "buffered") public boolean buffered = false;
+		@XmlAttribute(name = "unit") public String unit;
+		@XmlAttribute(name = "glitchInhibitScanIntervals") public int glitchInhibitScanIntervals = 0;
+
+		@XmlElement(name = "Configuration") public ScreenConfigurationDto configuration;
+
+		@XmlElement(name = "Control") public ControlSourceDto control;
+		@XmlElement(name = "Measurement") public MeasurementDto measurement;
+		@XmlElement(name = "Calculation") public CalculationDto calculation;
+	}
+
+	/**
+	 * JAXB-Bean für die Kanal-Quelle {@code <Control>}: GUI-Zugriff (Screen +
+	 * Wert-Rechteck), genau eine der fünf Strategien (XSD-{@code choice}
+	 * {@code TypeReadWrite}/{@code TypeRead}/{@code TypeMode}/
+	 * {@code TypeButton}/{@code TypeReheat}) und optionale
+	 * Update-Auslöser ({@code <UpdateBy>}).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ControlSourceDto {
+		@XmlAttribute(name = "optional") public boolean optional = false;
+
+		@XmlElement(name = "GuiAccess") public GuiAccessDto guiAccess;
+
+		@XmlElement(name = "TypeReadWrite") public StrategyReadWriteDto typeReadWrite;
+		@XmlElement(name = "TypeRead") public StrategyReadDto typeRead;
+		@XmlElement(name = "TypeMode") public StrategyModeDto typeMode;
+		@XmlElement(name = "TypeButton") public StrategyButtonDto typeButton;
+		@XmlElement(name = "TypeReheat") public StrategyReheatDto typeReheat;
+
+		@XmlElement(name = "UpdateBy") public UpdateByDto updateBy;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <GuiAccess screenId="...">}: das Wert-Rechteck
+	 * ({@code CurrentValue}), optional eine GUI-Vorbereitung
+	 * ({@code PreparationRef}) und Kanal-Abhängigkeiten ({@code Dependency}).
+	 * <b>Befund:</b> der alte Parser liest zusätzlich ein
+	 * {@code restoreChannelId}-Attribut, das {@code control.xsd} <b>nicht
+	 * deklariert</b> (eine Datei, die es nutzt, wäre schema-invalide); die
+	 * Vorlage nutzt es nicht. Hier wird es kanonisch mitgebunden, damit der
+	 * spätere JAXB-Reader verhaltensgleich bleibt.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class GuiAccessDto {
+		@XmlAttribute(name = "screenId") public String screenId;
+		@XmlAttribute(name = "restoreChannelId") public String restoreChannelId;
+
+		@XmlElement(name = "CurrentValue") public RectangleDto currentValue;
+		@XmlElement(name = "PreparationRef") public PreparationRefDto preparationRef;
+
+		@XmlElement(name = "Dependency")
+		public java.util.List<DependencyDto> dependency;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <Dependency id [value] [priority] [standby]/>}: der
+	 * Kanal, von dessen Wert das Auslesen abhängt (z.&nbsp;B. Vorlauf-Soll nur
+	 * bei Betriebsart „Kurve“). {@code priority} als Wrapper ({@code null} =
+	 * Attribut fehlt, wie im alten Creator).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class DependencyDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "value") public String value;
+		@XmlAttribute(name = "priority") public Integer priority;
+		@XmlAttribute(name = "standby") public String standby;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <TypeRead [divisor]>}: nur auslesbarer Wert
+	 * (OCR + Format-Regex). Creator-Default {@code divisor=1}.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class StrategyReadDto {
+		@XmlAttribute(name = "divisor") public int divisor = 1;
+
+		@XmlElement(name = "GuiRead") public GuiReadDto guiRead;
+	}
+
+	/** JAXB-Bean für {@code <GuiRead format="..."/>} (Extraktions-Regex). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class GuiReadDto {
+		@XmlAttribute(name = "format") public String format;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <TypeReadWrite>}: einstellbarer Zahlenwert mit
+	 * Grenzen/Schrittweite ({@code least}/{@code most}/{@code increment},
+	 * optional wechselnde Schrittweite ab {@code incrementChange} sowie
+	 * {@code maxExceeding} als Wrap-Around-Schutz). Wrapper-Typen = Attribut
+	 * darf fehlen (alter Creator: {@code null}); {@code divisor}-Default 1.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class StrategyReadWriteDto {
+		@XmlAttribute(name = "divisor") public int divisor = 1;
+		@XmlAttribute(name = "increment") public int increment;
+		@XmlAttribute(name = "least") public int least;
+		@XmlAttribute(name = "most") public int most;
+		@XmlAttribute(name = "incrementChange") public Integer incrementChange;
+		@XmlAttribute(name = "changedIncrement") public Integer changedIncrement;
+		@XmlAttribute(name = "maxExceeding") public Integer maxExceeding;
+
+		@XmlElement(name = "GuiModification") public GuiModificationDto guiModification;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <GuiModification format [wrapAround]>}: die
+	 * Hoch-/Runter-Touch-Punkte zum Verstellen des Wertes. {@code wrapAround}
+	 * mit Creator-Default {@code false} — anders als beim gleichnamigen
+	 * ScreenSequence-Attribut liest der alte Parser hier korrekt
+	 * {@code Boolean.parseBoolean}.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class GuiModificationDto {
+		@XmlAttribute(name = "format") public String format;
+		@XmlAttribute(name = "wrapAround") public boolean wrapAround = false;
+
+		@XmlElement(name = "Upper") public TouchPointDto upper;
+		@XmlElement(name = "Lower") public TouchPointDto lower;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <TypeMode>}: Modus-Auswahl (z.&nbsp;B. Betriebsart
+	 * Tag/Nacht/Standby/Timer) als geordnete Liste von Modus-Einträgen — die
+	 * Dokumentreihenfolge bestimmt die Reihenfolge in
+	 * {@code StrategyMode.getModes()}.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class StrategyModeDto {
+		@XmlElement(name = "ModeEntry")
+		public java.util.List<ModeEntryDto> modeEntry;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <ModeEntry id [handling]>}: Anwahl-Touch +
+	 * Erkennungs-Grafik ({@code GuiSet}) und optionale Weiß-Bereiche
+	 * ({@code MustBeWhite}), über die der alte Parser die Sequenz-Erkennung
+	 * schaltet. <b>Befund:</b> {@code handling} bleibt kanonisch der String —
+	 * die XSD erlaubt {@code READ/WRITE/BOTH}, der alte Parser verlangt aber
+	 * {@code Handling.valueOf} mit den Enum-Namen {@code RO/WO/RW}; ein
+	 * XSD-konformes {@code handling="READ"} würde den Alt-Parser mit einer
+	 * {@code IllegalArgumentException} abbrechen (Vorlage nutzt das Attribut
+	 * nicht, Creator-Default ist {@code RW}).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class ModeEntryDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "handling") public String handling;
+
+		@XmlElement(name = "GuiSet") public GuiSetDto guiSet;
+
+		@XmlElement(name = "MustBeWhite")
+		public java.util.List<RectangleDto> mustBeWhite;
+	}
+
+	/** JAXB-Bean für {@code <GuiSet>} (Anwahl-Touch + Erkennungs-Grafik). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class GuiSetDto {
+		@XmlElement(name = "Touch") public TouchPointDto touch;
+		@XmlElement(name = "ScreenGrafic") public ScreenGraficDescriptionDto screenGrafic;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <TypeButton [invert] pushTimeId releaseTimeId/>}:
+	 * der Kanal-Wert entspricht dem Zustand eines GUI-Buttons
+	 * (Duration-Referenzen für Druck-/Loslass-Dauer, Creator-Default
+	 * {@code invert=false}).
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class StrategyButtonDto {
+		@XmlAttribute(name = "invert") public boolean invert = false;
+		@XmlAttribute(name = "pushTimeId") public String pushTimeId;
+		@XmlAttribute(name = "releaseTimeId") public String releaseTimeId;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <TypeReheat desiredId pufferId deltaId>}: das
+	 * Warmwasser-Nachheizen — drei Kanal-Referenzen zur Zustandsermittlung
+	 * plus der Auslöse-Touch-Punkt.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class StrategyReheatDto {
+		@XmlAttribute(name = "desiredId") public String desiredId;
+		@XmlAttribute(name = "pufferId") public String pufferId;
+		@XmlAttribute(name = "deltaId") public String deltaId;
+
+		@XmlElement(name = "TouchPoint") public TouchPointDto touchPoint;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <UpdateBy>} — die Auslöser, die einen erneuten
+	 * GUI-Lesevorgang anstoßen. <b>Befund:</b> die XSD deklariert zusätzlich
+	 * {@code <SolvisHeatingData>}, der alte Parser kennt dieses Element aber
+	 * <b>nicht</b> ({@code UpdateStrategies.StrategyEnum} enthält nur
+	 * HumanAccess und EquipmentOnOff) — es würde kommentarlos ignoriert; die
+	 * Vorlage nutzt es nicht. Hier wird es kanonisch mitgebunden.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class UpdateByDto {
+		@XmlElement(name = "EquipmentOnOff") public EquipmentOnOffDto equipmentOnOff;
+		@XmlElement(name = "HumanAccess") public HumanAccessDto humanAccess;
+		@XmlElement(name = "SolvisHeatingData") public SolvisHeatingDataDto solvisHeatingData;
+	}
+
+	/**
+	 * JAXB-Bean für {@code <EquipmentOnOff>}: Abgleich eines berechneten
+	 * Kanals (z.&nbsp;B. Brennerlaufzeit) mit dem GUI-Wert.
+	 * {@code factor}-Default {@code -1} (= Brennerstarts-Update) und
+	 * {@code hourly=false} wie im alten Creator; {@code <Trigger>}-Kinder
+	 * sind weitere bei Synchronisation neu abzugleichende Kanal-Ids.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class EquipmentOnOffDto {
+		@XmlAttribute(name = "equipmentId") public String equipmentId;
+		@XmlAttribute(name = "calculatedId") public String calculatedId;
+		@XmlAttribute(name = "factor") public int factor = -1;
+		@XmlAttribute(name = "checkIntervalId") public String checkIntervalId;
+		@XmlAttribute(name = "readIntervalId") public String readIntervalId;
+		@XmlAttribute(name = "hourly") public boolean hourly = false;
+
+		@XmlElement(name = "Trigger")
+		public java.util.List<TriggerDto> trigger;
+	}
+
+	/** JAXB-Bean für {@code <Trigger id="..."/>}. */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class TriggerDto {
+		@XmlAttribute(name = "id") public String id;
+	}
+
+	/** JAXB-Bean für {@code <HumanAccess/>} (marker: Update nach User-Eingriff). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class HumanAccessDto {
+	}
+
+	/** JAXB-Bean für {@code <SolvisHeatingData solvisDataId [factor]/>} (nur XSD, s. {@link UpdateByDto}). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class SolvisHeatingDataDto {
+		@XmlAttribute(name = "solvisDataId") public String solvisDataId;
+		@XmlAttribute(name = "factor") public Integer factor;
+	}
+
+	/**
+	 * JAXB-Bean für die Kanal-Quelle {@code <Measurement type>}: Auslesen aus
+	 * dem Solvis-Hex-String ({@code sc2_val.xml}) über ein oder mehrere
+	 * {@code <Field>}-Bereiche. {@code type} bleibt kanonisch der
+	 * Vorlagen-String ({@code date/unsigned/signed/boolean/hex} — der alte
+	 * Parser mappt per {@code Strategy.valueOf(value.toUpperCase())});
+	 * Creator-Defaults {@code divisor=1}, {@code average=false},
+	 * {@code fast=false}.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class MeasurementDto {
+		@XmlAttribute(name = "type") public String type;
+		@XmlAttribute(name = "divisor") public int divisor = 1;
+		@XmlAttribute(name = "average") public boolean average = false;
+		@XmlAttribute(name = "fast") public boolean fast = false;
+
+		@XmlElement(name = "Field")
+		public java.util.List<FieldDto> field;
+	}
+
+	/** JAXB-Bean für {@code <Field position length/>} (Bereich im Hex-String). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class FieldDto {
+		@XmlAttribute(name = "position") public int position;
+		@XmlAttribute(name = "length") public int length;
+	}
+
+	/**
+	 * JAXB-Bean für die Kanal-Quelle {@code <Calculation strategy>}: ein aus
+	 * anderen Kanälen berechneter Wert ({@code runtime/starts/burnerStatus/
+	 * mixerPosition0}); die {@code <Alias>}-Kinder binden die
+	 * Berechnungs-Eingänge an Kanal-Ids.
+	 */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class CalculationDto {
+		@XmlAttribute(name = "strategy") public String strategy;
+
+		@XmlElement(name = "Alias")
+		public java.util.List<AliasDto> alias;
+	}
+
+	/** JAXB-Bean für {@code <Alias id dataId/>} (Berechnungs-Eingang → Kanal). */
+	@XmlAccessorType(XmlAccessType.FIELD)
+	public static class AliasDto {
+		@XmlAttribute(name = "id") public String id;
+		@XmlAttribute(name = "dataId") public String dataId;
+	}
 }

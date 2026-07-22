@@ -486,6 +486,271 @@ class ControlDualParseTest {
 	}
 
 	/**
+	 * {@code ChannelDescriptions} — <b>Dual-Parse</b> des letzten Zweigs: die
+	 * OfConfigs-Gruppierung (Id-Menge und Varianten-Anzahl identisch) und für
+	 * alle eindeutigen Ids die flachen Kanal-Eigenschaften über die
+	 * öffentlichen Domänen-Getter: unit/buffered/glitchInhibit, der
+	 * Quelltyp (Control/Measurement/Calculation als XSD-choice), Divisor,
+	 * Schreibbarkeit, average/fast, die Modus-Namen in Dokumentreihenfolge
+	 * und die abgeleiteten {@code UpperLowerStep}-Grenzen der
+	 * ReadWrite-Strategie.
+	 */
+	@Test
+	void channelDescriptionsDualParse() throws Exception {
+		final SolvisDescription alt = parseAlt();
+		final ControlDto neu = parseNeu();
+
+		final ControlDto.ChannelDescriptionsDto kanaele = neu.channelDescriptions;
+		assertNotNull(kanaele);
+
+		// OfConfigs-Gruppierung: gleiche Id-Menge, gleiche Varianten-Anzahl.
+		final java.util.Map<String, Integer> anzahlJeId = new java.util.LinkedHashMap<>();
+		for (final ControlDto.ChannelDescriptionDto d : kanaele.channelDescription) {
+			anzahlJeId.merge(d.id, 1, Integer::sum);
+		}
+		assertEquals(alt.getChannelDescriptions().get().size(), anzahlJeId.size(), "Anzahl Kanal-Ids");
+		for (final var eintrag : anzahlJeId.entrySet()) {
+			final var ofConfigs = alt.getChannelDescriptions().get(eintrag.getKey());
+			assertNotNull(ofConfigs, "Domäne kennt Kanal-Id " + eintrag.getKey());
+			assertEquals(ofConfigs.getElements().size(), eintrag.getValue(),
+					"Varianten-Anzahl von " + eintrag.getKey());
+		}
+
+		// Flache Eigenschaften dual-parse (eindeutige Ids -> getIfSingle):
+		int verglichen = 0;
+		for (final ControlDto.ChannelDescriptionDto d : kanaele.channelDescription) {
+			final var ausDomaene = alt.getChannelDescriptions().get(d.id).getIfSingle();
+			if (ausDomaene == null) {
+				continue; // Konfigurations-Varianten: oben über die Anzahl abgedeckt
+			}
+			assertEquals(ausDomaene.getUnit(), d.unit, "unit von " + d.id);
+			assertEquals(ausDomaene.isBuffered(), d.buffered, "buffered von " + d.id);
+			assertEquals(ausDomaene.glitchInhibitScanIntervals(), d.glitchInhibitScanIntervals,
+					"glitchInhibitScanIntervals von " + d.id);
+
+			switch (ausDomaene.getType()) {
+				case MEASUREMENT:
+					assertNotNull(d.measurement, "Measurement-Quelle von " + d.id);
+					assertNull(d.control);
+					assertNull(d.calculation);
+					assertEquals(ausDomaene.isAverage(), d.measurement.average, "average von " + d.id);
+					assertEquals(ausDomaene.isFast(), d.measurement.fast, "fast von " + d.id);
+					assertEquals(Integer.valueOf(d.measurement.divisor), ausDomaene.getDivisor(),
+							"Divisor von " + d.id);
+					org.junit.jupiter.api.Assertions.assertFalse(ausDomaene.isWriteable());
+					break;
+				case CALCULATION:
+					assertNotNull(d.calculation, "Calculation-Quelle von " + d.id);
+					assertNull(d.control);
+					assertNull(d.measurement);
+					assertEquals(Integer.valueOf(1), ausDomaene.getDivisor());
+					break;
+				case CONTROL:
+					assertNotNull(d.control, "Control-Quelle von " + d.id);
+					assertNull(d.measurement);
+					assertNull(d.calculation);
+					final ControlDto.ControlSourceDto quelle = d.control;
+					// XSD-choice: genau eine der fünf Strategien ist gesetzt.
+					assertEquals(1, java.util.stream.Stream
+							.of(quelle.typeReadWrite, quelle.typeRead, quelle.typeMode, quelle.typeButton,
+									quelle.typeReheat)
+							.filter(java.util.Objects::nonNull).count(), "Strategie-Anzahl von " + d.id);
+					// Nur TypeRead ist nicht schreibbar.
+					assertEquals(quelle.typeRead == null, ausDomaene.isWriteable(), "writeable von " + d.id);
+					final Integer divisorErwartet = quelle.typeReadWrite != null
+							? Integer.valueOf(quelle.typeReadWrite.divisor)
+							: quelle.typeRead != null ? Integer.valueOf(quelle.typeRead.divisor) : null;
+					assertEquals(divisorErwartet, ausDomaene.getDivisor(), "Divisor von " + d.id);
+					if (quelle.typeMode != null) {
+						final var modiDomaene = new java.util.ArrayList<String>();
+						ausDomaene.getModes().forEach(m -> modiDomaene.add(m.getName()));
+						final var modiDto = quelle.typeMode.modeEntry.stream().map(m -> m.id)
+								.collect(java.util.stream.Collectors.toList());
+						assertEquals(modiDto, modiDomaene, "Modi von " + d.id);
+					}
+					if (quelle.typeReadWrite != null) {
+						final var rw = quelle.typeReadWrite;
+						final var uls = ausDomaene.getUpperLowerStep();
+						assertEquals((double) rw.most / rw.divisor, uls.getUpper(), "upper von " + d.id);
+						assertEquals((double) rw.least / rw.divisor, uls.getLower(), "lower von " + d.id);
+						assertEquals((double) rw.increment / rw.divisor, uls.getStep(), "step von " + d.id);
+						if (rw.incrementChange != null && rw.changedIncrement != null) {
+							assertEquals(Double.valueOf((double) rw.incrementChange / rw.divisor),
+									uls.getIncrementChange(), "incrementChange von " + d.id);
+							assertEquals(Double.valueOf((double) rw.changedIncrement / rw.divisor),
+									uls.getChangedIncrement(), "changedIncrement von " + d.id);
+						} else {
+							assertNull(uls.getIncrementChange());
+						}
+					}
+					break;
+			}
+			++verglichen;
+		}
+		org.junit.jupiter.api.Assertions.assertTrue(verglichen >= 80,
+				"genügend Kanäle dual-parse-verglichen: " + verglichen);
+	}
+
+	/**
+	 * {@code ChannelDescriptions} — Charakterisierung der Bindung einzelner
+	 * Vorlagen-Kanäle über alle Quelltypen und Strategien: Measurement-Felder,
+	 * Calculation-Aliases, die Konfigurations-Varianten von C01, TypeRead mit
+	 * EquipmentOnOff/Trigger, TypeMode mit GuiSet und MustBeWhite, TypeReadWrite
+	 * mit GuiModification/Dependency, TypeButton, TypeReheat und die
+	 * admin-/Feature-Configurations am Kanal.
+	 */
+	@Test
+	void channelDescriptionsCharakterisiert() throws Exception {
+		final ControlDto neu = parseNeu();
+		final ControlDto.ChannelDescriptionsDto kanaele = neu.channelDescriptions;
+
+		// X06 (Uhrzeit): Measurement type="date" mit zwei Feldern.
+		final var x06 = kanaele.descriptions("X06").get(0);
+		assertEquals("date", x06.measurement.type);
+		assertEquals(2, x06.measurement.field.size());
+		assertEquals(0, x06.measurement.field.get(0).position);
+		assertEquals(6, x06.measurement.field.get(0).length);
+		assertEquals(202, x06.measurement.field.get(1).position);
+
+		// S01: signed/average/divisor 10, buffered, Einheit.
+		final var s01 = kanaele.descriptions("S01").get(0);
+		org.junit.jupiter.api.Assertions.assertTrue(s01.buffered);
+		assertEquals("°C", s01.unit);
+		assertEquals("signed", s01.measurement.type);
+		org.junit.jupiter.api.Assertions.assertTrue(s01.measurement.average);
+		assertEquals(10, s01.measurement.divisor);
+		assertEquals(14, s01.measurement.field.get(0).position);
+		assertEquals(4, s01.measurement.field.get(0).length);
+
+		// O-1: fast-Kanal (Ausgänge).
+		org.junit.jupiter.api.Assertions.assertTrue(kanaele.descriptions("O-1").get(0).measurement.fast);
+
+		// X01/X05: Calculation-Strategien und Alias-Bindung.
+		final var x01 = kanaele.descriptions("X01").get(0);
+		assertEquals("starts", x01.calculation.strategy);
+		assertEquals("equipmentOn", x01.calculation.alias.get(0).id);
+		assertEquals("alias.Brenner", x01.calculation.alias.get(0).dataId);
+		final var x05 = kanaele.descriptions("X05").get(0);
+		assertEquals("burnerStatus", x05.calculation.strategy);
+		assertEquals(2, x05.glitchInhibitScanIntervals);
+		assertEquals(2, x05.calculation.alias.size());
+		assertEquals("burnerLevel2On", x05.calculation.alias.get(1).id);
+
+		// X03: Konfigurations-Maske am Kanal (wiederverwendete Configuration-Bean).
+		final var x03 = kanaele.descriptions("X03").get(0);
+		assertEquals(0x1000L, x03.configuration.configurationMask.get(0).compareMaskValue());
+		assertEquals(0xf000L, x03.configuration.configurationMask.get(0).andMaskValue());
+
+		// C01: zwei Varianten (ein bzw. zwei Zählfunktions-Screens), TypeRead,
+		// EquipmentOnOff mit Trigger (factor-Default -1 = Brennerstarts).
+		final var c01 = kanaele.descriptions("C01");
+		assertEquals(2, c01.size());
+		assertEquals("Zaehlfunktion", c01.get(0).control.guiAccess.screenId);
+		assertEquals("Zaehlfunktion-2_2", c01.get(1).control.guiAccess.screenId);
+		assertEquals(145, c01.get(0).control.guiAccess.currentValue.topLeft.x);
+		assertEquals(75, c01.get(0).control.guiAccess.currentValue.topLeft.y);
+		assertNull(c01.get(0).control.guiAccess.restoreChannelId);
+		assertEquals("^(\\d+)$", c01.get(0).control.typeRead.guiRead.format);
+		assertEquals(1, c01.get(0).control.typeRead.divisor);
+		final var c01Update = c01.get(0).control.updateBy;
+		assertEquals("alias.Brenner", c01Update.equipmentOnOff.equipmentId);
+		assertEquals("X01", c01Update.equipmentOnOff.calculatedId);
+		assertEquals(-1, c01Update.equipmentOnOff.factor);
+		assertEquals("X02", c01Update.equipmentOnOff.trigger.get(0).id);
+		assertNull(c01Update.humanAccess);
+
+		// C02: EquipmentOnOff mit Faktor/Stunden-Synchronisation.
+		final var c02 = kanaele.descriptions("C02").get(0).control.updateBy.equipmentOnOff;
+		assertEquals(3600, c02.factor);
+		org.junit.jupiter.api.Assertions.assertTrue(c02.hourly);
+		assertEquals("checkCalculation", c02.checkIntervalId);
+		assertEquals("readCalculationInterval", c02.readIntervalId);
+		assertNull(c02.trigger);
+
+		// C03: optionaler Kanal (modulierter Gasbrenner).
+		org.junit.jupiter.api.Assertions.assertTrue(kanaele.descriptions("C03").get(0).control.optional);
+
+		// C04: TypeMode (aus/an/auto) mit GuiSet + exakter Grafik; HumanAccess.
+		final var c04 = kanaele.descriptions("C04").get(0).control;
+		assertEquals(3, c04.typeMode.modeEntry.size());
+		final var aus = c04.typeMode.modeEntry.get(0);
+		assertEquals("aus", aus.id);
+		assertNull(aus.handling);
+		assertEquals("Standard", aus.guiSet.touch.pushTimeRefId);
+		assertEquals("ModeChange", aus.guiSet.touch.releaseTimeRefId);
+		assertEquals(65, aus.guiSet.touch.coordinate.x);
+		assertEquals(75, aus.guiSet.touch.coordinate.y);
+		assertEquals("WWPumpeAus", aus.guiSet.screenGrafic.id);
+		assertEquals(Boolean.TRUE, aus.guiSet.screenGrafic.exact);
+		assertNotNull(c04.updateBy.humanAccess);
+		assertNull(c04.updateBy.equipmentOnOff);
+
+		// C05: TypeReadWrite-Grenzen + GuiModification (wrapAround, Upper/Lower).
+		final var c05 = kanaele.descriptions("C05").get(0).control.typeReadWrite;
+		assertEquals(1, c05.increment);
+		assertEquals(10, c05.least);
+		assertEquals(65, c05.most);
+		assertEquals(Integer.valueOf(5), c05.maxExceeding);
+		assertNull(c05.incrementChange);
+		org.junit.jupiter.api.Assertions.assertTrue(c05.guiModification.wrapAround);
+		assertEquals("(\\d+)..$", c05.guiModification.format);
+		assertEquals(225, c05.guiModification.upper.coordinate.x);
+		assertEquals(20, c05.guiModification.upper.coordinate.y);
+		assertEquals(50, c05.guiModification.lower.coordinate.y);
+
+		// C06, 2. Variante: GUI-Vorbereitung über den Heizkreis-Button.
+		assertEquals("Button_HK1",
+				kanaele.descriptions("C06").get(1).control.guiAccess.preparationRef.refId);
+
+		// C26: TypeButton (Zirkulations-Puls).
+		final var c26 = kanaele.descriptions("C26").get(0).control.typeButton;
+		assertEquals("Standard", c26.pushTimeId);
+		assertEquals("WindowChange", c26.releaseTimeId);
+		org.junit.jupiter.api.Assertions.assertFalse(c26.invert);
+
+		// C28: Feature-Configuration, Dependency mit value, wechselnde Schrittweite.
+		final var c28 = kanaele.descriptions("C28").get(0);
+		assertEquals("WW_Pumpe_Min_Laufzeit", c28.configuration.feature.id);
+		final var abhaengig = c28.control.guiAccess.dependency.get(0);
+		assertEquals("C26", abhaengig.id);
+		assertEquals("true", abhaengig.value);
+		assertNull(abhaengig.priority);
+		assertEquals(Integer.valueOf(120), c28.control.typeReadWrite.incrementChange);
+		assertEquals(Integer.valueOf(30), c28.control.typeReadWrite.changedIncrement);
+
+		// C31: ModeEntry mit MustBeWhite (Fix-Eintrag invertiert).
+		final var c31 = kanaele.descriptions("C31").get(0).control.typeMode;
+		final var fix = c31.modeEntry.get(1);
+		assertEquals("Fix", fix.id);
+		assertEquals(1, fix.mustBeWhite.size());
+		org.junit.jupiter.api.Assertions.assertTrue(fix.mustBeWhite.get(0).invertFunction);
+		assertEquals(130, fix.mustBeWhite.get(0).topLeft.x);
+		org.junit.jupiter.api.Assertions.assertFalse(c31.modeEntry.get(0).mustBeWhite.get(0).invertFunction);
+
+		// C32: Dependency mit priority/standby, divisor 100 (Fließkomma-Format).
+		final var c32 = kanaele.descriptions("C32").get(0).control;
+		assertEquals(100, c32.typeReadWrite.divisor);
+		final var kurve = c32.guiAccess.dependency.get(0);
+		assertEquals("C31", kurve.id);
+		assertEquals("Kurve", kurve.value);
+		assertEquals(Integer.valueOf(20), kurve.priority);
+		assertEquals("C06", kurve.standby);
+
+		// C46: TypeReheat (drei Kanal-Referenzen + Auslöse-Touch).
+		final var c46 = kanaele.descriptions("C46").get(0).control.typeReheat;
+		assertEquals("alias.WarmwassertemperaturSoll", c46.desiredId);
+		assertEquals("alias.Puffertemperatur", c46.pufferId);
+		assertEquals("alias.PufferdTStart", c46.deltaId);
+		assertEquals(225, c46.touchPoint.coordinate.x);
+		assertEquals(75, c46.touchPoint.coordinate.y);
+
+		// C49: admin-Configuration ohne Masken.
+		final var c49 = kanaele.descriptions("C49").get(0);
+		assertEquals("VALUE", c49.configuration.admin);
+		assertNull(c49.configuration.configurationMask);
+	}
+
+	/**
 	 * {@code ChannelAssignments}: das Domänen-Aggregat ({@code
 	 * AllChannelAssignments}) hängt an der OfConfigs-Maschinerie; hier wird
 	 * zunächst die <b>Bindung</b> charakterisiert (Id → SmartHome-Name).

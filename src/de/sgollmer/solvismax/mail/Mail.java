@@ -73,15 +73,18 @@ public class Mail {
 			}
 		}
 		switch (security) {
+			// Fork-Korrektur (MODERNISIERUNG.md 4.1): Frueher stand hier
+			// mail.smtp.ssl.trust="*" - damit wurde JEDEM Server-Zertifikat
+			// vertraut (anfaellig fuer Man-in-the-Middle). Jetzt gilt die
+			// JSSE-Standardpruefung gegen die System-Truststore-CAs; private
+			// SMTP-Server mit Eigenzertifikat muessen ihr Zertifikat in den
+			// Java-Truststore importieren (siehe CHANGELOG-fork.md).
 			case SSL:
 				props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory"); // SSL Factory Class
 				props.put("mail.smtp.socketFactory.port", portString); // SSL Port
-				props.put("mail.smtp.ssl.trust", "*");
 				break;
 			case TLS:
 				props.put("mail.smtp.starttls.enable", "true");
-//				props.put("mail.smtp.EnableSSL.enable", "true");
-				props.put("mail.smtp.ssl.trust", "*");
 				break;
 			case NONE:
 				break;

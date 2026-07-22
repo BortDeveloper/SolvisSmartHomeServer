@@ -51,6 +51,20 @@
     </repository>
   </repositories>
 
+  <!-- Pinnt transitive Versionen, damit die Enforcer-Konvergenzregel (4.2)
+       einen eindeutigen Abhaengigkeitsgraphen sieht: logback-classic 1.5.12
+       zieht slf4j-api 2.0.15, wir deklarieren 2.0.16 - hier wird die direkte
+       Version verbindlich gemacht (statt stillem "nearest wins"). -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <!-- Logging: SLF4J als Fassade + Logback als Implementierung (ersetzt die
          fruehere Eigen-Abstraktion mit tinylog/log4j). -->
@@ -142,6 +156,33 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
+      </plugin>
+
+      <!-- Build-Hygiene (MODERNISIERUNG.md 4.2): bricht den Build ab, wenn
+           die Umgebung oder der Abhaengigkeitsgraph von den Annahmen abweicht
+           - Java >= 17 (Projekt-Baseline seit Stufe 3.2) und konvergente
+           Versionen im Dependency-Graph (keine sich widersprechenden
+           transitiven Versionen, die sonst still "gewinnen" wuerden). -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>enforce-baseline</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                </requireJavaVersion>
+                <dependencyConvergence />
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Fuehrt die JUnit-5-Tests aus (mvn test / verify). -->

@@ -8,6 +8,23 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Modernisierung Stufe 4.1/4.2: Mail-TLS-Prüfung + Abhängigkeits-Hygiene
+
+- **Sicherheitskorrektur Mail-Versand:** Bisher setzte der Mail-Versand
+  `mail.smtp.ssl.trust="*"` — damit wurde **jedem** SMTP-Server-Zertifikat
+  vertraut (anfällig für Man-in-the-Middle; das Mail-Passwort ging an jeden,
+  der sich als Provider ausgibt). Jetzt gilt die JSSE-Standardprüfung gegen
+  die System-Truststore-CAs. **Auswirkung:** Öffentliche Provider (z. B.
+  securesmtp.t-online.de) funktionieren unverändert. Wer einen privaten
+  SMTP-Server mit selbstsigniertem Zertifikat nutzt, muss dessen Zertifikat
+  in den Java-Truststore importieren
+  (`keytool -importcert -cacerts -alias meinsmtp -file server.crt`).
+- **Dependabot** (Maven + GitHub-Actions, wöchentlich) hält Abhängigkeiten
+  aktuell; die CI prüft jeden Update-PR mit Build + Testsuite (JDK 17/21).
+- **maven-enforcer-plugin:** Build erzwingt Java ≥ 17 und
+  Dependency-Konvergenz (widersprüchliche transitive Versionen brechen den
+  Build, statt still zu „gewinnen").
+
 ## Modernisierung Stufe 3.4: jakarta.mail + Windows-Ballast isoliert
 
 - **`javax.mail` → `jakarta.mail`:** Das EOL-gegangene `com.sun.mail` 1.6.2

@@ -1,0 +1,20 @@
+# Automatische Abhaengigkeits-Pflege (MODERNISIERUNG.md 4.2):
+# Dependabot oeffnet woechentlich PRs fuer veraltete Maven-Abhaengigkeiten und
+# GitHub-Actions - die CI (Build + 81 Tests, JDK 17/21) prueft jeden Vorschlag
+# automatisch. Sicherheits-Advisories erzeugen zusaetzlich sofortige PRs.
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # Die vendored XMLLibrary (local-maven-repo) kennt kein Registry-Update;
+    # sie faellt ohnehin mit Abschluss von Stufe 3.3.
+    ignore:
+      - dependency-name: "de.sgollmer:xmllibrary"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

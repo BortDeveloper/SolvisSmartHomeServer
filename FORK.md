@@ -1,5 +1,9 @@
 # Fork-Hinweis
 
+> **Sprache:** Deutsch · **Status:** aktiv · **Zielgruppe:** technisch
+> Interessierte, Programmierer · **Siehe auch:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+> (Gesamtsicht), [CHANGELOG-fork.md](CHANGELOG-fork.md) (Umsetzung)
+
 Dies ist ein Fork von
 [GollmerSt/SolvisSmartHomeServer](https://github.com/GollmerSt/SolvisSmartHomeServer)
 (MIT-Lizenz). Der Upstream ist unverändert das Original; dieser Fork sammelt

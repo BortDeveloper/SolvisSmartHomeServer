@@ -1,5 +1,8 @@
 # Architektur (Fork-Sicht)
 
+> **Sprache:** Deutsch · **Status:** aktiv · **Zielgruppe:** Programmierer ·
+> **Bezug:** ADR-0017, [FORK.md](../FORK.md), [MODERNISIERUNG.md](../MODERNISIERUNG.md)
+
 Konsolidierte Architektur-Übersicht dieses Forks: Lineage, Laufzeit- und
 Deployment-Bild, Betriebsmodell und bewusste Grenzen — an **einer** Stelle,
 statt verstreut über [FORK.md](../FORK.md), [MODERNISIERUNG.md](../MODERNISIERUNG.md)

@@ -2,7 +2,7 @@
 # SolvisSmartHomeServer — Container-Image (Fork)
 #
 # Zwei-Stufen-Build:
-#   1. "build"   — JDK + Ant kompilieren aus den Quellen das Uber-Jar.
+#   1. "build"   — JDK + Maven-Wrapper (./mvnw) kompilieren aus den Quellen das Uber-Jar.
 #   2. Laufzeit  — schlankes JRE-Image, das nur das Jar ausfuehrt.
 #
 # Warum diese Struktur:

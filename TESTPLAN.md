@@ -1,6 +1,10 @@
 # Testplan — SolvisSmartHomeServer (Fork)
 
-Dieser Plan hilft, **schnell und nachvollziehbar** zu prüfen, ob der
+> **Sprache:** Deutsch · **Status:** aktiv · **Zielgruppe:** Operateure,
+> Programmierer · **Bezug:** [README.md](README.md), [FORK.md](FORK.md),
+> [CHANGELOG-fork.md](CHANGELOG-fork.md)
+
+Dieser Plan hilft, nachvollziehbar zu prüfen, ob der
 SolvisSmartHomeServer in der eigenen Umgebung so arbeitet wie beschrieben und
 sich integrieren lässt. Er ist in **Phasen** aufgebaut: die frühen Phasen
 brauchen **keine Heizungsanlage** (Build, Konfiguration, MQTT-Grundfunktion mit
@@ -28,7 +32,7 @@ Prüfkriterium ist die im README zugesagte Funktion:
 | Punkt | Anforderung |
 |---|---|
 | Anlage | SolvisMax 6/7 mit **SolvisControl 2 + SolvisRemote**. **Nicht** SC3 (dort Modbus nutzen). |
-| Laufzeit | JRE ≥ 1.8; verifiziert mit **OpenJDK 21**. |
+| Laufzeit | JRE ≥ 17 (Fork-Baseline, Bytecode major 61); verifiziert mit **OpenJDK 21**. |
 | Build (optional) | JDK 17+ (Maven-Wrapper `mvnw` ist im Repo enthalten — kein separates Maven nötig). |
 | MQTT | Ein MQTT-Broker (z. B. Mosquitto). Hinweis: Upstream-MQTT ist **unverschlüsselt** — für TLS-Umgebungen siehe Phase 6/Integrationsvariante. |
 | Netz | SolvisRemote per HTTP erreichbar; TCP-Port des Servers (Default **10735**) für TCP-Clients erreichbar. |

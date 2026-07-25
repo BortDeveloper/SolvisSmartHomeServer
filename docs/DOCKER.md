@@ -58,7 +58,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends default-jre-hea
    docker compose up -d
    ```
 
-## TLS/mTLS (Fork-Feature)
+## TLS/mTLS (Variante B — deprecated, nicht unterstützt)
+
+> ⛔ **Der native `<Ssl>`-mTLS-Pfad (Variante B) ist deprecated und wird nicht
+> unterstützt.** Der Start bricht bei `<Ssl enable="true">` per Fail-Fast-Guard
+> ab (Paho-v3-Fehler 32105). Produktivvariante ist **Variante A** (lokaler Broker
+> + mTLS-Bridge) — siehe [ARCHITECTURE.md](ARCHITECTURE.md) §4 und
+> [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 3. Der folgende Abschnitt ist nur
+> noch historisch/analytisch: [mtls-behebung-vorschlag.md](mtls-behebung-vorschlag.md).
 
 Zertifikate unter `./ssl` bereitstellen (read-only nach `/certs` gemountet) und
 in `base.xml` im `<Mqtt>`-Element konfigurieren:

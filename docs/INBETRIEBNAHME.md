@@ -1,5 +1,9 @@
 # Inbetriebnahme (Schritt für Schritt)
 
+> **Sprache:** Deutsch · **Status:** aktiv · **Zielgruppe:** Operateure ·
+> **Bezug:** [docs/DOCKER.md](DOCKER.md) (Grundlagen), [TESTPLAN.md](../TESTPLAN.md)
+> (Prüfschritte), [ARCHITECTURE.md](ARCHITECTURE.md) §4 (Betriebsmodell)
+
 Diese Anleitung führt vollständig durch die Erstinbetriebnahme als
 **Docker-Container**: Image bauen → Zugriff auf die Solvis-Anlage einrichten →
 MQTT-Broker anbinden → Test starten. Sie baut auf [docs/DOCKER.md](DOCKER.md)
@@ -24,7 +28,7 @@ MQTT-Broker anbinden → Test starten. Sie baut auf [docs/DOCKER.md](DOCKER.md)
 
 Verzeichnislayout, das wir anlegen (neben `docker-compose.yml`):
 
-```
+```text
 .
 ├── base.xml          # Konfiguration (erstellen wir in Phase 2/3)
 ├── data/             # persistente Laufzeitdaten (LearnedImages, Logs)  -> Volume /data
@@ -45,9 +49,9 @@ docker compose build
 # docker build -t solvissmarthomeserver:fork .
 ```
 
-Der Zwei-Stufen-Build kompiliert im Container (Ant) und legt das Uber-Jar in ein
-schlankes JRE-Image. Erfolg = `BUILD SUCCESSFUL` und ein Image
-`solvissmarthomeserver:fork`.
+Der Zwei-Stufen-Build kompiliert im Container über den Maven-Wrapper (`./mvnw`)
+und legt das Uber-Jar in ein schlankes JRE-Image. Erfolg = `BUILD SUCCESS` und
+ein Image `solvissmarthomeserver:fork`.
 
 Kurzcheck, dass das Image startet (ohne Anlage/Broker):
 

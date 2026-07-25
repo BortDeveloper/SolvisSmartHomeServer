@@ -58,12 +58,19 @@ Ergebnismatrix am Ende ist dafür gedacht.
 
 ### T1.2 — Uber-Jar ist vollständig
 - **Zweck:** Alle Laufzeit-Bibliotheken sind gebündelt (kein späteres
-  `NoClassDefFoundError`).
+  `NoClassDefFoundError`); zugleich Regressionswächter gegen einen Rückfall auf
+  die abgelösten Backends (Stufen 2.2 tinylog/log4j → SLF4J/Logback, 3.4
+  `javax.mail` → `jakarta.mail`).
 - **Schritte:**
-  `unzip -l target/SolvisSmartHomeServer.jar | grep -E 'paho|tinylog|log4j|javax/mail|solvismax/Main'`
-- **Erwartung:** Paho-MQTT-, tinylog-, log4j-, `javax.mail`- und
-  `de/sgollmer/solvismax/Main`-Klassen vorhanden.
-- **Bestanden, wenn:** alle fünf gefunden.
+  - Vorhanden (aktive Laufzeit-Bibliotheken):
+    `unzip -l target/SolvisSmartHomeServer.jar | grep -E 'paho|logback|jakarta/mail|solvismax/Main'`
+  - NICHT vorhanden (abgelöste Bibliotheken, 0 Treffer erwartet):
+    `unzip -l target/SolvisSmartHomeServer.jar | grep -E 'tinylog|log4j|javax/mail'`
+- **Erwartung:** Erstes Kommando findet Paho-MQTT-, Logback-, `jakarta.mail`-
+  und `de/sgollmer/solvismax/Main`-Klassen; zweites Kommando liefert **keine**
+  Treffer (tinylog, log4j und `javax.mail` sind im Fork ersetzt).
+- **Bestanden, wenn:** erstes Kommando findet alle vier, zweites Kommando
+  liefert 0 Treffer.
 
 ## Phase 2 — Laufzeit-Smoke (ohne Anlage)
 

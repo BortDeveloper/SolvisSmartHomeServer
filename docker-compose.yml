@@ -11,9 +11,11 @@
 #        docker compose run --rm solvis --server-learn
 #   4. Danach den Dauerbetrieb starten: docker compose up -d
 #
-# TLS/mTLS (Fork-Feature): Zertifikate unter ./ssl bereitstellen und in base.xml
-# im <Mqtt>-Element ein <Ssl .../> mit den /certs-Pfaden konfigurieren
-# (clientKeyFilePath muss PKCS#8 sein). Siehe CHANGELOG-fork.md.
+# MQTT-Anbindung: Unterstuetzt ist Variante A (lokaler Mosquitto auf 127.0.0.1 +
+# mTLS-Bridge; docs/ARCHITECTURE.md §4, docs/INBETRIEBNAHME.md Phase 3). Der
+# Connector spricht Klartext zum lokalen Broker; das mTLS-Material gehoert der
+# BRIDGE (Repo ccu2mqtt), nicht diesem Container. Variante B (natives <Ssl>-mTLS
+# direkt) ist deprecated und bricht beim Start per Fail-Fast-Guard ab.
 
 services:
   solvis:
@@ -23,14 +25,28 @@ services:
     restart: unless-stopped
     # tini als PID 1 -> sauberes SIGTERM (LWT/Disconnect beim Stoppen).
     init: true
+    # Variante A braucht Host-Loopback-Zugriff auf den lokalen Mosquitto:
+    # entweder nativer Betrieb (A3) oder host-Netz (A1). Bei host-Netz bindet der
+    # proprietaere TCP-Server (S-3) sonst auf Host-Interfaces -> Bind unbedingt auf
+    # Loopback beschraenken oder abschalten (siehe environment unten).
+    # network_mode: host
+    environment:
+      # S-3: TCP-/JSON-Server nur auf Loopback (Default) bzw. ganz aus.
+      - SOLVIS_TCPSERVER_BINDADDRESS=127.0.0.1
+      # - SOLVIS_TCPSERVER_ENABLE=false
+      # A-4: Pfad des Ready-Tokens (Default passt zum /data-Volume).
+      # - SOLVIS_HEALTH_TOKEN_PATH=/data/health/ready
     volumes:
       # base.xml wird NEBEN das Jar gemountet (dort sucht die App sie per Default).
       - ./base.xml:/opt/solvis/base.xml:ro
-      # Persistente Laufzeitdaten (LearnedImages, control.xml, Logs).
+      # Persistente Laufzeitdaten (LearnedImages, control.xml, Logs, health/ready).
       - ./data:/data
-      # TLS-Zertifikate (read-only), von base.xml <Ssl> referenziert.
-      - ./ssl:/certs:ro
+      # TLS-Zertifikate: fuer Variante A NICHT noetig (gehoeren zur Bridge).
+      # Nur mounten, falls fuer eigene Zwecke gebraucht.
+      # - ./ssl:/certs:ro
+    # HEALTHCHECK ist im Dockerfile definiert (Ready-Token-Frische, SR-1/A-4) und
+    # wird hier automatisch uebernommen. Ueberschreiben nur bei Bedarf.
     # Optional: proprietaeren TCP-Server-Port (Default 10735) veroeffentlichen,
-    # falls TCP-Clients (statt/zusaetzlich zu MQTT) genutzt werden.
+    # falls TCP-Clients genutzt werden. NICHT empfohlen (unauthentifiziert, S-3).
     # ports:
-    #   - "10735:10735"
+    #   - "127.0.0.1:10735:10735"

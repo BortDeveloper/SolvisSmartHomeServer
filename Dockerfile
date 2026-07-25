@@ -58,6 +58,17 @@ USER solvis
 # gegen versehentliche AWT-Display-Zugriffe.
 ENV JAVA_TOOL_OPTIONS="-Djava.awt.headless=true"
 
+# Health-Check (SR-1 / Auflage A-4): 'restart: unless-stopped' deckt nur einen
+# Prozess-Crash, nicht den Silent-Failure des MQTT-Retry-Loops (Container bleibt
+# "Up", waehrend kein solvis/#-Datum den Broker erreicht). Geprueft wird daher die
+# FRISCHE des Ready-Tokens, das die Anwendung bei Connect und laufendem Publish
+# schreibt (/data/health/ready via HealthToken) — Symptom statt PID (Google SRE
+# Kap. 6; Liveness != Readiness != Funktion). Schwelle 300 s liegt ueber dem
+# Touch-Intervall (30 s); die start-period deckt OCR-Lernphase/ersten Connect.
+# stat/date stammen aus coreutils im temurin-JRE-Image; laeuft als USER solvis.
+HEALTHCHECK --interval=60s --timeout=5s --start-period=180s --retries=3 \
+    CMD [ -f /data/health/ready ] && [ "$(( $(date +%s) - $(stat -c %Y /data/health/ready) ))" -lt 300 ] || exit 1
+
 # Hinweis: Fuer sauberes Herunterfahren (SIGTERM -> LWT/Disconnect) den Container
 # mit "--init" (bzw. compose "init: true") starten, damit ein Init-Prozess (tini)
 # die Signalweiterleitung uebernimmt. Das Jar selbst bleibt der Hauptprozess.

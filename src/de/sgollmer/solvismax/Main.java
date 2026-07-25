@@ -1,6 +1,7 @@
 package de.sgollmer.solvismax;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -359,8 +360,14 @@ public class Main {
 		Constants.Debug.logDebugging(logger);
 
 		this.commandHandler = new CommandHandler(this.instances);
-		this.server = new Server(serverSocket, this.commandHandler,
-				this.instances.getSolvisDescription().getMiscellaneous());
+		if (serverSocket != null) {
+			this.server = new Server(serverSocket, this.commandHandler,
+					this.instances.getSolvisDescription().getMiscellaneous());
+		} else {
+			// TCP-Server per Konfiguration deaktiviert (S-3): kein Server-Objekt,
+			// die MQTT-Anbindung bleibt der reguläre Betriebsweg.
+			logger.info("Proprietaerer TCP-Server deaktiviert — Betrieb laeuft ueber MQTT.");
+		}
 		this.mqtt = baseData.getMqtt();
 		try {
 			this.mqtt.connect(this.instances, this.commandHandler);
@@ -370,7 +377,9 @@ public class Main {
 		}
 
 		this.instances.initialized();
-		this.server.start();
+		if (this.server != null) {
+			this.server.start();
+		}
 
 		System.out.println(serverStart);
 
@@ -510,19 +519,68 @@ public class Main {
 		}
 	}
 
+	// S-3 (security-Audit 2026-07-25): Der proprietaere, unauthentifizierte
+	// TCP-/JSON-Server (Default-Port 10735 + 10736) band bisher bedingungslos
+	// auf allen Interfaces (0.0.0.0). Er ist jetzt konfigurierbar:
+	//   * solvis.tcpServer.enable       (SOLVIS_TCPSERVER_ENABLE)      Default true
+	//   * solvis.tcpServer.bindAddress  (SOLVIS_TCPSERVER_BINDADDRESS) Default 127.0.0.1
+	// Sicherer Default: nur Loopback (nicht aus dem LAN erreichbar). Vollstaendig
+	// abschaltbar via enable=false. Bewusstes Oeffnen auf alle Interfaces nur per
+	// Opt-in (bindAddress=0.0.0.0). Doku: docs/ARCHITECTURE.md §5, docs/DOCKER.md.
+	private static final String TCP_SERVER_ENABLE_PROPERTY = "solvis.tcpServer.enable";
+	private static final String TCP_SERVER_ENABLE_ENV = "SOLVIS_TCPSERVER_ENABLE";
+	private static final String TCP_SERVER_BIND_PROPERTY = "solvis.tcpServer.bindAddress";
+	private static final String TCP_SERVER_BIND_ENV = "SOLVIS_TCPSERVER_BINDADDRESS";
+	private static final String TCP_SERVER_BIND_DEFAULT = "127.0.0.1";
+	private static final int TCP_SERVER_BACKLOG = 50;
+
+	private static String getConfig(final String property, final String env, final String def) {
+		String value = System.getProperty(property);
+		if (value == null || value.isEmpty()) {
+			value = System.getenv(env);
+		}
+		if (value == null || value.isEmpty()) {
+			value = def;
+		}
+		return value;
+	}
+
+	static boolean isTcpServerEnabled() {
+		return !"false".equalsIgnoreCase(getConfig(TCP_SERVER_ENABLE_PROPERTY, TCP_SERVER_ENABLE_ENV, "true"));
+	}
+
+	static String getTcpServerBindAddress() {
+		return getConfig(TCP_SERVER_BIND_PROPERTY, TCP_SERVER_BIND_ENV, TCP_SERVER_BIND_DEFAULT);
+	}
+
 	private ServerSocket openSocket(final int port) {
+		if (!isTcpServerEnabled()) {
+			logger.info("Proprietaerer TCP-Server (Port " + port
+					+ ") per Konfiguration deaktiviert (" + TCP_SERVER_ENABLE_PROPERTY
+					+ "=false) — kein Listen-Socket wird geoeffnet.");
+			return null;
+		}
 		ServerSocket serverSocket = null;
-		;
+		String bindAddress = getTcpServerBindAddress();
 		try {
-			serverSocket = new ServerSocket(port);
+			if (bindAddress == null || bindAddress.isEmpty()) {
+				// Nur nach bewusster Konfiguration: alle Interfaces (0.0.0.0).
+				serverSocket = new ServerSocket(port);
+			} else {
+				serverSocket = new ServerSocket(port, TCP_SERVER_BACKLOG, InetAddress.getByName(bindAddress));
+			}
 		} catch (IOException e) {
-			System.err.println("Port " + port + " is in use.");
+			System.err.println("TCP-Server-Socket " + bindAddress + ":" + port
+					+ " konnte nicht geoeffnet werden (Port belegt oder Bind-Adresse ungueltig): " + e.getMessage());
 			System.exit(ExitCodes.SERVER_PORT_IN_USE);
 		}
 		return serverSocket;
 	}
 
 	private void closeSocket(final ServerSocket socket) {
+		if (socket == null) {
+			return;
+		}
 		try {
 			socket.close();
 		} catch (IOException e) {

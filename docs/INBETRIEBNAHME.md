@@ -70,6 +70,18 @@ docker compose run --rm --entrypoint sh solvis -c 'cat /opt/solvis/base.xml' 2>/
   || cp rsc/de/sgollmer/solvismax/data/base.xml ./base.xml
 ```
 
+> ⚠️ **Dateirechte sind der einzige reale Schutz der Secrets (Pflichtschritt).**
+> `passwordCrypt` in `base.xml` ist nur **Obfuskation, kein Schutz** — der
+> AES-Schlüssel ist aus dem öffentlichen Quellcode ableitbar (ECB). Anlagen-,
+> MQTT- und SMTP-Zugangsdaten sind daher nur durch Dateirechte geschützt.
+> Direkt nach dem Anlegen/Bearbeiten:
+>
+> ```bash
+> chmod 600 base.xml && chown 10001:10001 base.xml   # Owner = Dienstnutzer (UID 10001)
+> ```
+>
+> `base.xml` **niemals** ins Repo/Backup im Klartext ohne Zugriffsschutz.
+
 ### 2.2 Anlagen-Passwort verschlüsseln
 
 Passwörter stehen in `base.xml` **nie im Klartext**, sondern als
@@ -114,41 +126,66 @@ In `base.xml`:
 
 ---
 
-## Phase 3 — MQTT-Broker anbinden
+## Phase 3 — MQTT anbinden (Variante A: lokaler Broker + mTLS-Bridge)
 
-Das `<tns:Mqtt>`-Element aktivieren und auf den eigenen Broker zeigen. Für einen
-**mTLS-gehärteten Broker** das `<tns:Ssl>`-Kindelement ergänzen (Fork-Feature):
+**Unterstützte Produktivvariante ist Variante A** (siehe
+[ARCHITECTURE.md](ARCHITECTURE.md) §4): Der Connector publiziert **unverschlüsselt
+auf einen lokalen, auf `127.0.0.1` gebundenen Mosquitto** auf demselben Host;
+dieser koppelt per **mTLS-Bridge** (Login `solvis-bridge`, `topic solvis/# both`)
+an den zentralen Haus-Broker. Dasselbe Muster nutzen CCU-Jack und die FHEM-Bridge.
+Die Bridge-/Zertifikats-/ACL-Seite liegt im Repo `ccu2mqtt` (`docs/solvis.md` §7)
+und ist dort bereits provisioniert — **hier ist kein Client-Zertifikat nötig**.
+
+> ⛔ **Variante B (natives mTLS direkt, `<tns:Ssl enable="true">`) ist deprecated
+> und wird nicht unterstützt.** Der Start bricht dann per Fail-Fast-Guard mit
+> klarer Meldung ab (Ursache: Paho-v3-Fehler 32105). Begründung:
+> [mtls-behebung-vorschlag.md](mtls-behebung-vorschlag.md). **Kein `<tns:Ssl>` im
+> `<tns:Mqtt>`-Element konfigurieren.**
+
+### 3.1 `<tns:Mqtt>` auf den lokalen Broker zeigen
 
 ```xml
 <tns:Mqtt enable="true"
-    brokerUrl="<BROKER_HOST>"        <!-- z. B. 192.168.1.24 -->
-    port="<BROKER_PORT>"             <!-- 1883 (Klartext) oder 8883 (TLS) -->
-    userName="<BROKER_USER>"         <!-- optional; weglassen, wenn nur mTLS -->
+    brokerUrl="127.0.0.1"            <!-- lokaler Mosquitto, Loopback -->
+    port="1883"                      <!-- Klartext zum lokalen Broker -->
+    userName="<BROKER_USER>"         <!-- optional; nur falls der lokale Broker Auth verlangt -->
     passwordCrypt="<WERT>"           <!-- optional; via --string-to-crypt -->
     idPrefix="solvis"
-    topicPrefix="<PREFIX>"           <!-- z. B. "solvis" -> Topics solvis/… -->
+    topicPrefix="solvis"             <!-- Vertrag: ausschließlich solvis/# -->
     smartHomeId="HomeAssistant"
-    publishQoS="1" subscribeQoS="1">
-    <tns:Ssl enable="true"
-        caFilePath="/certs/ca.crt"
-        clientCrtFilePath="/certs/client.crt"
-        clientKeyFilePath="/certs/client.key" />
-</tns:Mqtt>
+    publishQoS="1" subscribeQoS="1" />
 ```
 
 Hinweise:
 
-- `topicPrefix` bestimmt alle Topics: Status unter `<PREFIX>/<unit>/<kanal>/data`,
-  Kommandos unter `<PREFIX>/<client>/<unit>/<kanal>/cmnd`, Server-Status
-  `<PREFIX>/server/online`.
-- **Ohne** `<tns:Ssl>` verbindet der Client unverschlüsselt (nur für
-  Klartext-Broker/`1883`).
-- Der private Schlüssel muss **PKCS#8** sein. Umwandeln falls nötig:
-  `openssl pkcs8 -topk8 -nocrypt -in alt.key -out ssl/client.key`.
-- Zertifikate nach `./ssl` legen (wird read-only nach `/certs` gemountet).
+- `topicPrefix="solvis"` ist vertraglich fixiert: Status unter
+  `solvis/<unit>/<kanal>/data`, Kommandos unter
+  `solvis/<client>/<unit>/<kanal>/cmnd`, Server-Status `solvis/server/online`.
+  **Keine Topics außerhalb `solvis/#`.**
+- Das mTLS-Material (CA, Client-Cert, Key) gehört zur **Bridge** (Mosquitto,
+  Repo `ccu2mqtt`), **nicht** zum Java-Connector. Das `./ssl`→`/certs`-Mount des
+  Connectors wird für Variante A **nicht** benötigt.
 
-Falls der Broker zusätzlich User/Passwort verlangt, den Wert wie in 2.2 mit
-`--string-to-crypt` erzeugen und als `passwordCrypt` im `<tns:Mqtt>` eintragen.
+### 3.2 Container-Netz: `127.0.0.1` muss den lokalen Broker erreichen
+
+Im Docker-Deployment ist `127.0.0.1` das **Container**-Loopback, nicht der Host.
+Damit der Connector den lokalen Mosquitto erreicht (und der Klartext-Hop echtes
+Loopback bleibt), eine der konventionstreuen Auflösungen wählen:
+
+- **A3 (bevorzugt, Stack-Konvention):** Server **nativ** auf dem Host (systemd,
+  wie CCU-Jack / FHEM-Bridge), lokaler Mosquitto localhost-only. Dann ist
+  `127.0.0.1` echtes Host-Loopback; die Docker-Linie wird hier nicht genutzt.
+- **A1 (Docker):** `network_mode: host` für den Connector-Container. Dann bindet
+  auch der proprietäre TCP-Server (Port 10735) auf Host-Interfaces — deshalb
+  **zwingend** mit dem Bind-/Abschalt-Schalter aus [ARCHITECTURE.md](ARCHITECTURE.md)
+  §5 koppeln (`SOLVIS_TCPSERVER_BINDADDRESS=127.0.0.1` bzw.
+  `SOLVIS_TCPSERVER_ENABLE=false`).
+- *A2 (Mosquitto-Sidecar im Compose-Netz):* nur mit dokumentierter
+  Security-Entscheidung (Netz nachweislich nicht ans LAN exponiert), da der Hop
+  dann kein echtes Loopback mehr ist.
+
+Falls der lokale Broker zusätzlich User/Passwort verlangt, den Wert wie in 2.2
+mit `--string-to-crypt` erzeugen und als `passwordCrypt` im `<tns:Mqtt>` eintragen.
 
 ---
 
@@ -175,24 +212,26 @@ docker compose up -d
 docker compose logs -f solvis        # Start/Verbindungsaufbau beobachten
 ```
 
-Auf dem Broker mitlesen (mit denselben Zertifikaten wie der Server):
+Mitlesen — zwei Ebenen (Variante A):
 
 ```bash
-# TLS/mTLS-Broker:
-mosquitto_sub -h <BROKER_HOST> -p 8883 \
-  --cafile ssl/ca.crt --cert ssl/client.crt --key ssl/client.key \
-  -t '<PREFIX>/#' -v
+# 1) Lokal (Connector -> lokaler Broker), Klartext-Loopback:
+mosquitto_sub -h 127.0.0.1 -p 1883 -t 'solvis/#' -v
 
-# Klartext-Broker:
-# mosquitto_sub -h <BROKER_HOST> -p 1883 -t '<PREFIX>/#' -v
+# 2) Ende-zu-Ende hinter der mTLS-Bridge (zentraler Broker):
+mosquitto_sub -h <PRIMAER_BROKER_HOST> -p 8883 \
+  --cafile ssl/ca.crt --cert ssl/client.crt --key ssl/client.key \
+  -t 'solvis/#' -v
 ```
 
 **Bestanden, wenn:**
 
-- `<PREFIX>/server/online` = `true`,
-- `<PREFIX>/<unit>/…/data`-Topics erscheinen und sich aktualisieren
+- `solvis/server/online` = `true`,
+- `solvis/<unit>/…/data`-Topics erscheinen und sich aktualisieren
   (Temperaturen, Zustände),
-- `<PREFIX>/<unit>/…/meta` liefert Kanal-Metadaten.
+- `solvis/<unit>/…/meta` liefert Kanal-Metadaten,
+- und (Container) der HEALTHCHECK auf `healthy` steht
+  (`docker inspect --format '{{.State.Health.Status}}' solvissmarthomeserver`).
 
 ### 5.2 Kommando-Test (nur mit `InteractiveGUIAccess="true"`)
 
@@ -222,8 +261,9 @@ docker compose down          # sendet SIGTERM; init:true sorgt fuer Disconnect/L
 | Symptom | Ursache / Prüfung |
 |---|---|
 | Lernphase/Start bricht mit Verbindungsfehler zur Anlage ab | SolvisRemote nicht erreichbar. `curl -I http://<SOLVIS_IP>/` testen; manche SolvisRemote zeigen den Web-Port erst nach Neustart/Re-Login. |
-| `base.xml couldn't be read` | XSD-Validierung fehlgeschlagen — Struktur/Attribute prüfen; `<tns:Ssl>` muss **innerhalb** von `<tns:Mqtt>` stehen. |
-| MQTT verbindet nicht (Log: „broker not available") | `brokerUrl`/`port` falsch, oder TLS-Konfig: bei aktivem `<tns:Ssl>` bricht der Client bei Zertifikatsfehlern bewusst ab (kein Klartext-Fallback). Cert-Pfade unter `/certs` prüfen. |
-| `… PKCS#1 format …` im Log | Client-Schlüssel in PKCS#1; mit `openssl pkcs8 -topk8 -nocrypt` nach PKCS#8 wandeln. |
+| `base.xml couldn't be read` | XSD-Validierung fehlgeschlagen — Struktur/Attribute prüfen. |
+| Start bricht ab: „MQTT-Konfiguration nicht unterstuetzt … (Variante B) … 32105" | `<tns:Ssl enable="true">` konfiguriert — Variante B ist deprecated. `<tns:Ssl>` aus `base.xml` entfernen und Variante A verwenden (Phase 3). |
+| MQTT verbindet nicht (Log: „broker … not reachable") | Variante A: lokaler Mosquitto (`127.0.0.1:1883`) nicht erreichbar. Läuft der lokale Broker? Erreicht der Container das Host-Loopback (Container-Netz A1/A3, Phase 3.2)? |
+| Container bleibt „Up", aber keine Daten (`unhealthy`) | Silent-Failure: Prozess läuft, aber kein MQTT-Publish. Der HEALTHCHECK (Ready-Token-Frische) meldet das; Logs auf WARN „broker not reachable" prüfen. |
 | Lernphase geht bei jedem Neustart verloren | `writablePathLinux` zeigt nicht auf `/data`, oder das `./data`-Volume fehlt/ist nicht schreibbar. |
 | Keine `…/data`-Topics, aber `server/online=true` | Kanäle evtl. per `IgnoredChannels` gefiltert, oder Anlage liefert (noch) keine Werte; Logs prüfen. |

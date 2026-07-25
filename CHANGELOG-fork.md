@@ -8,6 +8,29 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## logback-classic auf 1.5.13 (CVE-2024-12798 / CVE-2024-12801) + G2.6-Clone-Drill
+
+Sicherheits- und Verifikations-Sprint (stack-master, 2026-07-25).
+
+- **logback-classic 1.5.12 → 1.5.13 (CVE-Fix, G2.1-CVE-Teil).** 1.5.12 ist
+  betroffen von CVE-2024-12798 (JaninoEventEvaluator: Arbitrary Code
+  Execution über manipulierte Logback-Konfiguration) und CVE-2024-12801
+  (SaxEventRecorder: SSRF/XXE über externe Entities). 1.5.13 ist die
+  fixende Version. Die eigene `rsc/logback.xml` nutzt weder Janino-Conditionals
+  noch externe Entities (nur `ConsoleAppender` + Pattern-Encoder), die
+  Angriffsfläche war also nie aktiv — der Bump schließt die transitive
+  CVE-Exposition dennoch. `logback.version`-Property angehoben, der
+  `dependencyManagement`-Pin bleibt: 1.5.13 zieht `slf4j-api` 2.0.16, was
+  der direkt deklarierten Version entspricht (Enforcer-Konvergenz eindeutig).
+  Dependency-Baum-Konsistenz mangels lokal verfügbarem Maven über
+  pom-Konsistenz + Changelog-Beleg statt `mvn dependency:tree` verifiziert.
+  Die Dependabot-Reaktivierung bleibt separater Operator-Akt (F-34).
+- **G2.6-Clone-Drill real ausgeführt.** Bundle → Temp-Clone → Verifikation
+  von HEAD und Commit-Zahl (618) — beide PASS, Temp gelöscht. Protokoll nach
+  Standard §3: [docs/g2.6-clone-drill.md](docs/g2.6-clone-drill.md). Der
+  Drill bestätigt zugleich: `base.xml` ist eine versionierte Vorlage; die
+  realen Zugangsdaten sind nicht-versionierter Operator-State im Schreibpfad.
+
 ## Betriebshärtung: Variante A festgeschrieben, Variante B deprecated, Health-Signal, TCP-Server abschaltbar
 
 Umsetzung der architect-Abstimmung „Option A" (Auflagen A-1…A-4) und der

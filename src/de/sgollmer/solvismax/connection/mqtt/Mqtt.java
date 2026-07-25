@@ -96,6 +96,27 @@ public class Mqtt implements MqttTopicConfig, MqttConnectionConfig {
 			return;
 		}
 
+		// Fail-Fast-Guard (Auflage A-3): Variante B (natives mTLS direkt zum
+		// Broker, <Ssl enable="true"> im <Mqtt>-Element) wird nicht mehr
+		// unterstuetzt. Frueher lief dieser Pfad in Paho v3 in einen Endlos-
+		// Retry mit der irrefuehrenden Meldung "broker not available"
+		// (Ursache real: tcp://-URI + SSLSocketFactory -> Fehler 32105,
+		// REASON_CODE_SOCKET_FACTORY_MISMATCH). Statt Silent-Endlos-Retry wird
+		// hier sofort mit klarer Ursache abgebrochen (Main -> Exit MQTT_ERROR).
+		// Unterstuetzte Produktivvariante ist Variante A: lokaler Mosquitto auf
+		// 127.0.0.1 + mTLS-Bridge. Siehe docs/ARCHITECTURE.md §4 und
+		// docs/mtls-behebung-vorschlag.md.
+		if (this.ssl != null && this.ssl.isEnabled()) {
+			String message = "MQTT-Konfiguration nicht unterstuetzt: <Ssl enable=\"true\"> (Variante B, "
+					+ "natives mTLS direkt zum Broker) ist deprecatet. Ursache: Paho v3 lehnt die Kombination "
+					+ "tcp://-URI + SSLSocketFactory mit REASON_CODE_SOCKET_FACTORY_MISMATCH (32105) ab. "
+					+ "Bitte Variante A verwenden (lokaler Mosquitto auf 127.0.0.1 + mTLS-Bridge, Login "
+					+ "solvis-bridge) und <Ssl> aus base.xml entfernen. Details: docs/ARCHITECTURE.md §4, "
+					+ "docs/mtls-behebung-vorschlag.md. Start wird abgebrochen.";
+			logger.error(message);
+			throw new MqttException(new IllegalStateException(message));
+		}
+
 		this.instances = instances;
 		this.commandHandler = commandHandler;
 		this.mqttThread = new MqttThread(this);

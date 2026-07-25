@@ -1,10 +1,5 @@
 package de.sgollmer.solvismax.connection.mqtt;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-
-import javax.net.ssl.SSLSocketFactory;
-
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
@@ -43,18 +38,13 @@ public class MqttThread extends Helper.Runnable {
 				}
 				options.setAutomaticReconnect(true);
 				options.setCleanSession(false);
-				if (this.config.getSsl() != null && this.config.getSsl().isEnabled()) {
-					try {
-						SSLSocketFactory sslSocketFactory = this.config.getSsl().getSocketFactory();
-						options.setSocketFactory(sslSocketFactory);
-					} catch (GeneralSecurityException | IOException e) {
-						// Bei aktiviertem TLS niemals unverschluesselt weiterverbinden.
-						logger.error("TLS/SSL configuration for MQTT failed, connection aborted: "
-								+ e.getMessage(), e);
-						this.abort = true;
-						return;
-					}
-				}
+				// Variante B (natives mTLS direkt zum Broker) ist deprecatet und wird
+				// vor dem Thread-Start in Mqtt.connect() per Fail-Fast-Guard abgewiesen
+				// (Auflage A-3). Hier ankommender Verkehr ist daher immer Variante A
+				// (Klartext zum lokalen, auf 127.0.0.1 gebundenen Broker + mTLS-Bridge).
+				// Die fruehere options.setSocketFactory(...)-Verdrahtung wurde entfernt:
+				// tcp://-URI + SSLSocketFactory ergibt in Paho v3 den Fehler 32105
+				// (REASON_CODE_SOCKET_FACTORY_MISMATCH). Siehe docs/mtls-behebung-vorschlag.md.
 				MqttData lastWill = this.mqtt.getLastWill();
 				String topic = lastWill.getTopic(this.mqtt);
 				options.setWill(topic, lastWill.getPayLoad(), lastWill.getQoS(this.config.getPublishQoS()),
@@ -81,8 +71,12 @@ public class MqttThread extends Helper.Runnable {
 						subscribed = true;
 					} catch (MqttException e) {
 						if (!connected) {
-							Mqtt.logger
-									.info("Mqtt broker not available, will be retried in " + waitTime / 1000 + " s.");
+							// SR-1/A-4: WARN statt INFO, damit der Nie-Verbunden-Zustand
+							// nicht im Log-Rauschen untergeht. Ursache hier ist Variante A
+							// (lokaler Broker nicht erreichbar) — der 32105-Fall (Variante B)
+							// wird bereits in Mqtt.connect() ausgeschlossen.
+							Mqtt.logger.warn("MQTT broker (Variante A, lokaler Broker) not reachable, will be retried in "
+									+ waitTime / 1000 + " s.");
 						} else if (!subscribed) {
 							Mqtt.logger.error("Error on subscription, will be retried in " + waitTime / 1000 + " s.");
 							try {

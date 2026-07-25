@@ -150,6 +150,11 @@ public class Mqtt implements MqttTopicConfig, MqttConnectionConfig {
 
 	MqttCallbackExtended callback = new Callback(this);
 
+	// Dateibasiertes Ready-Token (Auflage A-4 / SR-1): bildet den tatsaechlichen
+	// Connect-/Publish-Zustand ab, damit der HEALTHCHECK den Silent-Failure des
+	// Retry-Loops erkennt (nicht nur die PID). Siehe HealthToken.
+	final HealthToken healthToken = new HealthToken();
+
 	public void unpublish(final MqttData dataIn) throws MqttException, MqttConnectionLost {
 		if (dataIn != null) {
 			MqttData data = (MqttData) dataIn.clone();
@@ -215,6 +220,10 @@ public class Mqtt implements MqttTopicConfig, MqttConnectionConfig {
 			throw new MqttConnectionLost();
 		}
 		this.client.publish(topic, message);
+		// A-4: erfolgreicher Publish haelt das Ready-Token frisch (gedrosselt).
+		// Damit spiegelt die Token-Frische den Pfad, den der Nutzen nimmt
+		// (MQTT-Publish), nicht die blosse Prozess-Existenz.
+		this.healthToken.touch();
 		logger.debug("Messsage was sent to <" + topic + ">, data: " + message.toString());
 
 	}
@@ -276,6 +285,7 @@ public class Mqtt implements MqttTopicConfig, MqttConnectionConfig {
 		}
 
 		this.publish(this.getLastWill());
+		this.healthToken.clear();
 		this.mqttQueue.abort();
 
 		if (this.client.isConnected()) {

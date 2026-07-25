@@ -57,6 +57,8 @@ final class Callback implements MqttCallbackExtended {
 					this.mqtt.publish(solvis.getHumanAccessPackage());
 				}
 				this.mqtt.publish(ServerStatus.ONLINE.getMqttData());
+				// A-4: Ready-Token nach (Re-)Connect frisch schreiben.
+				this.mqtt.healthToken.touch();
 				Mqtt.logger.info("New MQTT connection handling successfull.");
 			} catch (MqttException e) {
 				Mqtt.logger.error("Error: Mqtt exception occured. Mqqt message ignored.", e);
@@ -141,5 +143,8 @@ final class Callback implements MqttCallbackExtended {
 	@Override
 	public void connectionLost(final Throwable cause) {
 		Mqtt.logger.error("Connection to MQTT broker lost.", cause);
+		// A-4: Verbindungsverlust macht das Ready-Token sofort ungueltig, damit der
+		// HEALTHCHECK den Ausfall nicht erst nach Ablauf der Frischeschwelle sieht.
+		this.mqtt.healthToken.clear();
 	}
 }

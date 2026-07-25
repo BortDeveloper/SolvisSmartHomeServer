@@ -69,6 +69,8 @@ public class MqttThread extends Helper.Runnable {
 						connected = true;
 						this.mqtt.client.subscribe(topicFilters, qoSs);
 						subscribed = true;
+						// A-4: erster Ready-Nachweis nach erfolgreichem Connect + Subscribe.
+						this.mqtt.healthToken.touch();
 					} catch (MqttException e) {
 						if (!connected) {
 							// SR-1/A-4: WARN statt INFO, damit der Nie-Verbunden-Zustand

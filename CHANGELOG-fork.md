@@ -8,6 +8,61 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Betriebshärtung: Variante A festgeschrieben, Variante B deprecated, Health-Signal, TCP-Server abschaltbar
+
+Umsetzung der architect-Abstimmung „Option A" (Auflagen A-1…A-4) und der
+Security-/SRE-Audit-Findings S-1/S-2/S-3, SR-1/SR-2 (stack-master,
+2026-07-25). Ziel: den mTLS-Betrieb auf die tatsächlich unterstützte Topologie
+festlegen und die geerbten Upstream-Restrisiken je Posten entscheiden.
+
+- **Variante B (natives `<Ssl>`-mTLS direkt zum Broker) deprecatet statt
+  halb-repariert (A-3):** Ursache der Störung ist ein Konflikt in Eclipse
+  Paho v3 — die hartkodierte `tcp://`-URI (`Mqtt.java`) plus gesetzte
+  `SSLSocketFactory` (`MqttThread.java`) wird mit
+  `REASON_CODE_SOCKET_FACTORY_MISMATCH` (32105) abgelehnt und lief bisher in
+  einen **Silent-Endlos-Retry** mit der irreführenden Log-Zeile „broker not
+  available" (INFO). Statt den zweiten mTLS-Transportpfad zu reparieren
+  (größerer Upstream-Diff, zweite Testfläche), wird er entfernt: die
+  `setSocketFactory`-Verdrahtung ist raus, und `Mqtt.connect()` bricht bei
+  `<Ssl enable="true">` sofort per **Fail-Fast-Guard** mit klarer Ursache ab
+  (Exit statt Endlos-Retry). Unterstützt ist damit **Variante A** (lokaler
+  Mosquitto auf `127.0.0.1` + mTLS-Bridge, Login `solvis-bridge`) — dieselbe
+  Topologie wie CCU-Jack/FHEM-Bridge; die Bridge-Gegenseite (Cert/ACL) liegt im
+  Repo `ccu2mqtt`. Der Connect-Fehler wird jetzt auf **WARN** (statt INFO) mit
+  korrekter Ursache geloggt. Details/Begründung:
+  [docs/mtls-behebung-vorschlag.md](docs/mtls-behebung-vorschlag.md),
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §4.
+- **Dateibasiertes Health-Signal (A-4 / SR-1):** Neu `HealthToken` schreibt bei
+  erfolgreichem Connect + laufendem Publish einen Zeitstempel nach
+  `/data/health/ready` (überschreibbar via `-Dsolvis.health.tokenPath` /
+  `SOLVIS_HEALTH_TOKEN_PATH`, gedrosselt auf 30 s) und entfernt ihn bei
+  Verbindungsverlust/Shutdown. Der neue `HEALTHCHECK` im `Dockerfile` prüft die
+  **Frische** dieses Tokens (nicht die PID) — damit meldet Docker den
+  Silent-Failure des Retry-Loops als `unhealthy` (Google SRE Kap. 6: Symptom
+  statt Lebendigkeit). Deckt auch den Nie-Verbunden-Fall (SR-2): fehlendes
+  Token von Anfang an = ungesund.
+- **Proprietärer TCP-/JSON-Server bind-beschränkt + abschaltbar (S-3):** Der
+  unauthentifizierte Server (Port 10735/10736) band bisher bedingungslos auf
+  `0.0.0.0`. Jetzt Default-Bind **`127.0.0.1`** und vollständig deaktivierbar —
+  konfigurierbar über `solvis.tcpServer.bindAddress` /
+  `SOLVIS_TCPSERVER_BINDADDRESS` bzw. `solvis.tcpServer.enable` /
+  `SOLVIS_TCPSERVER_ENABLE` (`Main.java`, mit Null-Guards an Server-Konstruktion
+  und `closeSocket`). Kleiner, upstream-tauglicher Patch.
+- **`passwordCrypt`-Dateirechte dokumentiert (S-2):** `CryptAes` ist Obfuskation
+  mit öffentlich ableitbarem Schlüssel (ECB) — kein Krypto-Umbau (out of scope,
+  Roadmap 4.6), aber [INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) verlangt jetzt
+  `chmod 600 base.xml` (Owner = Dienstnutzer) als Pflichtschritt, und
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §3/§5 benennt Dateirechte als den
+  einzigen realen Schutz.
+- **Doku (A-1):** `docs/ARCHITECTURE.md` schreibt Variante A als unterstützt
+  fest, markiert Variante B als deprecated, schließt die offenen Fragen 1
+  (Variante) und 2 (TCP-Server) und erfüllt damit ADR-0017 Folgeentscheidung 5
+  (konsolidierte Betriebsmodell-Sicht). `docs/INBETRIEBNAHME.md` Phase 3 führt
+  den Operator auf Variante A (lokaler Broker + Bridge, Container-Netz A3/A1/A2).
+- **Verifikation:** statische Änderung, minimal am geprüften Code; kein
+  Build-/Live-Lauf in dieser Umgebung (Maven-Wrapper-Download im Sandbox nicht
+  verfügbar). Integrationstest des Connect-Pfads bleibt Operator-/Test-Schritt.
+
 ## Modernisierung Stufe 4.1/4.2: Mail-TLS-Prüfung + Abhängigkeits-Hygiene
 
 - **Sicherheitskorrektur Mail-Versand:** Bisher setzte der Mail-Versand

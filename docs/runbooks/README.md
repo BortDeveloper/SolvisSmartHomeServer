@@ -51,7 +51,7 @@ Regelbetrieb (Monitoring, optional Steuerung) starten.
 6. Datenfluss prüfen — `mosquitto_sub -h 127.0.0.1 -p 1883 -t 'solvis/#' -v`
    → erwartet: `solvis/server/online true` plus `solvis/<unit>/…/data`-Topics.
 
-**Automatisierung**: bewusst manuell — Auslöser: Operator; Grund: Der Start kann
+**Automatisierung**: `bewusst manuell` — Auslöser: Operator; Grund: Der Start kann
 (bei `InteractiveGUIAccess="true"`) reale Klick-Steuerung an der Anlage
 auslösen — bewusste Freigabe statt Auto-Deploy (Least Privilege). Der
 Dauerlauf danach läuft unbeaufsichtigt: `restart: unless-stopped`
@@ -78,8 +78,8 @@ Native A3-Linie (systemd): `make -C SmartHome/Linux update` — stoppt Dienst,
 installiert Jar/`base.xml`, startet neu (`stopServices` → `install` →
 `systemctl start`).
 
-**Automatisierung**: Script (on-demand) — realer Skript-Pfad
-`SmartHome/Linux/Makefile` Target `update` (native) bzw.
+**Automatisierung**: `Script (on-demand)` — `SmartHome/Linux/Makefile`
+Target `update` (native) bzw.
 `docker compose build && docker compose up -d`. Der Build-Teil ist zusätzlich
 durch den `CI-Job` `build` (`.github/workflows/build.yml`) abgesichert; der
 Deploy-Schritt bleibt bewusst operatorgetrieben (kein Auto-Deploy).
@@ -101,8 +101,8 @@ erzeugen (schreibt `LearnedImages` nach `/data`).
 Native A3-Linie: `make -C SmartHome/Linux learn` (stoppt Dienst, ruft
 `--server-learn`, startet Dienst neu).
 
-**Automatisierung**: Script (on-demand) — realer Skript-Pfad
-`SmartHome/Linux/Makefile` Target `learn` bzw.
+**Automatisierung**: `Script (on-demand)` — `SmartHome/Linux/Makefile`
+Target `learn` bzw.
 `docker compose run --rm solvis --server-learn`. Bewusst nicht periodisch:
 Auslöser ist eine erkannte GUI-Änderung, kein Zeitplan.
 
@@ -122,7 +122,7 @@ und `data/` (angelernte Bilder, generierte `control.xml`/Messwerte, Logs).
 4. Backup prüfbar hinterlegen (Prüfsumme) — `sha256sum backup-*.tar.gz.age`
    → erwartet: Hash notiert/mitgesichert.
 
-**Automatisierung**: bewusst manuell — Auslöser: Operator; Grund: `base.xml`
+**Automatisierung**: `bewusst manuell` — Auslöser: Operator; Grund: `base.xml`
 enthält nur dateirechtegeschützte Secrets (`passwordCrypt` = Obfuskation) — kein
 unverschlüsselter Auto-Export (Least Privilege / Separation of Duties). `data/`
 ist zudem aus der Lernphase reproduzierbar, sodass ein automatischer Scheduler
@@ -144,7 +144,7 @@ Operator-State aus einem Backup wiederherstellen.
 4. Dienst starten und prüfen — `docker compose up -d` → erwartet: `healthy`,
    `solvis/#`-Topics erscheinen wie vor dem Restore.
 
-**Automatisierung**: bewusst manuell — Auslöser: Operator (DR-Fall); Grund:
+**Automatisierung**: `bewusst manuell` — Auslöser: Operator (DR-Fall); Grund:
 Restore fasst Secret-Material an und erfordert manuelles Setzen der Dateirechte
 (Vier-Augen / Separation of Duties) — kein unbeaufsichtigter Automatismus.
 
@@ -165,6 +165,6 @@ Native A3-Linie: `make -C SmartHome/Linux stopServices` bzw. `terminate` (ruft
 `--server-terminate`); der systemd-`ExecStop` nutzt ebenfalls
 `--server-terminate` (`SolvisSmartHomeServer.service`).
 
-**Automatisierung**: Script (on-demand) — realer Skript-Pfad
-`SmartHome/Linux/Makefile` Target `stopServices`/`terminate` bzw.
+**Automatisierung**: `Script (on-demand)` — `SmartHome/Linux/Makefile`
+Target `stopServices`/`terminate` bzw.
 `docker compose down`.

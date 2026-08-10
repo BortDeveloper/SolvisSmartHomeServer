@@ -32,6 +32,7 @@ Smart-Home-Systeme an — lesend (Monitoring) und schreibend (Steuerung).
 | prüfen, ob es in meiner Umgebung läuft | [TESTPLAN.md](TESTPLAN.md) |
 | wissen, warum dieser Fork existiert | [FORK.md](FORK.md) |
 | ein Problem im Betrieb einordnen | [Troubleshooting](docs/INBETRIEBNAHME.md#troubleshooting) |
+| eine externe KI-Zweitmeinung einholen | [Externe KI-Analysen](#externe-ki-analysen) |
 
 ## Überblick
 
@@ -191,6 +192,42 @@ hinter einem lokalen Broker + mTLS-Bridge (Betriebsmodell:
 **Ausführliche Upstream-Dokumentation:** Installation, Interfaces und
 Arbeitsweise im
 [Upstream-Wiki](https://github.com/GollmerSt/SolvisSmartHomeServer/wiki).
+
+## Externe KI-Analysen
+
+Externe Assistenten (Copilot u. a.) mit Repo-Lesezugriff liefern brauchbare
+Zweitmeinungen — wenn sie den lebenden **Fork**-Stand lesen statt der
+Upstream-Doku oder eines veralteten Snapshots. Prompt-Vorlage zum direkten
+Mitgeben:
+
+```text
+Analysiere den Branch feature/modernisierung — master folgt nur dem
+Upstream. Lies vor jeder Aussage in dieser Reihenfolge:
+1. README.md — Projektzweck, Wegweiser, Fork-Hinweis
+2. FORK.md — warum der Fork existiert, Upstream-/Branch-Modell
+3. docs/ARCHITECTURE.md — konsolidierte Fork-Sicht: System-Kontext,
+   Betriebsmodell (lokaler Broker + mTLS-Bridge, Topic-Raum solvis/#),
+   Grenzen
+4. MODERNISIERUNG.md — Umbau-Roadmap mit Status (geplant vs. umgesetzt)
+5. CHANGELOG-fork.md — tatsächlich durchgeführte Abweichungen, neueste
+   oben
+6. TESTPLAN.md — was verifiziert ist und was (noch) nicht
+
+Achtung: docu/ ist unveränderte UPSTREAM-Doku (Stand 2021) und
+beschreibt NICHT den Fork — nicht als Beleg für den Fork-Stand nutzen.
+
+Regeln für deinen Bericht:
+- Nenne Branch und Commit-Stand (SHA + Datum) deiner Analyse.
+- Jede Aussage ohne selbst gelesene Quelle markierst du als
+  UNVERIFIED — Enthaltung schlägt Erfindung.
+- Aussagen über die reale Anlage (SolvisMax/SolvisRemote), Broker,
+  Bridge oder laufende Container nur bei tatsächlichem Zugriff; sonst
+  explizit "kein Zugriff, nicht geprüft".
+```
+
+Zertifikate, Keys und Anlagen-Zugangsdaten liegen nicht im Repo
+(nicht-versionierter Operator-State) und gehören in keinen externen
+Assistenten-Kontext.
 
 ## Lizenz
 

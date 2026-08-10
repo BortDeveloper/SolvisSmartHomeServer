@@ -14,15 +14,24 @@ Smart-Home-Systeme an — lesend (Monitoring) und schreibend (Steuerung).
 > Grund und Fahrplan: [FORK.md](FORK.md). Urheberschaft der OCR-Kernidee: Stefan
 > Gollmer (GollmerSt) — Attribution bewusst erhalten.
 
-## Wegweiser (drei Zielgruppen)
+## Nach Zielgruppe
 
-| Zielgruppe | Interesse | Einstiegsfrage | Primär-Dokument |
-|---|---|---|---|
-| Technisch Interessierte | Überblick | Was tut das Projekt, warum? | Dieses README (Abschnitte [Überblick](#überblick), [Features](#features)) |
-| Operateure | Betrieb | Wie nehme ich es in Betrieb? | [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) (Schritt für Schritt) |
-| Programmierer | Erweiterung | Wie ist es gebaut? | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [MODERNISIERUNG.md](MODERNISIERUNG.md) |
+| Lens | Ich will wissen … | Einstieg |
+|------|-------------------|----------|
+| **ANWENDER** | was das Projekt tut und wie ich es nutze | [Quick Start](#quick-start) |
+| **TECHNIKER** | wie es funktioniert (Komponenten, Datenfluss) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| **PROGRAMMIERER** | Build, Code-Layout, Tests, Beiträge | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **OPERATEUR** | Betrieb Schritt für Schritt + Automatisierung | [docs/runbooks/](docs/runbooks/) |
+| **ARCHITEKTUR** | tragende Entscheidung/Topologie | [Abschnitt Architektur](#architektur) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| **COMPLIANCE** | Standards, Secrets/PII, Nachweise | [Abschnitt Compliance](#compliance) |
 
-### Ich möchte …
+Die sechs Lenses folgen dem Cockpit-weiten Zielgruppen-Doku-Standard.
+**TECHNIKER** will *verstehen* (Architektur/Datenfluss), **PROGRAMMIERER** will
+*bauen/beitragen*. **ARCHITEKTUR** und **COMPLIANCE** sind README-Kurzsichten,
+die in die Tiefe verweisen ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) bzw.
+[docs/security/](docs/security/)).
+
+## Ich möchte …
 
 | Ich möchte … | Dokument |
 |---|---|
@@ -147,6 +156,57 @@ hinter einem lokalen Broker + mTLS-Bridge (Betriebsmodell:
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §4). Betriebsprobleme einordnen:
 [Troubleshooting](docs/INBETRIEBNAHME.md#troubleshooting).
 
+## Architektur
+
+Der Connector ist ein eigenständiger Java-17-Prozess, der die SolvisRemote über
+deren grafische Web-Oberfläche per HTTP anspricht: Werte werden per **OCR** aus
+dem Pixelbild gelesen, Änderungen per simulierten Klicks gesetzt und erneut per
+OCR verifiziert. Nach außen spricht er **ausschließlich MQTT** und belegt dabei
+vertraglich **nur den Topic-Namensraum `solvis/#`** (`topicPrefix="solvis"`).
+
+Tragende Betriebsentscheidung ist **Variante A** (lokaler Mosquitto auf
+`127.0.0.1` + mTLS-Bridge `solvis-bridge` zum zentralen Haus-Broker); der direkte
+native `<Ssl>`-mTLS-Pfad (**Variante B**) ist deprecated und bricht beim Start
+per Fail-Fast-Guard ab (Paho-v3-Fehler 32105). Grundlage ist ADR-0017
+(Projektlandschaft Hausautomation, Cockpit-Repo `stack-master`) und die
+architect-Abstimmung vom 2026-07-25.
+
+Der OCR-Kern (`imagepatternrecognition/`) stammt vom Upstream-Autor und wird
+bewusst **nicht** neu gebaut, sondern durch 31 Golden-Tests gepinnt. Der Fork
+trägt nur Betriebs-, Wartungs- und Modernisierungsanpassungen bei (Maven-Build,
+Java-17-Baseline, SLF4J/Logback, JAXB-Migration, Docker).
+
+Vollständige Sicht — System-Kontext (mit Topologie-Diagramm), Baustein-Sicht,
+Betriebsmodell und bewusste Grenzen — in
+**[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. Warum der Fork existiert:
+[FORK.md](FORK.md); Umbau-Roadmap: [MODERNISIERUNG.md](MODERNISIERUNG.md).
+
+## Compliance
+
+**Secrets/PII im Repo: keine realen Betriebs-Secrets.** Zertifikate, private
+Schlüssel und Anlagen-Zugangsdaten liegen ausschließlich als
+nicht-versionierter Operator-State vor — gemountete Dateien (`/certs`) und
+`passwordCrypt`-Werte in einer lokalen, **nicht eingecheckten** `base.xml`
+(erstellt aus der Vorlage `rsc/de/sgollmer/solvismax/data/base.xml`). Ein
+`gitleaks`-Lauf über den Fork-Stand meldet ausschließlich Upstream-Alt-Artefakte
+(Muster-Daten in `control.xml`, Beispiel-`passwordCrypt` in der Template-
+`base.xml`, ein PKCS#8-Testschlüssel in `SslTest.java`) — **keine** Live-Credentials.
+
+**Krypto ehrlich benannt:** `passwordCrypt` ist **Obfuskation, kein Schutz**
+(hartkodierter Schlüssel, ECB; aus dem öffentlichen Quellcode ableitbar). Der
+einzige reale Schutz der Secrets in `base.xml` sind **Dateirechte**
+(`chmod 600 base.xml`, Owner = Dienstnutzer UID 10001) — Pflichtschritt in
+[docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) Phase 2. Krypto-Umbau ist
+Roadmap-Punkt 4.6.
+
+**Berührte Standards / Restrisiken:** Transportsicherheit nach außen über die
+mTLS-Bridge (Client-Zertifikate + Broker-ACL `readwrite solvis/#`; SSOT im
+Vertragspartner-Repo `ccu2mqtt`). Drei bewusst akzeptierte Restrisiken mit je
+einer dokumentierten Entscheidung: HTTP-only zur SolvisRemote (S-8),
+unauthentifizierter TCP-/JSON-Server auf Loopback-Bind bzw. abschaltbar (S-3),
+Obfuskations-Krypto (S-2). Details und Kompensationen:
+[docs/security/](docs/security/) und [docs/ARCHITECTURE.md §5](docs/ARCHITECTURE.md).
+
 ## Verzeichnisstruktur
 
 ```text
@@ -156,7 +216,7 @@ hinter einem lokalen Broker + mTLS-Bridge (Betriebsmodell:
 ├── test/, testFiles/   # JUnit-Tests + Golden-Referenzen (OCR, XML)
 ├── local-maven-repo/   # vendored XMLLibrary (bis JAXB-Ablösung, MODERNISIERUNG 3.3)
 ├── SmartHome/          # Installations-/Service-Dateien (Linux-Makefile, Windows)
-├── docs/               # Fork-Doku (Architektur, Inbetriebnahme, Docker …)
+├── docs/               # Fork-Doku (Index, Architektur, Inbetriebnahme, runbooks/, security/)
 ├── docu/               # UPSTREAM-Doku (GollmerSt) — nicht Fork-Stand, siehe ARCHITECTURE.md
 ├── Dockerfile          # Zwei-Stufen-Build (Maven → schlankes JRE-Image)
 └── docker-compose.yml  # Container-Deployment
@@ -164,19 +224,27 @@ hinter einem lokalen Broker + mTLS-Bridge (Betriebsmodell:
 
 ## Dokumentation
 
-**Einstieg & Hintergrund**
+Vollständiger Index: [docs/README.md](docs/README.md).
+
+### Einstieg & Hintergrund
 
 - [FORK.md](FORK.md) — warum dieser Fork existiert, geplante Änderungen.
 - [MODERNISIERUNG.md](MODERNISIERUNG.md) — Umbau-Roadmap (Status/Reihenfolge).
 - [CHANGELOG-fork.md](CHANGELOG-fork.md) — durchgeführte Anpassungen im Detail.
 
-**Betrieb**
+### Entwicklung
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Build, Tests, Code-Layout, Beitrags-Regeln.
+
+### Betrieb
 
 - [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) — Erstinbetriebnahme Schritt
   für Schritt (Container).
+- [docs/runbooks/](docs/runbooks/) — Day-2-Standardaufgaben (Deploy, Update,
+  Backup, Restore, Lernphase, Stop) mit Automatisierungs-Angabe.
 - [docs/DOCKER.md](docs/DOCKER.md) — Container-Grundlagen und Fallstricke.
 
-**Architektur**
+### Architektur & Compliance
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — konsolidierte Fork-Sicht
   (Lineage, System-Kontext, Betriebsmodell, Grenzen).
@@ -184,8 +252,10 @@ hinter einem lokalen Broker + mTLS-Bridge (Betriebsmodell:
   (Explorations-Erkenntnisse).
 - [docs/mtls-behebung-vorschlag.md](docs/mtls-behebung-vorschlag.md) — Analyse
   des nativen mTLS-Pfads (Variante B).
+- [docs/security/](docs/security/) — Secret-/PII-Handhabung, `gitleaks`-Befund,
+  Restrisiken (S-2/S-3/S-8).
 
-**Qualität**
+### Qualität
 
 - [TESTPLAN.md](TESTPLAN.md) — phasenweiser Prüfplan (mit/ohne Anlage).
 

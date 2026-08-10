@@ -76,6 +76,31 @@ Fahrplan/Status: [MODERNISIERUNG.md](../MODERNISIERUNG.md)):
                        Konsumenten: Home Assistant / Node-RED (Automationsebene)
 ```
 
+Dieselbe Topologie als versioniertes Mermaid-Diagramm (Zonen = Trust-Boundaries,
+Kanten mit Protokoll/Port; die ASCII-Skizze oben bleibt als Ergänzung):
+
+```mermaid
+flowchart LR
+    subgraph anlage["Anlagen-/IoT-Segment (kein HTTPS)"]
+        solvis["SolvisMax 6/7<br/>SolvisControl 2 + SolvisRemote"]
+    end
+    subgraph host["Connector-Host (Loopback-Zone)"]
+        connector["SolvisSmartHomeServer<br/>Java-17-Prozess: OCR + MQTT-Client (Paho)"]
+        localbroker["lokaler Mosquitto<br/>127.0.0.1"]
+    end
+    subgraph haus["Haus-Broker-Zone (mTLS + ACL)"]
+        central["zentraler Mosquitto<br/>ACL: readwrite solvis/#"]
+    end
+    subgraph automation["Automationsebene"]
+        consumers["Home Assistant / Node-RED"]
+    end
+
+    solvis -->|"HTTP: Pixelbild + Klicks"| connector
+    connector -->|"MQTT 1883 Klartext, solvis/#"| localbroker
+    localbroker -->|"mTLS-Bridge 8883<br/>solvis/# both, Login solvis-bridge"| central
+    central -->|"MQTT 8883, solvis/#"| consumers
+```
+
 - **Anlagen-Seite:** Die SolvisRemote liefert eine Pixelkopie der
   SolvisControl-2-Oberfläche per HTTP. Der Server liest Werte per OCR
   (reines Java, kein Tesseract), steuert per simulierten Klicks und

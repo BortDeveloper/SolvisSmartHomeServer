@@ -1,13 +1,26 @@
 [Unit]
-Description=SolvisSmartHomeServer
-Wants=network.target
-After=network.target
+Description=SolvisSmartHomeServer (Fork)
+# Der Server braucht beim Start Netzweg zu SolvisRemote und lokalem Broker:
+Wants=network-online.target
+After=network-online.target
 
 [Service]
+Type=simple
 User=$(accountSolvis)
-RemainAfterExit=yes
+# Optionale Betriebsparameter des Forks (SOLVIS_HEALTH_TOKEN_PATH,
+# SOLVIS_TCPSERVER_BINDADDRESS, SOLVIS_TCPSERVER_ENABLE) - Datei ist optional:
+EnvironmentFile=-/etc/default/solvissmarthomeserver
+# javaPath wird vom Makefile substituiert und muss ein Java >= 17 sein
+# (Fork-Baseline; Guard: "make checkJava"). Kein nacktes /usr/bin/java
+# voraussetzen - bei mehreren JDKs "make javaPath=<pfad> ..." verwenden.
 ExecStart=$(javaPath) -jar $(solvisJarPath)
-ExecStop=$(javaPath) -jar $(solvisJarPath) --server-terminate
+# Stop ueber SIGTERM (systemd-Default): der Server disconnectet sauber und
+# setzt das MQTT-LWT (solvis/server/online=false). Bewusst KEIN ExecStop mit
+# --server-terminate: das braucht den (abschaltbaren) TCP-Port 10735.
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=15
+NoNewPrivileges=yes
 
 [Install]
 WantedBy=multi-user.target

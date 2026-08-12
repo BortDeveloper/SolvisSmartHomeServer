@@ -36,7 +36,7 @@ die in die Tiefe verweisen ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) bzw.
 | Ich möchte … | Dokument |
 |---|---|
 | in Minuten bauen und smoke-testen | [Quick Start](#quick-start) |
-| als Container produktiv aufsetzen | [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) |
+| produktiv aufsetzen (nativ/systemd, Container als Alternative) | [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) |
 | die Architektur / das Betriebsmodell verstehen | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | prüfen, ob es in meiner Umgebung läuft | [TESTPLAN.md](TESTPLAN.md) |
 | wissen, warum dieser Fork existiert | [FORK.md](FORK.md) |
@@ -147,7 +147,8 @@ java -jar target/SolvisSmartHomeServer.jar --string-to-crypt=probe  # Laufzeit-S
 
 Erwartet: `BUILD SUCCESS` und beim zweiten Befehl ein Base64-artiger
 verschlüsselter String. Vollständige Erstinbetriebnahme (Anlage anbinden,
-OCR-Lernphase, MQTT) als Container: [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md).
+OCR-Lernphase, MQTT) nativ als systemd-Dienst (Standardpfad) oder als
+Container: [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md).
 
 ## Betrieb (Day 2)
 
@@ -239,7 +240,8 @@ Vollständiger Index: [docs/README.md](docs/README.md).
 ### Betrieb
 
 - [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) — Erstinbetriebnahme Schritt
-  für Schritt (Container).
+  für Schritt (nativ/systemd als Standardpfad, Container als Alternative;
+  inkl. Cutover vom Alt-Pfad).
 - [docs/runbooks/](docs/runbooks/) — Day-2-Standardaufgaben (Deploy, Update,
   Backup, Restore, Lernphase, Stop) mit Automatisierungs-Angabe.
 - [docs/DOCKER.md](docs/DOCKER.md) — Container-Grundlagen und Fallstricke.

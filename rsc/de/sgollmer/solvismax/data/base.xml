@@ -26,7 +26,11 @@
 		<!-- heatingCircuits: -->
 		<!----><!-- 1-3 -->
 
-
+		<!-- url: Adresse der SolvisRemote. In DIESER Installation die feste
+			IP 192.168.1.35 eintragen (Fritzbox-DHCP-Reservierung, Stand
+			2026-08-12). NICHT den DNS-Namen solvis.fritz.box verwenden:
+			der zeigt noch auf .49, wo ein unbekanntes Geraet antwortet
+			(F-119) - Hostname erst nach der DNS-Bereinigung. -->
 		<tns:Unit id="mySolvis" type="SolvisMax6PurSolo"
 			mainHeating="OelBW" heatingCircuits="1" fwLth2_21_02A="true"
 			account="account" passwordCrypt="AES-coded" url="aaa.bbb.ccc.ddd"
@@ -150,6 +154,11 @@
 			</tns:ChannelOptions>
 		</tns:Unit>
 	</tns:Units>
+	<!-- Mqtt: Unterstuetzte Produktivvariante ist Variante A (siehe
+		docs/ARCHITECTURE.md Paragraph 4): brokerUrl="127.0.0.1", port="1883"
+		(lokaler Mosquitto, mTLS-Bridge zum Haus-Broker), enable="true",
+		topicPrefix="solvis" (Vertrag: ausschliesslich solvis/#). Die Werte
+		unten sind neutrale Upstream-Vorlagenwerte. -->
 	<tns:Mqtt enable="false" brokerUrl="192.168.0.71" port="1883"
 		subscribeQoS="1" publishQoS="1" idPrefix="SolvisSmartHomeServer"
 		topicPrefix="SolvisSmartHomeServer" smartHomeId="IoBroker" />

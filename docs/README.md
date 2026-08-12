@@ -21,7 +21,7 @@ weiteren Fork-Dokumente.
 
 ### Betrieb
 
-- [INBETRIEBNAHME.md](INBETRIEBNAHME.md) — Erstinbetriebnahme Schritt für Schritt (Container).
+- [INBETRIEBNAHME.md](INBETRIEBNAHME.md) — Erstinbetriebnahme Schritt für Schritt (nativ/systemd als Standardpfad, Container als Alternative; inkl. Cutover vom Alt-Pfad).
 - [runbooks/](runbooks/) — Day-2-Standardaufgaben (Deploy, Update, Backup, Restore, Lernphase, Stop).
 - [DOCKER.md](DOCKER.md) — Container-Grundlagen und Fallstricke.
 

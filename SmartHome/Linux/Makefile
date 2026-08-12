@@ -19,6 +19,11 @@ serviceSources = $(service).service $(serviceDebug).service
 serviceFiles = $(systemD)/$(service).service $(systemD)/$(serviceDebug).service
 
 javaPath = /usr/bin/java
+# Fork: Mindest-Java-Major (Bytecode major 61 = Java 17); Guard: Target checkJava.
+javaVersionMin = 17
+# Fork: Quelle der Build-/Vorlagen-Artefakte (Maven-Build im Repo-Root).
+repoRoot = ../..
+rscData = $(repoRoot)/rsc/de/sgollmer/solvismax/data
 javaDebugPort = 0.0.0.0:10737
 javaAgentlib = jdwp=transport=dt_socket,suspend=n,server=y,address=$(javaDebugPort)
 
@@ -50,6 +55,44 @@ fhemRestart = 0
 
 
 .SUFFIXES:
+
+
+
+# Fork: Bruecke Maven-Build -> Install. Der Fork-Build legt das Jar unter
+# target/ ab (nicht hier), und die base.xsd ist eine Jar-Ressource unter
+# rsc/de/sgollmer/solvismax/data/ (zur Laufzeit liest der Server sie aus
+# dem Klassenpfad; die
+# installierte Kopie ist nur Referenz/Altbestand). "make prepare" stellt die
+# vom Install erwarteten Dateien in diesem Verzeichnis bereit. Eine bereits
+# vorhandene (vom Operator editierte) base.xml wird NICHT ueberschrieben.
+prepare:
+	@test -f $(repoRoot)/target/$(solvisJar) || { \
+		echo "FEHLER: $(repoRoot)/target/$(solvisJar) fehlt." ; \
+		echo "Erst frisch bauen: (cd $(repoRoot) && ./mvnw -B clean package)" ; \
+		exit 1 ; \
+	}
+	cp $(repoRoot)/target/$(solvisJar) ./$(solvisJar)
+	cp $(rscData)/$(baseXml).xsd ./$(baseXml).xsd
+	@if [ -f $(baseXml).xml ] ; then \
+		echo "$(baseXml).xml existiert bereits - nicht ueberschrieben." ; \
+	else \
+		cp $(rscData)/$(baseXml).xml ./$(baseXml).xml ; \
+		echo "$(baseXml).xml aus der Vorlage erzeugt - Werte anpassen (INBETRIEBNAHME.md Phase 2)." ; \
+	fi
+
+
+
+# Fork: Versions-Guard - der Fork braucht Java >= $(javaVersionMin)
+# (Bytecode major 61). Bricht ab, bevor ein zu altes Java installiert wird.
+checkJava:
+	@v=`$(javaPath) -version 2>&1 | sed -n 's/.*version "\([0-9][0-9]*\).*/\1/p' | head -n 1` ; \
+	if [ -z "$$v" ] || [ "$$v" -lt $(javaVersionMin) ] ; then \
+		echo "FEHLER: $(javaPath) ist kein Java >= $(javaVersionMin) (gefunden: $${v:-nichts})." ; \
+		echo "Mit make javaPath=/pfad/zu/java-17+ <ziel> wiederholen." ; \
+		exit 1 ; \
+	fi
+
+
 
 eraseGenerated:
 	set -x ; \
@@ -151,7 +194,7 @@ uninstallSolvis: uninstallService uninstallDebugService
 	
 
 
-installSolvis: $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xml  $(serverDir)/$(baseXml).xsd copyService
+installSolvis: checkJava $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xml  $(serverDir)/$(baseXml).xsd copyService
 
 
 

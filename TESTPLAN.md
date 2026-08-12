@@ -36,17 +36,30 @@ Prüfkriterium ist die im README zugesagte Funktion:
 | Build (optional) | JDK 17+ (Maven-Wrapper `mvnw` ist im Repo enthalten — kein separates Maven nötig). |
 | MQTT | Ein MQTT-Broker (z. B. Mosquitto). Hinweis: Upstream-MQTT ist **unverschlüsselt** — für TLS-Umgebungen siehe Phase 6/Integrationsvariante. |
 | Netz | SolvisRemote per HTTP erreichbar; TCP-Port des Servers (Default **10735**) für TCP-Clients erreichbar. |
+| Anlagen-Adresse (diese Installation) | SolvisRemote = **`192.168.1.35`** (feste Fritzbox-DHCP-Reservierung, Stand 2026-08-12). ⚠️ **Nicht** `solvis.fritz.box` verwenden: der DNS-Name zeigt noch auf `192.168.1.49`, wo ein unbekanntes Gerät antwortet (F-119) — Hostname erst nach der DNS-Bereinigung. |
+| Exklusivität (diese Installation) | **Nur ein OCR-Client** darf gegen die Anlage laufen (Fehlsteuerungsrisiko). Vor Phase 4–8: Cutover-Checkliste [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) Phase 5 abhaken; Verifikation: Phase 9 unten. |
 
 ## Referenz-Baseline (in diesem Fork bereits verifiziert)
 
-Damit klar ist, worauf aufgesetzt wird — geprüft am 2026-07-21 auf
-OpenJDK 21 / Debian 13 / arm64:
+Damit klar ist, worauf aufgesetzt wird:
 
-- **T1.1** Build aus Quellen → erfolgreich (`target/SolvisSmartHomeServer.jar`).
-- **T2.1** Laufzeit-Smoke `--string-to-crypt` → erfolgreich.
+- Geprüft am **2026-07-21** auf OpenJDK 21 / Debian 13 / arm64:
+  - **T1.1** Build aus Quellen → erfolgreich (`target/SolvisSmartHomeServer.jar`).
+  - **T2.1** Laufzeit-Smoke `--string-to-crypt` → erfolgreich.
+- Nachverifiziert am **2026-08-12** auf OpenJDK 17.0.5 / Windows 11 / x64
+  (Maven 3.9.16), HEAD des Branches `feature/modernisierung`:
+  - **T1.1** `mvnw`/Maven `clean package` → `BUILD SUCCESS`, **91/91 Tests grün**.
+  - **T1.2** Uber-Jar geprüft → logback-classic **1.5.13** (CVE-Fix-Stand)
+    gebündelt; keine tinylog-/log4j-/`javax.mail`-**Klassen** (siehe Hinweis
+    in T1.2 zu benignen Treffern des groben grep-Musters).
+  - **T2.1** `--string-to-crypt=probe` → verschlüsselter Wert, sauberes Ende.
 
 Alle übrigen Tests sind in der **eigenen** Umgebung auszuführen; die
 Ergebnismatrix am Ende ist dafür gedacht.
+
+> ⚠️ **Vor jedem Deployment frisch bauen** (`./mvnw -B clean package`): ein
+> liegengebliebenes `target/`-Jar kann veraltet sein (hier lag bis 2026-08-12
+> ein Jar vom 22.07. mit logback 1.5.12, obwohl HEAD 1.5.13 enthielt).
 
 ---
 
@@ -68,13 +81,19 @@ Ergebnismatrix am Ende ist dafür gedacht.
 - **Schritte:**
   - Vorhanden (aktive Laufzeit-Bibliotheken):
     `unzip -l target/SolvisSmartHomeServer.jar | grep -E 'paho|logback|jakarta/mail|solvismax/Main'`
-  - NICHT vorhanden (abgelöste Bibliotheken, 0 Treffer erwartet):
-    `unzip -l target/SolvisSmartHomeServer.jar | grep -E 'tinylog|log4j|javax/mail'`
+  - NICHT vorhanden (abgelöste Bibliotheken als **Klassen**, 0 Treffer erwartet):
+    `unzip -l target/SolvisSmartHomeServer.jar | grep -E 'org/tinylog|org/apache/log4j|org/apache/logging|javax/mail/'`
 - **Erwartung:** Erstes Kommando findet Paho-MQTT-, Logback-, `jakarta.mail`-
   und `de/sgollmer/solvismax/Main`-Klassen; zweites Kommando liefert **keine**
   Treffer (tinylog, log4j und `javax.mail` sind im Fork ersetzt).
 - **Bestanden, wenn:** erstes Kommando findet alle vier, zweites Kommando
   liefert 0 Treffer.
+- **Hinweis (benigne Treffer eines gröberen Musters):** Ein grep auf die
+  nackten Wörter `tinylog|log4j|javax/mail` findet vier harmlose Einträge —
+  die toten Upstream-Konfig-Vorlagen `de/sgollmer/solvismax/data/log4j2.xml`
+  und `…/tinylog.properties` (Ressourcen, keine Klassen) sowie
+  `ch/qos/logback/classic/log4j/XMLLayout` (Teil von Logback selbst). Das
+  Muster oben zielt deshalb auf die **Klassen-Pfade**.
 
 ## Phase 2 — Laufzeit-Smoke (ohne Anlage)
 
@@ -100,10 +119,13 @@ Ergebnismatrix am Ende ist dafür gedacht.
 
 ### T3.1 — `base.xml` wird eingelesen und validiert
 - **Zweck:** Konfiguration ist syntaktisch/schematisch korrekt.
-- **Vorbedingung:** `base.xml` aus `base.xml.new` erstellt; darin gesetzt:
-  `Unit` (`id`, `type`, `url`=SolvisRemote-IP, `account`,
-  `passwordCrypt`=Wert aus T2.1), `Mqtt` (`enable="true"`, `brokerUrl`, `port`,
-  `topicPrefix`), `ExecutionData` (`port`, `writablePathLinux`).
+- **Vorbedingung:** `base.xml` aus der Vorlage
+  `rsc/de/sgollmer/solvismax/data/base.xml` erstellt (nativ: `make prepare`
+  in `SmartHome/Linux/`); darin gesetzt: `Unit` (`id`, `type`,
+  `url="192.168.1.35"` — IP pinnen, **nicht** `solvis.fritz.box` (F-119),
+  `account`, `passwordCrypt`=Wert aus T2.1), `Mqtt` (`enable="true"`,
+  `brokerUrl="127.0.0.1"`, `port="1883"`, `topicPrefix="solvis"`),
+  `ExecutionData` (`port`, `writablePathLinux`).
 - **Schritte:** Server im Vordergrund starten (`make foreground` bzw.
   `java -jar …`) und Log beobachten.
 - **Erwartung:** Kein XSD-/Parse-Fehler; Server meldet Start und den Beginn
@@ -112,20 +134,32 @@ Ergebnismatrix am Ende ist dafür gedacht.
 
 ## Phase 4 — Anbindung an die Solvis-Anlage (mit Anlage)
 
+> ⚠️ **Vorbedingung für alle Tests mit Anlage (Phase 4–8):**
+> Cutover-Checkliste aus [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md)
+> Phase 5 abgehakt — insbesondere darf **kein zweiter OCR-Client** (Alt-Dienst
+> auf `mon-dg`) gegen dieselbe Anlage laufen (Fehlsteuerungsrisiko), und Tests
+> gegen die Live-Anlage erfolgen nur mit explizitem Betreiber-Auftrag.
+
 ### T4.1 — SolvisRemote erreichbar
 - **Zweck:** Netzweg zur grafischen Oberfläche steht.
-- **Schritte:** Von-Host `curl -sI http://<SolvisRemote-IP>/` bzw. Web-UI im
-  Browser öffnen.
-- **Erwartung:** HTTP-Antwort / Login-Oberfläche der SolvisRemote.
+- **Schritte:** Vom Fork-Host `curl -sI http://192.168.1.35/` bzw. Web-UI im
+  Browser öffnen. **Gegen die IP testen**, nicht gegen `solvis.fritz.box`
+  (F-119: DNS zeigt noch auf `.49`, unbekanntes Gerät).
+- **Erwartung:** HTTP-Antwort (401 ohne Login = gesund) / Login-Oberfläche
+  der SolvisRemote.
 - **Bestanden, wenn:** Oberfläche erreichbar. *(Bekannter Stolperstein: manche
-  SolvisRemote-Geräte zeigen den Web-Port erst nach Reset/Re-Login.)*
+  SolvisRemote-Geräte zeigen den Web-Port erst nach Reset/Re-Login — hier
+  zuletzt nach Stromreset am 2026-08-12 wieder erreichbar.)*
 
 ### T4.2 — Lernphase (OCR-Bildschirmerkennung)
 - **Zweck:** Die grafische Erkennung ist auf die Sprache/Version der Anlage
   angelernt.
-- **Schritte:** `--server-learn` (bzw. `make learn`).
+- **Vorbedingung:** T4.1 grün gegen `192.168.1.35`; Cutover-Checkliste
+  abgehakt (die Lernphase klickt real auf der Anlagen-GUI).
+- **Schritte:** nativ `sudo make learn` (in `SmartHome/Linux/`) bzw.
+  `--server-learn` direkt.
 - **Erwartung:** Lernlauf ohne Abbruch; erkannte Screens werden abgelegt
-  (`LearnedImages`).
+  (`LearnedImages` unter `<writablePathLinux>/SolvisServerData/`).
 - **Bestanden, wenn:** Lernphase abgeschlossen, keine Erkennungsfehler.
 
 ### T4.3 — Messwerte werden gelesen
@@ -143,10 +177,14 @@ Topic-Schema laut Wiki: Status `prefix/unit/kanal/data`, Kommando
 `prefix/unit/status`, `prefix/…/meta`. `prefix` = `topicPrefix` aus `base.xml`.
 
 ### T5.1 — Statuswerte erscheinen auf MQTT
-- **Schritte:** `mosquitto_sub -h <broker> -t '<prefix>/#' -v`
+- **Schritte (Variante A, zwei Ebenen):**
+  - Lokaler Broker (Loopback-Hop des Connectors):
+    `mosquitto_sub -h 127.0.0.1 -p 1883 -t 'solvis/#' -v`
+  - Ende-zu-Ende hinter der mTLS-Bridge (zentraler Primär-Broker, mit
+    Client-Zertifikat): `mosquitto_sub -h <PRIMAER_BROKER> -p 8883 --cafile … --cert … --key … -t 'solvis/#' -v`
 - **Erwartung:** `.../data`-Topics mit Messwerten; `.../meta` mit
-  Kanal-Metadaten; `server/online` = `true`.
-- **Bestanden, wenn:** Datentopics laufend aktualisiert.
+  Kanal-Metadaten; `solvis/server/online` = `true` — auf **beiden** Ebenen.
+- **Bestanden, wenn:** Datentopics laufend aktualisiert (lokal und zentral).
 
 ### T5.2 — Last-Will / Online-Status
 - **Schritte:** Server stoppen (`--server-terminate`) und `server/online`
@@ -201,6 +239,37 @@ per **mTLS-Bridge** an den zentralen Broker koppelt (Muster dieses Stacks).
   weiter.
 - **Bestanden, wenn:** Wiederverbindung ohne Neustart.
 
+## Phase 9 — Cutover-Verifikation (Ablösung des Alt-Pfads, mit Anlage)
+
+Belegt, dass nach dem Cutover ([docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md)
+Phase 5) **genau ein** Publisher den Vertrag `solvis/#` bedient.
+
+### T9.1 — Alt-Dienst still und deaktiviert
+- **Zweck:** Kein zweiter OCR-Client / Publisher (Topic-Kollision,
+  Fehlsteuerungsrisiko).
+- **Schritte:** Auf `mon-dg` (`192.168.1.60`):
+  `systemctl is-active SolvisSmartHomeServer.service` und
+  `systemctl is-enabled SolvisSmartHomeServer.service`.
+- **Erwartung:** `inactive` und `disabled` (Ist-Stand seit 2026-08-12).
+- **Bestanden, wenn:** beide Ausgaben wie erwartet; kein Prozess der
+  Alt-Software läuft.
+
+### T9.2 — `solvis/server/online` nur noch vom Fork, keine Doppel-Publikationen
+- **Zweck:** Publisher-Eindeutigkeit auf dem Vertrag `solvis/#`.
+- **Schritte:**
+  1. Fork stoppen (`systemctl stop …`) → `solvis/server/online` muss auf
+     `false` gehen und **bleiben** (würde ein zweiter Publisher leben, käme
+     erneut `true`).
+  2. Fork starten → `online=true`; einige Minuten `solvis/#` am zentralen
+     Broker mitlesen: jedes `.../data`-Topic aktualisiert sich in **einem**
+     konsistenten Rhythmus, keine widersprüchlichen/flappenden Doppelwerte,
+     keine stale Zeitstempel des Alt-Pfads.
+  3. Optional Gegenprobe der Broker-Seite: der `solvis/#`-Übergangsbestand
+     (mon-dg-ACL, `bridge.conf`) ist entzogen — Nachweis liegt im Repo
+     `ccu2mqtt` (`docs/broker-acl.md`).
+- **Erwartung/Bestanden, wenn:** Online-Status folgt ausschließlich dem Fork;
+  keine Doppel-Publikationen beobachtbar.
+
 ---
 
 ## Ergebnismatrix (zum Ausfüllen)
@@ -225,17 +294,23 @@ Umgebung: JRE-Version ⟶ ______  · OS/Arch ⟶ ______  · Anlage/Regler ⟶ __
 | T7.1 | Smart-Home-Integration | ja | | |
 | T8.1 | Dienst + Neustart | ja | | |
 | T8.2 | Reconnect | ja | | |
+| T9.1 | Alt-Dienst inactive+disabled | ja | | |
+| T9.2 | Ein Publisher auf `solvis/#` | ja | | |
 
 **Schnell-Fazit für Interessierte:** Sind **T1.1–T3.1** grün, baut und startet
 das Produkt in der eigenen Umgebung sauber. Sind zusätzlich **T4.x–T6.x** grün,
 arbeitet es wie beschrieben mit der eigenen Anlage. **T7/T8** belegen die
-Integrations- und Dauerbetriebstauglichkeit.
+Integrations- und Dauerbetriebstauglichkeit, **T9** die saubere Ablösung des
+Alt-Pfads.
 
 ## Hinweise zu CLI-Optionen
 
 Die genutzten Optionen stammen aus `SmartHome/Linux/Makefile` und dem Code
 (u. a. `--string-to-crypt=`, `--server-learn`, `--server-terminate`,
 `--test-mail`, `--documentation --csvSemicolon`, `--iobroker`). In diesem Fork
-**verifiziert** sind bislang der Build (T1.1) und `--string-to-crypt` (T2.1);
-die übrigen sind laut Upstream-Doku vorgesehen und in der eigenen Umgebung zu
-bestätigen — genau dafür ist dieser Plan da.
+**verifiziert** sind bislang der Build (T1.1, zuletzt 2026-08-12), das
+Uber-Jar (T1.2, 2026-08-12) und `--string-to-crypt` (T2.1, zuletzt
+2026-08-12); die übrigen sind laut Upstream-Doku vorgesehen und in der
+eigenen Umgebung zu bestätigen — genau dafür ist dieser Plan da. Die Tests
+mit Anlage (T4.x–T9.x, insbesondere OCR-Lernphase und MQTT-Kette) stehen bis
+zur realen Inbetriebnahme auf **UNVERIFIED**.

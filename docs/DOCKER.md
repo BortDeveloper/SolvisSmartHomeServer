@@ -42,9 +42,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends default-jre-hea
 
 ## Inbetriebnahme (Schritt für Schritt)
 
-1. **`base.xml`** aus `base.xml.new` erstellen und anpassen; darin
-   `writablePathLinux="/data"` setzen. Die Datei wird neben das Jar gemountet
-   (Default-Suchort) — alternativ per `--base-xml=/pfad` überschreiben.
+1. **`base.xml`** aus der Vorlage `rsc/de/sgollmer/solvismax/data/base.xml`
+   erstellen und anpassen; darin `writablePathLinux="/data"` setzen und die
+   SolvisRemote-**IP pinnen** (`url="192.168.1.35"`; nicht `solvis.fritz.box`,
+   F-119 — siehe [INBETRIEBNAHME.md](INBETRIEBNAHME.md)). Die Datei wird neben
+   das Jar gemountet (Default-Suchort) — alternativ per `--base-xml=/pfad`
+   überschreiben.
 2. **Passwort verschlüsseln** und als `passwordCrypt` eintragen:
    ```
    docker compose run --rm solvis --string-to-crypt=DEINPASSWORT

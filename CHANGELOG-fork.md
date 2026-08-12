@@ -8,6 +8,71 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Inbetriebnahme-Vorarbeit: nativer systemd-Pfad erstklassig, Cutover-Kapitel, Adress-Pinning, Build-Verify nachgeholt
+
+Umsetzung der Betreiber-Entscheide vom 2026-08-12 (stack-master):
+Pfadentscheid **O1 gestaffelt** — der Fork wird auf dem Zielhost zunächst
+**nativ (systemd)** aufgebaut; Docker folgt erst nach bewiesener Funktion als
+separater Entscheid.
+
+- **Nativer Deploy-Pfad fork-fertig gemacht.** Bisher führte
+  [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) ausschließlich durch die
+  Docker-Linie, obwohl sie A3 (nativ) selbst als bevorzugt nannte; der
+  Upstream-Install unter `SmartHome/Linux/` passte nicht zum Fork-Build
+  (Makefile erwartete Jar/`base.xml`/`base.xsd` im Makefile-Verzeichnis, der
+  Maven-Build schreibt nach `target/`, die `base.xsd` ist Jar-Ressource;
+  `/usr/bin/java` ohne Versions-Guard). Anpassungen (rückwärtskompatibel):
+  - `SmartHome/Linux/Makefile`: neues Ziel **`prepare`** (Brückenschritt
+    Maven-Build → Install: kopiert `target/`-Jar und `base.xsd` aus `rsc/…`,
+    legt die `base.xml`-Vorlage an, überschreibt eine vorhandene `base.xml`
+    nie) und neues Ziel **`checkJava`** (bricht ab, wenn `javaPath` kein
+    Java ≥ 17 ist; in `installSolvis` eingehängt). Zur Laufzeit validiert der
+    Fork gegen die **Jar-interne** `base.xsd` — die installierte Kopie ist
+    nur Referenz.
+  - `SmartHome/Linux/SolvisSmartHomeServer.service` (Fork-Unit):
+    `After=network-online.target`, `Restart=on-failure` + `RestartSec`,
+    Stop über **SIGTERM** (sauberer Disconnect + LWT) statt `ExecStop` mit
+    `--server-terminate` (das den abschaltbaren TCP-Port 10735 bräuchte),
+    optionales `EnvironmentFile=/etc/default/solvissmarthomeserver` (u. a.
+    `SOLVIS_HEALTH_TOKEN_PATH` — der Container-Default `/data/health/ready`
+    ist nativ meist nicht beschreibbar), `NoNewPrivileges`; `javaPath` bleibt
+    Makefile-substituiert (kein nacktes `/usr/bin/java` mehr vorausgesetzt).
+  - [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) neu gegliedert: native
+    Schritte in jeder Phase zuerst, Docker als gekennzeichnete Alternative;
+    neue Phase 4 (systemd-Install inkl. Brückenschritt und
+    Betriebsparameter). Zielhost-OS der Referenz-Installation: UNVERIFIED,
+    Schritte parametrisiert für Debian-artige Systeme.
+- **Cutover-Kapitel (HIGH-Lücke geschlossen).** Neue Phase 5 in
+  INBETRIEBNAHME.md: Checkliste vor Lernphase/GO-Live — Alt-Dienst auf
+  `mon-dg` gestoppt+disabled (Ist-Stand 2026-08-12; Verifikation
+  `systemctl is-active/is-enabled`), Entzug des `solvis/#`-Übergangsbestands
+  (mon-dg-ACL, `bridge.conf`) als Operator-Schritt im Repo `ccu2mqtt`
+  referenziert, **Zwei-OCR-Clients-Verbot** (GUI-Kollision =
+  Fehlsteuerungsrisiko an der realen Heizung) und dokumentierter
+  Rollback-Weg (`systemctl enable --now` der noch installierten
+  Alt-Software). Dazu [TESTPLAN.md](TESTPLAN.md) **Phase 9**
+  (Cutover-Verifikation: T9.1 Alt-Dienst still, T9.2 genau ein Publisher auf
+  `solvis/#`).
+- **Adress-Pinning (F-119-Klasse).** SolvisRemote hat eine feste Adresse
+  **`192.168.1.35`** (Fritzbox-DHCP-Reservierung, bestätigt 2026-08-12).
+  Alle Beispiel-/Vorlagen-Konfigurationen (INBETRIEBNAHME-Snippets,
+  TESTPLAN-Vorbedingungen/T4.1, Kommentar in der versionierten
+  `base.xml`-Vorlage) pinnen die IP; `solvis.fritz.box` wird überall mit
+  Warnung geführt (DNS zeigt noch auf `.49`, dort antwortet ein unbekanntes
+  Gerät — Hostname erst nach DNS-Bereinigung). Die von den
+  Charakterisierungstests gepinnten Vorlagen-**Werte** blieben unverändert
+  (nur XML-Kommentare ergänzt).
+- **Build-Verify nachgeholt (Stale-target-Befund behoben).** Im Repo lag ein
+  `target/`-Jar vom 22.07. mit logback 1.5.12, obwohl HEAD seit dem
+  CVE-Sprint 1.5.13 deklariert. HEAD am **2026-08-12** frisch gebaut
+  (OpenJDK 17.0.5 / Windows 11 / Maven 3.9.16): `BUILD SUCCESS`,
+  **91/91 Tests grün**, im Uber-Jar **logback-classic 1.5.13** bestätigt;
+  Laufzeit-Smoke `--string-to-crypt=probe` ok. TESTPLAN-Referenz-Baseline
+  entsprechend nachgeführt; „vor Deployment frisch bauen" ist jetzt
+  Pflichthinweis in INBETRIEBNAHME Phase 1. T1.2-Prüfkommando auf
+  Klassen-Pfade geschärft (das grobe Wort-Muster traf vier benigne
+  Ressourcen-/Logback-Einträge).
+
 ## logback-classic auf 1.5.13 (CVE-2024-12798 / CVE-2024-12801) + G2.6-Clone-Drill
 
 Sicherheits- und Verifikations-Sprint (stack-master, 2026-07-25).

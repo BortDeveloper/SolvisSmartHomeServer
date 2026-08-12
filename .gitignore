@@ -13,3 +13,11 @@ build
 # IDE
 /.idea/
 *.iml
+
+# Nativer Install-Pfad: von "make prepare" bereitgestellte Artefakte.
+# WICHTIG: base.xml enthaelt nach dem Befuellen Zugangsdaten (passwordCrypt
+# ist nur Obfuskation) und darf NIE eingecheckt werden.
+/SmartHome/Linux/SolvisSmartHomeServer.jar
+/SmartHome/Linux/base.xml
+/SmartHome/Linux/base.xml.old
+/SmartHome/Linux/base.xsd

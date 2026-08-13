@@ -23,8 +23,12 @@ Out-of-the-box-Funktion geht vor.
   `-Dhttp.auth.digest.reEnabledAlgorithms=MD5` fest in beiden
   `ExecStart`-Zeilen (vor `-jar`), mit Kommentar (Gerätezwang; wirkt nur auf
   den jeweiligen Prozess). Der vom Operator live gesetzte Workaround via
-  `JDK_JAVA_OPTIONS` im EnvironmentFile bleibt möglich, ist aber nicht mehr
-  nötig.
+  `JDK_JAVA_OPTIONS` im EnvironmentFile bleibt möglich, ist bei
+  Neuinstallationen aus dem Template aber nicht mehr nötig; für
+  **Bestandsinstallationen** aus dem alten Template ist er bis zum nächsten
+  `make installSolvis` der dokumentierte Retrofit-Weg (INBETRIEBNAHME.md
+  Phase 4.3; so am 2026-08-13 auf `ransible` verifiziert — die Lernphase
+  lief damit an).
 - **Makefile:** neue Variable `javaDeviceOpts` mit demselben `-D`-Flag in
   `start`/`startDebug` und im `foreground`-Rezept — damit funktionieren auch
   die Startwege an der Unit vorbei (`make learn`, `foreground`,

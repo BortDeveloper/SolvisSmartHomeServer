@@ -6,7 +6,11 @@ After=network.target
 [Service]
 User=$(accountSolvis)
 RemainAfterExit=yes
-ExecStart=$(javaPath) -agentlib:$(javaAgentlib) -jar $(solvisJarPath)
+# -Dhttp.auth.digest.reEnabledAlgorithms=MD5: Geraetezwang der SolvisRemote
+# (nur MD5-Digest; JDK 14+ verweigert sonst mit 401) - wirkt nur auf diesen
+# Prozess. JDWP ($(javaAgentlib)) lauscht nur auf 127.0.0.1 - Debug-Zugriff
+# per SSH-Portforward (siehe Makefile-Kommentar javaDebugPort).
+ExecStart=$(javaPath) -Dhttp.auth.digest.reEnabledAlgorithms=MD5 -agentlib:$(javaAgentlib) -jar $(solvisJarPath)
 ExecStop=$(javaPath) -jar $(solvisJarPath) --server-terminate
 
 [Install]

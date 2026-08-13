@@ -8,6 +8,38 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## MD5-Digest-Freischaltung (Gerätezwang SolvisRemote) + JDWP auf Loopback (F-120)
+
+Live-Befund beim Lernphasen-Erststart auf `ransible` (2026-08-13, Java 21):
+Der Fork scheiterte trotz korrekter Credentials (curl-200-Beweis lag vor)
+mit **HTTP 401 auf `display.bmp`**; JDK-Meldung `Rejecting digest
+authentication with insecure algorithm: MD5`. Ursache: Die
+SolvisRemote-Firmware beherrscht Digest-Auth **nur mit MD5**, moderne JDKs
+(Java 14+) verweigern das per Default. Das Gerät kann nie etwas anderes —
+Out-of-the-box-Funktion geht vor.
+
+- **Unit-Templates** (`SmartHome/Linux/SolvisSmartHomeServer.service`,
+  `DebugSolvisSmartHomeServer.service`):
+  `-Dhttp.auth.digest.reEnabledAlgorithms=MD5` fest in beiden
+  `ExecStart`-Zeilen (vor `-jar`), mit Kommentar (Gerätezwang; wirkt nur auf
+  den jeweiligen Prozess). Der vom Operator live gesetzte Workaround via
+  `JDK_JAVA_OPTIONS` im EnvironmentFile bleibt möglich, ist aber nicht mehr
+  nötig.
+- **Makefile:** neue Variable `javaDeviceOpts` mit demselben `-D`-Flag in
+  `start`/`startDebug` und im `foreground`-Rezept — damit funktionieren auch
+  die Startwege an der Unit vorbei (`make learn`, `foreground`,
+  `debugServer`, `terminate`, `documentation`, `iobroker`).
+- **Härtung Debug-Unit:** `javaDebugPort` von `0.0.0.0:10737` auf
+  **`127.0.0.1:10737`** — JDWP (unauthentifizierte Code-Ausführung!) darf
+  nie auf allen Interfaces lauschen. Remote-Debugging per SSH-Portforward
+  (`ssh -L 10737:127.0.0.1:10737 <host>`, dokumentiert im Makefile).
+- **Doku:** [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) — Phase 4.3
+  (Hinweis, dass die Units das Flag bereits enthalten), Phase 6 (manueller
+  `--server-learn`-Aufruf mit explizitem `-D`-Flag), neue
+  Troubleshooting-Zeile zum 401/MD5-Symptom (inkl. Hinweis, warum der
+  curl-Beweis aus `check-credentials.sh` dabei grün bleibt — curl akzeptiert
+  MD5). [TESTPLAN.md](TESTPLAN.md) T4.2: Anmerkung zum Messbefund.
+
 ## Credential-Prüfskript `check-credentials.sh` (F-120) + HEAD-403-Messbefund
 
 Vorbereitung des GO-Live (stack-master, 2026-08-13). Motivation:

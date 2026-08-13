@@ -8,6 +8,42 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Credential-Prüfskript `check-credentials.sh` (F-120) + HEAD-403-Messbefund
+
+Vorbereitung des GO-Live (stack-master, 2026-08-13). Motivation:
+Fehlkonfigurierte Zugangsdaten (Web-Passwort, `passwordCrypt`, MQTT-Login)
+sollen **vor** der OCR-Lernphase auffallen, nicht erst beim ersten
+Dienststart. Vorlage ist der am 2026-08-13 auf dem Referenzhost `ransible`
+manuell bewiesene Testablauf (alle 4 Prüfungen PASS).
+
+- **Neu `SmartHome/Linux/check-credentials.sh`** (bash, shellcheck-sauber,
+  read-only): parst Unit- (`account`, `url`, `passwordCrypt`) und
+  Mqtt-Parameter (`enable`, `brokerUrl`, `port`, `userName`,
+  `passwordCrypt`) robust aus der `base.xml` (mehrzeilige Attribute,
+  Kommentare werden nicht-gierig entfernt; keine hartkodierten IPs) und
+  prüft: **P1** SolvisRemote-Anmeldung (GET mit `--anyauth`, Vorprüfung ohne
+  Auth → 401), **P2** Unit-Crypt-Abgleich via `--string-to-crypt`, **P3**
+  Login am lokalen Broker (`mosquitto_sub` auf `$SYS/broker/version`, kein
+  Publish; rc 0/27 = akzeptiert), **P4** Mqtt-Crypt-Abgleich. Dreiwertige
+  Semantik nach ADR-0024 (PASS/FAIL/UNVERIFIED je Prüfung, Exit 0/1/3).
+  Passwörter nur per `read -rs`, `trap`-Cleanup; die kurzzeitige
+  argv-Sichtbarkeit (`--string-to-crypt`, `-P`) ist auf dem
+  Einzelnutzer-Host als dokumentierte Abwägung akzeptiert.
+- **Makefile-Ziel `checkCredentials`** (`SmartHome/Linux/Makefile`, ohne
+  sudo); `installSolvis` gibt am Ende den Empfehlungshinweis aus, bleibt
+  aber bewusst ohne harte Abhängigkeit (das Skript ist interaktiv).
+- **Messbefund 2026-08-13: die SolvisRemote beantwortet HEAD mit 403** —
+  401 (ohne Login) bzw. 200 (mit Login) kommen nur auf **GET**. Alle
+  `curl -I`/`curl -sI`-Proben in
+  [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) (Cutover-Checkliste,
+  Troubleshooting inkl. neuer 403-Zeile) und [TESTPLAN.md](TESTPLAN.md)
+  (T4.1) auf die GET-Variante umgestellt.
+- **Doku:** INBETRIEBNAHME.md neue Phase 3.3 „Credentials prüfen
+  (empfohlen)" + Cutover-Checklistenpunkt „Credentials geprüft";
+  TESTPLAN.md neuer Testfall **T2.2** „`check-credentials.sh` dreiwertig"
+  (bisheriger Mail-Test → T2.3), Status UNVERIFIED bis zum nächsten
+  Live-Lauf.
+
 ## Inbetriebnahme-Vorarbeit: nativer systemd-Pfad erstklassig, Cutover-Kapitel, Adress-Pinning, Build-Verify nachgeholt
 
 Umsetzung der Betreiber-Entscheide vom 2026-08-12 (stack-master):

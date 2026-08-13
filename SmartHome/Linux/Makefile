@@ -195,6 +195,16 @@ uninstallSolvis: uninstallService uninstallDebugService
 
 
 installSolvis: checkJava $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xml  $(serverDir)/$(baseXml).xsd copyService
+	@echo "Empfohlen: 'make checkCredentials' vor dem ersten Start/Lernphase (Credential-Pruefung, F-120)."
+
+
+
+# Fork: interaktive Credential-Pruefung (F-120) — prueft Solvis-Web-Login,
+# MQTT-Login und die passwordCrypt-Werte der base.xml VOR Lernphase/GO-Live.
+# Bewusst KEINE harte Abhaengigkeit von installSolvis (interaktiv, fragt
+# Passwoerter ab); kein sudo noetig, Skript ist read-only.
+checkCredentials:
+	@./check-credentials.sh
 
 
 

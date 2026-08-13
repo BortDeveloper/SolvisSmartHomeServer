@@ -321,9 +321,20 @@ läuft trotzdem, nur das Signal fehlt).
 nur mit MD5; Java 14+ verweigert das per Default (Symptom siehe
 Troubleshooting; Messbefund ransible 2026-08-13, Java 21). Die Fork-Units
 setzen deshalb `-Dhttp.auth.digest.reEnabledAlgorithms=MD5` **fest in der
-`ExecStart`-Zeile** — im EnvironmentFile ist dafür nichts zu tun.
-(`JDK_JAVA_OPTIONS="-Dhttp.auth.digest.reEnabledAlgorithms=MD5"` im EnvFile
-würde ebenfalls wirken, ist mit dem Template-Fix aber nicht mehr nötig.)
+`ExecStart`-Zeile** — bei **Neuinstallationen** aus dem aktuellen Template
+ist im EnvironmentFile dafür nichts zu tun.
+
+**Retrofit für Bestandsinstallationen** (Unit noch aus dem alten Template
+installiert, `ExecStart` ohne Flag): Bis zum nächsten
+`sudo make installSolvis` (zieht das neue Template) wirkt als Nachrüstung
+eine Zeile im EnvFile — die Unit lädt es bereits (`EnvironmentFile=-…`):
+
+```bash
+echo 'JDK_JAVA_OPTIONS=-Dhttp.auth.digest.reEnabledAlgorithms=MD5' | sudo tee -a /etc/default/solvissmarthomeserver
+```
+
+So am 2026-08-13 auf `ransible` verifiziert (Lernphase lief damit an). Nach
+dem Template-Update ist die Zeile redundant, aber unschädlich.
 
 ### 4.4 Dienststeuerung (Referenz)
 

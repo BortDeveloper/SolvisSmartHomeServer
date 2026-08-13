@@ -24,12 +24,22 @@ javaVersionMin = 17
 # Fork: Quelle der Build-/Vorlagen-Artefakte (Maven-Build im Repo-Root).
 repoRoot = ../..
 rscData = $(repoRoot)/rsc/de/sgollmer/solvismax/data
-javaDebugPort = 0.0.0.0:10737
+# Fork: JDWP nur auf Loopback (nie 0.0.0.0 - der Debug-Port waere sonst im
+# LAN offen). Remote-Debugging per SSH-Portforward:
+#   ssh -L 10737:127.0.0.1:10737 <host>
+javaDebugPort = 127.0.0.1:10737
 javaAgentlib = jdwp=transport=dt_socket,suspend=n,server=y,address=$(javaDebugPort)
 
+# Fork: Geraetezwang SolvisRemote - die Firmware kann Digest-Auth nur mit
+# MD5, JDK 14+ verweigert das per Default ("Rejecting digest authentication
+# with insecure algorithm: MD5" -> 401; Messbefund ransible 2026-08-13,
+# Java 21). Gilt fuer alle Starts, die mit der Anlage sprechen (learn,
+# foreground, debugServer, ...); wirkt nur auf den jeweiligen Prozess.
+javaDeviceOpts = -Dhttp.auth.digest.reEnabledAlgorithms=MD5
+
 solvisJarPath = $(serverDir)/$(solvisJar)
-start = sudo -u $(accountSolvis) $(javaPath) -jar $(solvisJarPath)
-startDebug = sudo -u $(accountSolvis) $(javaPath) -agentlib:$(javaAgentlib) -jar  $(solvisJarPath)
+start = sudo -u $(accountSolvis) $(javaPath) $(javaDeviceOpts) -jar $(solvisJarPath)
+startDebug = sudo -u $(accountSolvis) $(javaPath) $(javaDeviceOpts) -agentlib:$(javaAgentlib) -jar  $(solvisJarPath)
 startLocal = sudo -u $(accountSolvis) $(javaPath) -jar  $(solvisJar)
 
 generatedBaseDir = SolvisServerData
@@ -266,7 +276,7 @@ terminate: stopServices installSolvis
 
 
 foreground: stopServices installSolvis
-	sudo -u $(accountSolvis) $(javaPath) -jar $(serverDir)/$(solvisJar)
+	sudo -u $(accountSolvis) $(javaPath) $(javaDeviceOpts) -jar $(serverDir)/$(solvisJar)
 
 
 

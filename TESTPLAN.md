@@ -181,10 +181,21 @@ Ergebnismatrix am Ende ist dafür gedacht.
 - **Vorbedingung:** T4.1 grün gegen `192.168.1.35`; Cutover-Checkliste
   abgehakt (die Lernphase klickt real auf der Anlagen-GUI).
 - **Schritte:** nativ `sudo make learn` (in `SmartHome/Linux/`) bzw.
-  `--server-learn` direkt.
+  `--server-learn` direkt (dann `-Dhttp.auth.digest.reEnabledAlgorithms=MD5`
+  mitgeben, siehe Anmerkung).
 - **Erwartung:** Lernlauf ohne Abbruch; erkannte Screens werden abgelegt
   (`LearnedImages` unter `<writablePathLinux>/SolvisServerData/`).
 - **Bestanden, wenn:** Lernphase abgeschlossen, keine Erkennungsfehler.
+- **Anmerkung (MD5-Digest-Befund 2026-08-13, ransible, Java 21):** Der
+  Lernphasen-Erststart scheiterte trotz korrekter Credentials (curl-200-Beweis
+  lag vor) mit 401 auf `display.bmp`; JDK-Meldung „Rejecting digest
+  authentication with insecure algorithm: MD5". Ursache: Die SolvisRemote
+  kann Digest-Auth nur mit MD5, Java 14+ verweigert das per Default. Fix:
+  System-Property `http.auth.digest.reEnabledAlgorithms=MD5` — seither fest
+  in den Unit-Templates und make-Startkommandos verdrahtet
+  ([docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md), Troubleshooting). Bei
+  T4.2-Fehlschlägen mit diesem Symptom zuerst prüfen, ob das Flag im
+  verwendeten Startweg ankommt.
 
 ### T4.3 — Messwerte werden gelesen
 - **Zweck:** Monitoring (Zusage 1) funktioniert.

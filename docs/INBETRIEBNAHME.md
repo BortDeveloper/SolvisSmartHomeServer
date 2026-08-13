@@ -317,6 +317,14 @@ Symptom-Signal für Monitoring — ohne die Variable versucht der Server
 `/data/health/ready` (auf nativen Hosts meist nicht beschreibbar; der Server
 läuft trotzdem, nur das Signal fehlt).
 
+**Hinweis MD5-Digest (Gerätezwang):** Die SolvisRemote beherrscht Digest-Auth
+nur mit MD5; Java 14+ verweigert das per Default (Symptom siehe
+Troubleshooting; Messbefund ransible 2026-08-13, Java 21). Die Fork-Units
+setzen deshalb `-Dhttp.auth.digest.reEnabledAlgorithms=MD5` **fest in der
+`ExecStart`-Zeile** — im EnvironmentFile ist dafür nichts zu tun.
+(`JDK_JAVA_OPTIONS="-Dhttp.auth.digest.reEnabledAlgorithms=MD5"` im EnvFile
+würde ebenfalls wirken, ist mit dem Template-Fix aber nicht mehr nötig.)
+
 ### 4.4 Dienststeuerung (Referenz)
 
 ```bash
@@ -411,10 +419,14 @@ Cutover-Checkliste (Phase 5) abgehakt — die Lernphase klickt real auf der
 Anlagen-GUI.
 
 ```bash
-# Nativ (Standard) — stoppt laufende Dienste, lernt, startet den Dienst:
+# Nativ (Standard) — stoppt laufende Dienste, lernt, startet den Dienst
+# (das MD5-Digest-Flag steckt bereits in den make-Startkommandos):
 cd SmartHome/Linux && sudo make learn
-# oder manuell, ohne automatischen Dienststart:
-sudo -u solvis java -jar /opt/solvis/SolvisSmartHomeServer/SolvisSmartHomeServer.jar --server-learn
+# oder manuell, ohne automatischen Dienststart — dann das MD5-Digest-Flag
+# EXPLIZIT mitgeben (Gerätezwang der SolvisRemote, sonst 401 auf display.bmp;
+# siehe Troubleshooting):
+sudo -u solvis java -Dhttp.auth.digest.reEnabledAlgorithms=MD5 \
+  -jar /opt/solvis/SolvisSmartHomeServer/SolvisSmartHomeServer.jar --server-learn
 
 # Docker (Alternative):
 # docker compose run --rm solvis --server-learn
@@ -495,6 +507,7 @@ sudo systemctl stop SolvisSmartHomeServer.service
 |---|---|
 | Lernphase/Start bricht mit Verbindungsfehler zur Anlage ab | SolvisRemote nicht erreichbar. `curl -s -o /dev/null -w '%{http_code}' http://192.168.1.35/` testen (`401` = gesund); manche SolvisRemote zeigen den Web-Port erst nach Neustart/Re-Login. **Nicht** `solvis.fritz.box` verwenden (F-119: zeigt noch auf `.49`, unbekanntes Gerät). |
 | `curl -I` (HEAD) gegen die SolvisRemote liefert 403 | Kein Fehler der Zugangsdaten: die SolvisRemote beantwortet **HEAD-Requests mit 403**; das erwartete 401 (ohne Login) bzw. 200 (mit Login) kommt nur auf **GET** (Messbefund 2026-08-13). Erreichbarkeit daher per GET prüfen — `check-credentials.sh` (Phase 3.3) macht das bereits richtig. |
+| 401 auf `display.bmp` trotz korrekter Credentials; JDK-Log: „Rejecting digest authentication with insecure algorithm: MD5" | Gerätezwang: Die SolvisRemote-Firmware kann Digest-Auth **nur mit MD5**, Java 14+ verweigert das per Default (Messbefund ransible 2026-08-13, Java 21; der curl-200-Beweis aus `check-credentials.sh` bleibt dabei grün, weil curl MD5 akzeptiert). Fix: System-Property **`http.auth.digest.reEnabledAlgorithms=MD5`** — in den Fork-Units bereits fest in `ExecStart`, in den make-Startkommandos (`learn`, `foreground`, …) enthalten; bei manuellen `java -jar`-Aufrufen als `-D`-Flag mitgeben. Alternativ wirkt `JDK_JAVA_OPTIONS` im EnvFile (Phase 4.3), ist aber nicht mehr nötig. |
 | `make installSolvis` bricht mit „kein Java >= 17" ab | `/usr/bin/java` ist zu alt. Java ≥ 17 installieren oder `make … javaPath=/pfad/zu/java-17+` übergeben. |
 | `make installSolvis`: Jar/base.xml fehlt | Brückenschritt vergessen: erst `./mvnw -B clean package` (Repo-Wurzel), dann `make prepare` (in `SmartHome/Linux/`). |
 | `base.xml couldn't be read` | XSD-Validierung fehlgeschlagen — Struktur/Attribute prüfen (validiert wird gegen die Jar-interne `base.xsd`). |

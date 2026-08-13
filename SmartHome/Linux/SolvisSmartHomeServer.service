@@ -13,7 +13,12 @@ EnvironmentFile=-/etc/default/solvissmarthomeserver
 # javaPath wird vom Makefile substituiert und muss ein Java >= 17 sein
 # (Fork-Baseline; Guard: "make checkJava"). Kein nacktes /usr/bin/java
 # voraussetzen - bei mehreren JDKs "make javaPath=<pfad> ..." verwenden.
-ExecStart=$(javaPath) -jar $(solvisJarPath)
+# -Dhttp.auth.digest.reEnabledAlgorithms=MD5: Geraetezwang - die
+# SolvisRemote-Firmware beherrscht Digest-Auth nur mit MD5, moderne JDKs
+# (Java 14+) verweigern das per Default ("Rejecting digest authentication
+# with insecure algorithm: MD5" -> 401; Messbefund ransible 2026-08-13).
+# Wirkt ausschliesslich auf diesen Prozess.
+ExecStart=$(javaPath) -Dhttp.auth.digest.reEnabledAlgorithms=MD5 -jar $(solvisJarPath)
 # Stop ueber SIGTERM (systemd-Default): der Server disconnectet sauber und
 # setzt das MQTT-LWT (solvis/server/online=false). Bewusst KEIN ExecStop mit
 # --server-terminate: das braucht den (abschaltbaren) TCP-Port 10735.

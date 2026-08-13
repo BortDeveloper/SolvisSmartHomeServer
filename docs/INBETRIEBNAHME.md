@@ -229,6 +229,29 @@ Hinweise:
 Falls der lokale Broker zusätzlich User/Passwort verlangt, den Wert wie in 2.2
 mit `--string-to-crypt` erzeugen und als `passwordCrypt` im `<tns:Mqtt>` eintragen.
 
+### 3.3 Credentials prüfen (empfohlen)
+
+Bevor es weitergeht, die in Phase 2/3 eingetragenen Zugangsdaten gegen die
+reale Umgebung beweisen — Fehlkonfigurationen fallen so **vor** der
+OCR-Lernphase auf, nicht erst beim ersten Dienststart:
+
+```bash
+cd SmartHome/Linux && make checkCredentials      # ruft ./check-credentials.sh
+```
+
+Das Skript ist **read-only** (ändert nichts, publiziert nichts) und prüft
+interaktiv (Passwörter werden unsichtbar abgefragt, nie angezeigt):
+
+- **P1** Anmeldung an der SolvisRemote (`http://<url>/`, GET mit `--anyauth`),
+- **P2** Unit-`passwordCrypt` in `base.xml` passt zum echten Web-Passwort,
+- **P3** Login am lokalen MQTT-Broker (nur falls `userName` konfiguriert),
+- **P4** Mqtt-`passwordCrypt` in `base.xml` passt zum MQTT-Passwort.
+
+Jede Prüfung meldet dreiwertig **PASS/FAIL/UNVERIFIED** (Haus-Standard
+ADR-0024); Exit-Code `0` = alle anwendbaren Prüfungen PASS, `1` = mindestens
+ein FAIL, `3` = kein FAIL, aber mindestens ein UNVERIFIED. Erst bei
+Gesamt-PASS weiter zu Phase 4.
+
 ---
 
 ## Phase 4 — Installation als systemd-Dienst (nativer Standardpfad)
@@ -336,9 +359,13 @@ sind **ausgeschlossen**, aus zwei Gründen:
       systemctl is-enabled SolvisSmartHomeServer.service   # erwartet: disabled
       ```
 
-- [ ] **SolvisRemote unter `192.168.1.35` erreichbar** (`curl -sI
-      http://192.168.1.35/` → HTTP 401 = gesund). Nicht über
-      `solvis.fritz.box` prüfen (F-119, siehe Adress-Kasten oben).
+- [ ] **SolvisRemote unter `192.168.1.35` erreichbar**
+      (`curl -s -o /dev/null -w '%{http_code}' http://192.168.1.35/` → `401`
+      = gesund). Per **GET** prüfen, nicht mit `curl -I` — die SolvisRemote
+      beantwortet HEAD mit 403 (Messbefund 2026-08-13, siehe Troubleshooting).
+      Nicht über `solvis.fritz.box` prüfen (F-119, siehe Adress-Kasten oben).
+- [ ] **Credentials geprüft** (`make checkCredentials` → PASS, Phase 3.3) —
+      Web-Login, `passwordCrypt`-Werte und MQTT-Login stimmen.
 - [ ] **Kein zweiter OCR-Client aktiv** (siehe Verbot oben) — auch keine
       Test-/Debug-Instanz auf einem Arbeitsrechner.
 - [ ] **Übergangsbestand `solvis/#` auf der Broker-Seite entziehen (beim
@@ -466,7 +493,8 @@ sudo systemctl stop SolvisSmartHomeServer.service
 
 | Symptom | Ursache / Prüfung |
 |---|---|
-| Lernphase/Start bricht mit Verbindungsfehler zur Anlage ab | SolvisRemote nicht erreichbar. `curl -I http://192.168.1.35/` testen (401 = gesund); manche SolvisRemote zeigen den Web-Port erst nach Neustart/Re-Login. **Nicht** `solvis.fritz.box` verwenden (F-119: zeigt noch auf `.49`, unbekanntes Gerät). |
+| Lernphase/Start bricht mit Verbindungsfehler zur Anlage ab | SolvisRemote nicht erreichbar. `curl -s -o /dev/null -w '%{http_code}' http://192.168.1.35/` testen (`401` = gesund); manche SolvisRemote zeigen den Web-Port erst nach Neustart/Re-Login. **Nicht** `solvis.fritz.box` verwenden (F-119: zeigt noch auf `.49`, unbekanntes Gerät). |
+| `curl -I` (HEAD) gegen die SolvisRemote liefert 403 | Kein Fehler der Zugangsdaten: die SolvisRemote beantwortet **HEAD-Requests mit 403**; das erwartete 401 (ohne Login) bzw. 200 (mit Login) kommt nur auf **GET** (Messbefund 2026-08-13). Erreichbarkeit daher per GET prüfen — `check-credentials.sh` (Phase 3.3) macht das bereits richtig. |
 | `make installSolvis` bricht mit „kein Java >= 17" ab | `/usr/bin/java` ist zu alt. Java ≥ 17 installieren oder `make … javaPath=/pfad/zu/java-17+` übergeben. |
 | `make installSolvis`: Jar/base.xml fehlt | Brückenschritt vergessen: erst `./mvnw -B clean package` (Repo-Wurzel), dann `make prepare` (in `SmartHome/Linux/`). |
 | `base.xml couldn't be read` | XSD-Validierung fehlgeschlagen — Struktur/Attribute prüfen (validiert wird gegen die Jar-interne `base.xsd`). |

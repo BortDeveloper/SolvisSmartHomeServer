@@ -107,7 +107,28 @@ Ergebnismatrix am Ende ist dafür gedacht.
 - **Nutzen:** Der Ausgabewert ist der Wert für `passwordCrypt` in `base.xml`
   (Phase 3).
 
-### T2.2 — E-Mail-Benachrichtigung (optional)
+### T2.2 — `check-credentials.sh` dreiwertig
+- **Zweck:** Die Credential-Prüfung (F-120) beweist vor Lernphase/GO-Live,
+  dass Web-Passwort, MQTT-Login und die `passwordCrypt`-Werte der `base.xml`
+  zusammenpassen — mit korrekter dreiwertiger Semantik (ADR-0024).
+- **Vorbedingung:** `base.xml` befüllt (Phase 2/3 der
+  [Inbetriebnahme](docs/INBETRIEBNAHME.md)); Jar gebaut; Netzweg zur
+  SolvisRemote und zum lokalen Broker (sonst UNVERIFIED statt PASS).
+- **Schritte:** `make checkCredentials` (in `SmartHome/Linux/`) bzw.
+  `./check-credentials.sh [base.xml]`; Passwörter werden unsichtbar abgefragt.
+- **Erwartung:** P1–P4 melden je **PASS/FAIL/UNVERIFIED** mit Begründung;
+  Exit-Code 0 nur bei durchgängig PASS (1 = mind. ein FAIL, 3 = kein FAIL,
+  aber mind. ein UNVERIFIED). Das Skript ändert nichts (read-only, kein
+  Publish). Hinweis: Die SolvisRemote beantwortet HEAD mit 403 — das Skript
+  prüft deshalb per GET (Messbefund 2026-08-13).
+- **Bestanden, wenn:** Semantik wie beschrieben; bei korrekten Zugangsdaten
+  Gesamt-PASS.
+- **Anmerkung:** Manueller Vorläufer-Lauf der vier Prüfschritte auf dem
+  Referenzhost `ransible` am 2026-08-13: **alle 4 Prüfungen PASS** (Web-Login
+  200, Unit-Crypt-Match, MQTT-Login `solvis-local`, Mqtt-Crypt-Match). Das
+  Skript selbst steht bis zum nächsten Live-Lauf auf **UNVERIFIED**.
+
+### T2.3 — E-Mail-Benachrichtigung (optional)
 - **Zweck:** Die Fehler-Mail-Funktion ist grundsätzlich konfigurierbar.
 - **Vorbedingung:** `ExceptionMail`-Block in `base.xml` mit gültigem SMTP.
 - **Schritte:** `--test-mail` (bzw. `make testmail`).
@@ -142,9 +163,12 @@ Ergebnismatrix am Ende ist dafür gedacht.
 
 ### T4.1 — SolvisRemote erreichbar
 - **Zweck:** Netzweg zur grafischen Oberfläche steht.
-- **Schritte:** Vom Fork-Host `curl -sI http://192.168.1.35/` bzw. Web-UI im
-  Browser öffnen. **Gegen die IP testen**, nicht gegen `solvis.fritz.box`
-  (F-119: DNS zeigt noch auf `.49`, unbekanntes Gerät).
+- **Schritte:** Vom Fork-Host
+  `curl -s -o /dev/null -w '%{http_code}' http://192.168.1.35/` bzw. Web-UI
+  im Browser öffnen. **Per GET testen, nicht `curl -I`** — die SolvisRemote
+  beantwortet HEAD-Requests mit 403 (Messbefund 2026-08-13). **Gegen die IP
+  testen**, nicht gegen `solvis.fritz.box` (F-119: DNS zeigt noch auf `.49`,
+  unbekanntes Gerät).
 - **Erwartung:** HTTP-Antwort (401 ohne Login = gesund) / Login-Oberfläche
   der SolvisRemote.
 - **Bestanden, wenn:** Oberfläche erreichbar. *(Bekannter Stolperstein: manche
@@ -282,7 +306,8 @@ Umgebung: JRE-Version ⟶ ______  · OS/Arch ⟶ ______  · Anlage/Regler ⟶ __
 | T1.1 | Build aus Quellen | nein | | |
 | T1.2 | Uber-Jar vollständig | nein | | |
 | T2.1 | Start + `--string-to-crypt` | nein | | |
-| T2.2 | Test-Mail (optional) | nein | | |
+| T2.2 | `check-credentials.sh` dreiwertig | nein¹ | | UNVERIFIED bis zum nächsten Live-Lauf; Vorläufer-Lauf ransible 2026-08-13: 4/4 PASS |
+| T2.3 | Test-Mail (optional) | nein | | |
 | T3.1 | `base.xml` eingelesen | nein | | |
 | T4.1 | SolvisRemote erreichbar | ja | | |
 | T4.2 | Lernphase | ja | | |
@@ -296,6 +321,10 @@ Umgebung: JRE-Version ⟶ ______  · OS/Arch ⟶ ______  · Anlage/Regler ⟶ __
 | T8.2 | Reconnect | ja | | |
 | T9.1 | Alt-Dienst inactive+disabled | ja | | |
 | T9.2 | Ein Publisher auf `solvis/#` | ja | | |
+
+¹ T2.2 läuft ohne Anlage an, liefert dann aber für P1 (und ggf. P3)
+**UNVERIFIED** statt PASS — ein Gesamt-PASS braucht den Netzweg zur
+SolvisRemote und zum lokalen Broker.
 
 **Schnell-Fazit für Interessierte:** Sind **T1.1–T3.1** grün, baut und startet
 das Produkt in der eigenen Umgebung sauber. Sind zusätzlich **T4.x–T6.x** grün,

@@ -42,9 +42,11 @@ als Dienst installieren → **Cutover vom Alt-Pfad** → Lernphase → Test.
 
 **Nativ (Standard):**
 
-- Debian-artiger Host (Referenz: `ransible`; das dortige OS ist zum
-  Redaktionsstand **UNVERIFIED** — die Schritte sind parametrisiert und auf
-  jedem Debian-artigen System mit systemd nachvollziehbar).
+- Debian-artiger Host (Referenz: `ransible` = RPi4, Debian 13 „trixie"
+  aarch64, OpenJDK 21 — **produktiv verifiziert seit 2026-08-13**, der Fork
+  läuft dort nativ als Produktiv-Publisher, T5/T9 PASS; die Schritte sind
+  parametrisiert und auf jedem Debian-artigen System mit systemd
+  nachvollziehbar).
 - **Java ≥ 17** (headless reicht; OCR nutzt nur `java.desktop` aus dem JDK,
   kein X11): `java -version` prüfen. Bei mehreren JDKs den vollen Pfad
   notieren (wird unten als `javaPath` übergeben).
@@ -388,12 +390,13 @@ sind **ausgeschlossen**, aus zwei Gründen:
 - [ ] **Kein zweiter OCR-Client aktiv** (siehe Verbot oben) — auch keine
       Test-/Debug-Instanz auf einem Arbeitsrechner.
 - [ ] **Übergangsbestand `solvis/#` auf der Broker-Seite entziehen (beim
-      GO-Live des Direkt-Pfads):** In der mon-dg-ACL und der `bridge.conf`
-      des zentralen Brokers besteht noch der Übergangsbestand für den
-      Alt-Pfad. Der Operator entzieht ihn beim GO-Live des Fork-Direktpfads.
-      Diese Änderung liegt **im Repo `ccu2mqtt`** (`docs/broker-acl.md` und
-      Bridge-Konfiguration) — sie wird von dort aus durchgeführt, nicht aus
-      diesem Repo.
+      GO-Live des Direkt-Pfads).**
+      Ist-Stand 2026-08-12: erledigt — `solvis/#` ist sowohl aus der
+      mon-dg-Bridge als auch aus der Broker-ACL entzogen (live deployed;
+      Negativtest: Publish auf dem Alt-Pfad wird mit PUBACK RC 135
+      abgewiesen). Diese Änderung lag **im Repo `ccu2mqtt`**
+      (`docs/broker-acl.md` und Bridge-Konfiguration) — sie wurde von dort
+      aus durchgeführt, nicht aus diesem Repo.
 - [ ] **Konsumenten informiert/geprüft:** Abnehmer von `solvis/#` (z. B.
       Home Assistant) verkraften den Publisher-Wechsel (Topics bleiben
       vertragsgleich; ggf. Retained-Altwerte beachten).

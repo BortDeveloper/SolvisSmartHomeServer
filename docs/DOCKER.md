@@ -6,6 +6,13 @@ Java-Anwendung ohne native Abhängigkeiten und braucht keinen Bildschirm
 ein [`Dockerfile`](../Dockerfile) (Zwei-Stufen-Build), eine
 [`docker-compose.yml`](../docker-compose.yml) und diese Anleitung.
 
+> ℹ️ **Docker ist nicht der Produktivweg dieser Installation.** Seit dem
+> Cutover am 2026-08-13 läuft der Fork **nativ als systemd-Dienst** auf dem
+> headless RPi4 `ransible`; der Container-Weg bleibt als Alternative für
+> Entwicklung und Test dokumentiert. Produktivbetrieb und Day-2-Aufgaben:
+> [INBETRIEBNAHME.md](INBETRIEBNAHME.md) und
+> [runbooks/README.md](runbooks/README.md).
+
 ## Warum es funktioniert (und die Fallstricke)
 
 - **Architekturunabhängig:** Java-Bytecode; das Image läuft auf **amd64** und
@@ -44,8 +51,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends default-jre-hea
 
 1. **`base.xml`** aus der Vorlage `rsc/de/sgollmer/solvismax/data/base.xml`
    erstellen und anpassen; darin `writablePathLinux="/data"` setzen und die
-   SolvisRemote-**IP pinnen** (`url="192.168.1.35"`; nicht `solvis.fritz.box`,
-   F-119 — siehe [INBETRIEBNAHME.md](INBETRIEBNAHME.md)). Die Datei wird neben
+   SolvisRemote-**IP pinnen** (`url="192.168.1.35"`; nicht `solvis.fritz.box` —
+   verwaister Fritzbox-Alt-Eintrag, Begründung in
+   [INBETRIEBNAHME.md](INBETRIEBNAHME.md)). Die Datei wird neben
    das Jar gemountet (Default-Suchort) — alternativ per `--base-xml=/pfad`
    überschreiben.
 2. **Passwort verschlüsseln** und als `passwordCrypt` eintragen:
@@ -53,6 +61,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends default-jre-hea
    docker compose run --rm solvis --string-to-crypt=DEINPASSWORT
    ```
 3. **Lernphase** einmalig fahren (schreibt nach `/data`):
+
+   > ⚠️ **Vor jeder Lernphase gilt die Cutover-Checkliste aus
+   > [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 5.** Die Lernphase klickt
+   > real auf der Anlagen-GUI. Es darf zu keinem Zeitpunkt ein **zweiter
+   > OCR-Client** gegen `192.168.1.35` laufen — weder der native Dienst auf
+   > `ransible`, noch die Alt-Software auf `mon-dg`, noch eine Testinstanz auf
+   > einem Arbeitsrechner. Zwei Clients auf derselben Oberfläche verklicken
+   > sich gegenseitig, bis hin zu realen Fehlsteuerungen an der Heizung.
+
    ```
    docker compose run --rm solvis --server-learn
    ```

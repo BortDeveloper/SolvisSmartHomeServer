@@ -36,7 +36,7 @@ Prüfkriterium ist die im README zugesagte Funktion:
 | Build (optional) | JDK 17+ (Maven-Wrapper `mvnw` ist im Repo enthalten — kein separates Maven nötig). |
 | MQTT | Ein MQTT-Broker (z. B. Mosquitto). Hinweis: Upstream-MQTT ist **unverschlüsselt** — für TLS-Umgebungen siehe Phase 6/Integrationsvariante. |
 | Netz | SolvisRemote per HTTP erreichbar; TCP-Port des Servers (Default **10735**) für TCP-Clients erreichbar. |
-| Anlagen-Adresse (diese Installation) | SolvisRemote = **`192.168.1.35`** (feste Fritzbox-DHCP-Reservierung, Stand 2026-08-12). ⚠️ **Nicht** `solvis.fritz.box` verwenden: der DNS-Name zeigt noch auf `192.168.1.49`, wo ein unbekanntes Gerät antwortet (F-119) — Hostname erst nach der DNS-Bereinigung. |
+| Anlagen-Adresse (diese Installation) | SolvisRemote = **`192.168.1.35`** (feste Fritzbox-DHCP-Reservierung, Stand 2026-08-12). ⚠️ **Nicht** `solvis.fritz.box` verwenden: der Name stammt aus einem verwaisten Fritzbox-Alt-Eintrag und zeigt weiterhin auf `192.168.1.49`. Begründung und Details führt [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md). |
 | Exklusivität (diese Installation) | **Nur ein OCR-Client** darf gegen die Anlage laufen (Fehlsteuerungsrisiko). Vor Phase 4–8: Cutover-Checkliste [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) Phase 5 abhaken; Verifikation: Phase 9 unten. |
 
 ## Referenz-Baseline (in diesem Fork bereits verifiziert)
@@ -53,6 +53,34 @@ Damit klar ist, worauf aufgesetzt wird:
     gebündelt; keine tinylog-/log4j-/`javax.mail`-**Klassen** (siehe Hinweis
     in T1.2 zu benignen Treffern des groben grep-Musters).
   - **T2.1** `--string-to-crypt=probe` → verschlüsselter Wert, sauberes Ende.
+
+### Produktiv verifiziert am 2026-08-13 auf `ransible` (Debian 13 aarch64, OpenJDK 21)
+
+Mit dem Cutover am 2026-08-13 ist der Fork Produktiv-Publisher: er läuft nativ
+als systemd-Dienst auf dem headless RPi4 `ransible` (`192.168.1.135`) und
+publiziert über den lokalen Mosquitto auf den Primär-Broker. In dieser Session
+wurden die folgenden Tests real durchgeführt und bestanden — Ausführender war
+der Betreiber, Belegquelle sind die Messungen im as-built-Runbook
+`ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md` (§0, §6a–§6d) sowie der
+Vollzugseintrag F-120 im Cockpit-Journal:
+
+- **T4.1** SolvisRemote erreichbar — GET auf `http://192.168.1.35/` liefert
+  `401` ohne Login (mit Login `200`); HEAD antwortet abweichend mit `403`.
+- **T4.2** OCR-Lernphase — Durchlauf ohne Abbruch, `LearnedImages` unter
+  `/opt/solvis/SolvisServerData/`. Erststart scheiterte zunächst am
+  MD5-Digest-Gerätezwang (siehe Anmerkung zu T4.2), nach Setzen von
+  `-Dhttp.auth.digest.reEnabledAlgorithms=MD5` grün.
+- **T5.1** Statuswerte auf MQTT, beide Ebenen — lokal auf `127.0.0.1:1883`
+  und Ende-zu-Ende hinter der mTLS-Bridge am Primär-Broker: retained
+  `solvis/server/online=true` plus laufende `solvis/bortfeld/…`-Topics
+  (`data`/`meta`) mit realen Anlagenwerten, u. a. der Brennerlaufzeit.
+- **T5.2** Last-Will/Online-Status — Stop/Start des Dienstes zeigt die
+  Sequenz `true` → `false` → `true` (retained).
+- **T9.1** Alt-Dienst auf `mon-dg` — `inactive` und `disabled` gemessen.
+- **T9.2** genau ein Publisher — zwischen Stop und Start des Forks blieb
+  `solvis/#` **33 s vollständig still**; zusätzlich ist der
+  `solvis/#`-Übergangsbestand des Alt-Pfads broker-seitig entzogen
+  (Negativtest: Publish wird mit `PUBACK 0x87` = RC 135 abgewiesen).
 
 Alle übrigen Tests sind in der **eigenen** Umgebung auszuführen; die
 Ergebnismatrix am Ende ist dafür gedacht.
@@ -167,8 +195,8 @@ Ergebnismatrix am Ende ist dafür gedacht.
   `curl -s -o /dev/null -w '%{http_code}' http://192.168.1.35/` bzw. Web-UI
   im Browser öffnen. **Per GET testen, nicht `curl -I`** — die SolvisRemote
   beantwortet HEAD-Requests mit 403 (Messbefund 2026-08-13). **Gegen die IP
-  testen**, nicht gegen `solvis.fritz.box` (F-119: DNS zeigt noch auf `.49`,
-  unbekanntes Gerät).
+  testen**, nicht gegen `solvis.fritz.box` (verwaister Fritzbox-Alt-Eintrag auf
+  `.49` — [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md)).
 - **Erwartung:** HTTP-Antwort (401 ohne Login = gesund) / Login-Oberfläche
   der SolvisRemote.
 - **Bestanden, wenn:** Oberfläche erreichbar. *(Bekannter Stolperstein: manche
@@ -285,7 +313,8 @@ Phase 5) **genau ein** Publisher den Vertrag `solvis/#` bedient.
 - **Schritte:** Auf `mon-dg` (`192.168.1.60`):
   `systemctl is-active SolvisSmartHomeServer.service` und
   `systemctl is-enabled SolvisSmartHomeServer.service`.
-- **Erwartung:** `inactive` und `disabled` (Ist-Stand seit 2026-08-12).
+- **Erwartung:** `inactive` und `disabled` (Ist-Stand seit 2026-08-12, real
+  gemessen am 2026-08-13).
 - **Bestanden, wenn:** beide Ausgaben wie erwartet; kein Prozess der
   Alt-Software läuft.
 
@@ -301,37 +330,42 @@ Phase 5) **genau ein** Publisher den Vertrag `solvis/#` bedient.
      keine stale Zeitstempel des Alt-Pfads.
   3. Optional Gegenprobe der Broker-Seite: der `solvis/#`-Übergangsbestand
      (mon-dg-ACL, `bridge.conf`) ist entzogen — Nachweis liegt im Repo
-     `ccu2mqtt` (`docs/broker-acl.md`).
+     `ccu2mqtt` (as-built: `docs/runbooks/solvis-bridge-ransible.md`).
 - **Erwartung/Bestanden, wenn:** Online-Status folgt ausschließlich dem Fork;
   keine Doppel-Publikationen beobachtbar.
 
 ---
 
-## Ergebnismatrix (zum Ausfüllen)
+## Ergebnismatrix (Referenz-Installation ausgetragen, eigene Umgebung nachtragen)
 
-Umgebung: JRE-Version ⟶ ______  · OS/Arch ⟶ ______  · Anlage/Regler ⟶ ______
-· Broker ⟶ ______  · Datum ⟶ ______
+Die Ergebnisspalte führt den Stand der **Referenz-Installation**; wer den Plan
+in einer fremden Umgebung fährt, überschreibt sie mit den eigenen Werten.
+
+Umgebung der Referenz: JRE-Version ⟶ OpenJDK 21 · OS/Arch ⟶ Debian 13 „trixie"
+aarch64 (RPi4 `ransible`) · Anlage/Regler ⟶ SolvisMax mit SolvisControl 2 +
+SolvisRemote (`192.168.1.35`) · Broker ⟶ lokaler Mosquitto `127.0.0.1:1883`
+plus mTLS-Bridge zum Primär-Broker · Datum ⟶ 2026-08-13
 
 | Test | Kurzbeschreibung | Hardware nötig | Ergebnis (✅/❌/–) | Notiz |
 |---|---|:--:|:--:|---|
-| T1.1 | Build aus Quellen | nein | | |
-| T1.2 | Uber-Jar vollständig | nein | | |
-| T2.1 | Start + `--string-to-crypt` | nein | | |
-| T2.2 | `check-credentials.sh` dreiwertig | nein¹ | | UNVERIFIED bis zum nächsten Live-Lauf; Vorläufer-Lauf ransible 2026-08-13: 4/4 PASS |
-| T2.3 | Test-Mail (optional) | nein | | |
+| T1.1 | Build aus Quellen | nein | ✅ | 2026-08-12, OpenJDK 17.0.5 / Windows 11: `BUILD SUCCESS`, 91/91 Tests (Referenz-Baseline oben) |
+| T1.2 | Uber-Jar vollständig | nein | ✅ | 2026-08-12: logback-classic 1.5.13, keine tinylog-/log4j-/`javax.mail`-Klassen |
+| T2.1 | Start + `--string-to-crypt` | nein | ✅ | 2026-08-12: verschlüsselter Wert, sauberes Ende |
+| T2.2 | `check-credentials.sh` dreiwertig | nein¹ | – | UNVERIFIED bis zum nächsten Live-Lauf; Vorläufer-Lauf ransible 2026-08-13: 4/4 PASS |
+| T2.3 | Test-Mail (optional) | nein | – | E-Mail-Benachrichtigung in dieser Installation nicht genutzt |
 | T3.1 | `base.xml` eingelesen | nein | | |
-| T4.1 | SolvisRemote erreichbar | ja | | |
-| T4.2 | Lernphase | ja | | |
-| T4.3 | Messwerte gelesen | ja | | |
-| T5.1 | Statuswerte auf MQTT | ja | | |
-| T5.2 | Online/LWT | ja | | |
-| T6.1 | Sollwert setzen | ja | | |
-| T6.2 | Manueller Eingriff erkannt | ja | | |
-| T7.1 | Smart-Home-Integration | ja | | |
-| T8.1 | Dienst + Neustart | ja | | |
-| T8.2 | Reconnect | ja | | |
-| T9.1 | Alt-Dienst inactive+disabled | ja | | |
-| T9.2 | Ein Publisher auf `solvis/#` | ja | | |
+| T4.1 | SolvisRemote erreichbar | ja | ✅ | 2026-08-13, ransible: GET `http://192.168.1.35/` → `401` ohne Login (HEAD → `403`); Beleg `ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md` §0 |
+| T4.2 | Lernphase | ja | ✅ | 2026-08-13, ransible: Durchlauf ohne Abbruch nach MD5-Digest-Freischaltung; `LearnedImages` unter `/opt/solvis/SolvisServerData/` |
+| T4.3 | Messwerte gelesen | ja | | implizit durch T5.1 gedeckt, separat nicht protokolliert |
+| T5.1 | Statuswerte auf MQTT | ja | ✅ | 2026-08-13: lokal **und** E2E am Primär-Broker — retained `solvis/server/online=true`, `solvis/bortfeld/…` data/meta mit realen Werten (u. a. Brennerlaufzeit); Beleg Runbook §6c |
+| T5.2 | Online/LWT | ja | ✅ | 2026-08-13: Sequenz `true` → `false` → `true` (retained); Beleg Runbook §6d |
+| T6.1 | Sollwert setzen | ja | | offen — Betrieb läuft mit `InteractiveGUIAccess="false"` (nur Monitoring) |
+| T6.2 | Manueller Eingriff erkannt | ja | | offen |
+| T7.1 | Smart-Home-Integration | ja | | offen |
+| T8.1 | Dienst + Neustart | ja | | offen — Langzeitbeweis (Phase 8) steht vor dem Rückbau der Alt-Software aus |
+| T8.2 | Reconnect | ja | | offen — siehe T8.1 |
+| T9.1 | Alt-Dienst inactive+disabled | ja | ✅ | 2026-08-13 auf `mon-dg` gemessen: `inactive` + `disabled`; Beleg Runbook §0 |
+| T9.2 | Ein Publisher auf `solvis/#` | ja | ✅ | 2026-08-13: 33 s vollständige Stille zwischen Stop und Start; Übergangsbestand broker-seitig entzogen (Negativtest `PUBACK 0x87`); Beleg Runbook §6d |
 
 ¹ T2.2 läuft ohne Anlage an, liefert dann aber für P1 (und ggf. P3)
 **UNVERIFIED** statt PASS — ein Gesamt-PASS braucht den Netzweg zur
@@ -347,10 +381,21 @@ Alt-Pfads.
 
 Die genutzten Optionen stammen aus `SmartHome/Linux/Makefile` und dem Code
 (u. a. `--string-to-crypt=`, `--server-learn`, `--server-terminate`,
-`--test-mail`, `--documentation --csvSemicolon`, `--iobroker`). In diesem Fork
-**verifiziert** sind bislang der Build (T1.1, zuletzt 2026-08-12), das
-Uber-Jar (T1.2, 2026-08-12) und `--string-to-crypt` (T2.1, zuletzt
-2026-08-12); die übrigen sind laut Upstream-Doku vorgesehen und in der
-eigenen Umgebung zu bestätigen — genau dafür ist dieser Plan da. Die Tests
-mit Anlage (T4.x–T9.x, insbesondere OCR-Lernphase und MQTT-Kette) stehen bis
-zur realen Inbetriebnahme auf **UNVERIFIED**.
+`--test-mail`, `--documentation --csvSemicolon`, `--iobroker`).
+
+**Verifiziert** sind in diesem Fork der Build (T1.1, zuletzt 2026-08-12), das
+Uber-Jar (T1.2, 2026-08-12) und `--string-to-crypt` (T2.1, zuletzt 2026-08-12)
+sowie seit dem Cutover am 2026-08-13 auf `ransible` die Tests mit Anlage
+**T4.1** (Erreichbarkeit), **T4.2** (OCR-Lernphase, also `--server-learn`),
+**T5.1/T5.2** (MQTT-Kette lokal und Ende-zu-Ende hinter der mTLS-Bridge, inkl.
+Last-Will) und **T9.1/T9.2** (Cutover-Verifikation). Die Belege stehen in der
+Referenz-Baseline oben und in der Ergebnismatrix.
+
+**UNVERIFIED** bleibt, was tatsächlich offen ist: `check-credentials.sh` als
+Skript (T2.2 — der manuelle Vorläufer-Lauf war 4/4 PASS), die Steuerpfade
+T6.1/T6.2 (der Betrieb läuft bewusst mit `InteractiveGUIAccess="false"`), die
+Smart-Home-Integration T7.1 sowie der Dauerbetriebs-Nachweis T8.1/T8.2, der
+als Langzeitbeweis vor dem Rückbau der Alt-Software aussteht. Ebenfalls nicht
+gemessen sind die Nebenoptionen `--test-mail` (T2.3, hier nicht genutzt),
+`--documentation` und `--iobroker`; sie sind laut Upstream-Doku vorgesehen und
+in der eigenen Umgebung zu bestätigen — genau dafür ist dieser Plan da.

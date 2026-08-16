@@ -18,8 +18,9 @@ und Entscheidungssicht bleibt SSOT in
   `rsc/de/sgollmer/solvismax/data/base.xml`).
 - **Realer Schutz = Dateirechte.** `passwordCrypt` ist Obfuskation (ECB,
   hartkodierter, aus dem Quellcode ableitbarer Schlüssel), **kein** Schutz.
-  Wirksam sind allein `chmod 600 base.xml` + Owner = Dienstnutzer (UID 10001) —
-  Pflichtschritt [../INBETRIEBNAHME.md](../INBETRIEBNAHME.md) Phase 2.
+  Wirksam sind allein `chmod 600 base.xml` + Owner = Dienstnutzer (nativ der
+  Systemnutzer `solvis`, im Container-Fall UID 10001) — Pflichtschritt
+  [../INBETRIEBNAHME.md](../INBETRIEBNAHME.md) Phase 2.
 - **Kein PII** im Repo (kein Personenbezug in Code/Doku/Testdaten).
 
 ## `gitleaks`-Befund (Nachweis)
@@ -40,7 +41,11 @@ gitleaks detect --no-banner --redact -s .
 ## Berührte Standards & Restrisiken
 
 Transportsicherheit nach außen über die **mTLS-Bridge** (Client-Zertifikate +
-Broker-ACL `readwrite solvis/#`; SSOT im Vertragspartner-Repo `ccu2mqtt`). Drei
+Broker-ACL `readwrite solvis/#`). Diese Gegenseite ist **nicht** Gegenstand
+dieses Repos: SSOT ist das as-built-Runbook
+`ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md`, das den Ist-Zustand seit
+2026-08-13 als Soll führt (Bridge `solvis-bridge-to-primary`, Login
+`solvis-bridge`, PKI und Deploy-Pfad der Zertifikate). Drei
 bewusst akzeptierte Restrisiken mit je einer dokumentierten Entscheidung
 ([../ARCHITECTURE.md](../ARCHITECTURE.md) §5):
 

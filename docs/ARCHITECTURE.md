@@ -113,8 +113,9 @@ flowchart LR
   `solvis/<client>/<unit>/<kanal>/cmnd`, Metadaten `…/meta`, Serverstatus
   `solvis/server/online` (mit Last Will). Andere Topics, andere Projekte,
   Broker-Interna: kennt dieser Kontext nicht. Die Gegenseite (Broker-ACL,
-  Bridge-Konfiguration, Login `solvis-bridge`) ist im Vertragspartner-Repo
-  `ccu2mqtt` dokumentiert (`docs/solvis.md`, dort §7 Umsetzungsplan).
+  Bridge-Konfiguration, Login `solvis-bridge`, PKI) ist im Vertragspartner-Repo
+  `ccu2mqtt` dokumentiert; maßgeblich ist dort das as-built-Runbook
+  `docs/runbooks/solvis-bridge-ransible.md` (Ist = Soll seit 2026-08-13).
 - **Nebenschnittstelle (Upstream-Erbe):** ein proprietärer, unauthentifizierter
   TCP-Server (JSON, Default-Port 10735/10736) für FHEM-/ioBroker-Clients. Im
   Zielbetrieb dieses Stacks ungenutzt; er bindet daher standardmäßig **nur auf
@@ -159,17 +160,22 @@ Klartext-Listener, Client-Zertifikate + Broker-ACL).
   FORK.md):** Der Server publiziert unverschlüsselt auf einen **lokalen, auf
   `127.0.0.1` gebundenen** Mosquitto auf demselben Host; dieser koppelt per
   mTLS-Bridge (`topic solvis/# both`, Login `solvis-bridge`) an den
-  zentralen Broker. Dasselbe Muster nutzt der Gesamt-Stack für CCU-Jack-
-  und FHEM-Anbindung. TLS im Server selbst ist hier nicht erforderlich. Die
-  Gegenseite (Cert `solvis-bridge`, ACL `readwrite solvis/#`, Bridge-Plan) ist
-  bei `ccu2mqtt` (`docs/solvis.md` §7) bereits provisioniert.
+  zentralen Broker. Dasselbe Muster nutzt der Gesamt-Stack für CCU-Jack und
+  die Feld-Gateways `mon-dg`/`eno-eg`. TLS im Server selbst ist hier nicht
+  erforderlich. Die Gegenseite (Cert `solvis-bridge`, ACL `readwrite
+  solvis/#`, Bridge- und Local-Broker-Konfiguration) ist bei `ccu2mqtt`
+  eingerichtet und as-built dokumentiert in
+  `docs/runbooks/solvis-bridge-ransible.md`; `docs/solvis.md` §7 ist nur noch
+  Chronik und Herleitung.
 
   **Container-Netz (damit `127.0.0.1` echtes Host-Loopback bleibt):** Der Hop
   Connector → lokaler Broker rechtfertigt seinen Klartext nur bei echtem
   Loopback. Zwei konventionstreue Auflösungen:
-  - **A3 (bevorzugt, Stack-Konvention):** Server nativ auf dem Host (wie
-    CCU-Jack / FHEM-Bridge), dortiger Mosquitto localhost-only. `127.0.0.1`
-    ist Host-Loopback; die Docker-Deploymentlinie wird dann nicht genutzt.
+  - **A3 (produktiv im Einsatz, Stack-Konvention):** Server nativ auf dem Host
+    (wie CCU-Jack und die Feld-Gateways `mon-dg`/`eno-eg`), dortiger Mosquitto
+    localhost-only. `127.0.0.1` ist Host-Loopback; die Docker-Deploymentlinie
+    wird dann nicht genutzt. **Das ist der Ist-Zustand seit 2026-08-13**
+    (`ransible`, `192.168.1.135`, systemd-Dienst, OpenJDK 21).
   - **A1 (Docker):** `network_mode: host` für den Connector-Container →
     `127.0.0.1` bleibt Host-Loopback. **Muss** mit dem TCP-Server-Bind aus §5
     gekoppelt werden (Default-Loopback/Abschaltung), da der proprietäre Server
@@ -190,15 +196,19 @@ Klartext-Listener, Client-Zertifikate + Broker-ACL).
   wäre ein Landschafts-Vertragseingriff (ADR-pflichtig, neues Connector-Cert +
   ACL-Identität bei `ccu2mqtt`).
 
-Deployment: headless (Dienst per systemd oder **Docker-Container**;
-`java.desktop`-Modul erforderlich, `/data`-Volume für Lernphase/Laufzeitdaten,
-`/certs` read-only für Zertifikate). Zielhost-Referenz: arm64/Debian,
-OpenJDK 21. Secrets (Zertifikate, Schlüssel, Anlagen-Zugangsdaten) liegen
-**nie im Repo** — nur als gemountete Dateien bzw. `passwordCrypt`-Werte in
-der lokalen `base.xml` (die selbst nicht eingecheckt wird).
+Deployment: headless, `java.desktop`-Modul erforderlich. Produktiv läuft der
+Fork seit **2026-08-13** als **systemd-Dienst** auf dem headless RPi4
+`ransible` (arm64/Debian 13, OpenJDK 21); Installationspfad
+`/opt/solvis/SolvisSmartHomeServer/`, Schreibpfad `/opt/solvis` für Lernphase
+und Laufzeitdaten. Der **Docker-Weg** bleibt als Alternative für Entwicklung
+und Test dokumentiert ([DOCKER.md](DOCKER.md); dort `/data`-Volume statt
+Schreibpfad). Secrets (Anlagen-Zugangsdaten, Broker-Login) liegen **nie im
+Repo** — nur als `passwordCrypt`-Werte in der lokalen, nicht eingecheckten
+`base.xml`; das mTLS-Material der Bridge gehört ohnehin zum Broker-Host und
+damit zu `ccu2mqtt`.
 
 Qualitätssicherung: [TESTPLAN.md](../TESTPLAN.md) (Phasen 1–3 ohne Anlage,
-4–8 mit Anlage); CI baut/testet auf JDK 17 und 21; OCR per Golden-Tests,
+4–9 mit Anlage); CI baut/testet auf JDK 17 und 21; OCR per Golden-Tests,
 Config-Parsing per Dual-Parse-Vergleich abgesichert. Tests gegen die
 **Live-Anlage** nur mit explizitem Betreiber-Auftrag — die Steuerung klickt
 real auf der Anlagen-Oberfläche.

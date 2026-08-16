@@ -196,13 +196,15 @@ nicht-versionierter Operator-State vor — gemountete Dateien (`/certs`) und
 **Krypto ehrlich benannt:** `passwordCrypt` ist **Obfuskation, kein Schutz**
 (hartkodierter Schlüssel, ECB; aus dem öffentlichen Quellcode ableitbar). Der
 einzige reale Schutz der Secrets in `base.xml` sind **Dateirechte**
-(`chmod 600 base.xml`, Owner = Dienstnutzer UID 10001) — Pflichtschritt in
+(`chmod 600 base.xml`, Owner = Dienstnutzer — nativ `solvis`, im
+Container-Fall UID 10001) — Pflichtschritt in
 [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) Phase 2. Krypto-Umbau ist
 Roadmap-Punkt 4.6.
 
 **Berührte Standards / Restrisiken:** Transportsicherheit nach außen über die
-mTLS-Bridge (Client-Zertifikate + Broker-ACL `readwrite solvis/#`; SSOT im
-Vertragspartner-Repo `ccu2mqtt`). Drei bewusst akzeptierte Restrisiken mit je
+mTLS-Bridge (Client-Zertifikate + Broker-ACL `readwrite solvis/#`; SSOT ist das
+as-built-Runbook `ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md` im
+Vertragspartner-Repo). Drei bewusst akzeptierte Restrisiken mit je
 einer dokumentierten Entscheidung: HTTP-only zur SolvisRemote (S-8),
 unauthentifizierter TCP-/JSON-Server auf Loopback-Bind bzw. abschaltbar (S-3),
 Obfuskations-Krypto (S-2). Details und Kompensationen:

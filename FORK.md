@@ -34,33 +34,47 @@ Weiteres, und er wird zudem **seit Anfang 2023 nicht mehr gepflegt** (letztes
 Release v01.05.01, Dezember 2021). Der Fork existiert, um eine wartbare Kopie
 zu haben und die folgenden Anpassungen vorzunehmen.
 
-### Geplante Änderungen
+### Fork-Ziele und Stand
 
-Die Punkte sind Vorhaben, nicht fertige Features; der Stand wird hier
-fortgeschrieben.
+Die drei Ziele, für die dieser Fork angelegt wurde, sind seit dem Cutover am
+**2026-08-13 produktiv erfüllt**: Der Fork läuft nativ als systemd-Dienst auf
+dem headless Raspberry Pi 4 `ransible` unter OpenJDK 21 und publiziert über
+einen lokalen Mosquitto plus mTLS-Bridge ausschließlich `solvis/#`.
 
-1. **Betrieb hinter dem mTLS-Broker.** Der Upstream unterstützt für die
-   MQTT-Anbindung ausdrücklich **nur unverschlüsseltes MQTT** (siehe Wiki
-   „MQTT-Schnittstelle"). Im Zielsetup verbindet sich der Server daher nicht
-   direkt mit dem Primär-Broker, sondern publiziert auf einen **lokalen,
-   auf `127.0.0.1` gebundenen Mosquitto** auf demselben Host, der seinerseits
-   per mTLS-Bridge zum Primär-Broker koppelt (dasselbe Muster, das im
-   Gesamt-Stack bereits für die CCU-Jack- und die FHEM-Anbindung genutzt
-   wird). In diesem Betriebsmodell ist TLS im Server selbst **nicht
-   erforderlich**. Der Fork dokumentiert diese Betriebsart und stellt eine
-   passende Beispiel-Konfiguration bereit; **nativer TLS-Support im
-   MQTT-Client** wird als Option geprüft, ist aber nachrangig.
+1. **Betrieb hinter dem mTLS-Broker** — **VOLLZOGEN 2026-08-13 (Variante A).**
+   Der Upstream unterstützt für die MQTT-Anbindung ausdrücklich **nur
+   unverschlüsseltes MQTT** (siehe Wiki „MQTT-Schnittstelle"). Der Server
+   verbindet sich deshalb nicht direkt mit dem Primär-Broker, sondern
+   publiziert auf einen **lokalen, auf `127.0.0.1` gebundenen Mosquitto** auf
+   demselben Host, der seinerseits per mTLS-Bridge zum Primär-Broker koppelt —
+   dasselbe Muster, das der Gesamt-Stack für CCU-Jack und die Feld-Gateways
+   `mon-dg`/`eno-eg` nutzt. TLS im Server selbst ist in diesem Betriebsmodell
+   **nicht erforderlich**; der native `<Ssl>`-Pfad (Variante B) ist inzwischen
+   ausdrücklich deprecated und bricht per Fail-Fast-Guard ab
+   ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §4). Die Bridge-Gegenseite
+   gehört zum Repo `ccu2mqtt` (as-built:
+   `docs/runbooks/solvis-bridge-ransible.md`).
 
-2. **Kompatibilität mit aktuellen Java-Laufzeiten.** Der Upstream ist gegen
-   Java 8 gebaut (2021). Der Zielhost läuft auf **OpenJDK 21**. Geprüft und
-   — soweit nötig — angepasst wird, dass Build und Laufzeit unter einer
-   modernen JRE fehlerfrei durchlaufen.
+2. **Kompatibilität mit aktuellen Java-Laufzeiten** — **VOLLZOGEN 2026-08-13.**
+   Der Upstream ist gegen Java 8 gebaut (2021); Build und Laufzeit dieses Forks
+   sind auf Java 17 als Baseline gehoben, die CI testet 17 und 21, und der
+   Produktivbetrieb läuft unter **OpenJDK 21**. Einziger Gerätezwang dabei:
+   Die SolvisRemote beherrscht Digest-Auth nur mit MD5, weshalb die Units
+   `-Dhttp.auth.digest.reEnabledAlgorithms=MD5` setzen.
 
-3. **Headless-Raspberry-Deployment.** Konfiguration, Start-/Service-Dateien
-   und Doku für einen unbeaufsichtigten Dauerbetrieb auf einem
-   ARM-Raspberry ohne grafische Oberfläche (die OCR-Bildschirmerkennung
-   arbeitet auf dem vom SolvisRemote gelieferten Web-GUI, nicht auf einem
-   lokalen Display). Container-Betrieb: [docs/DOCKER.md](docs/DOCKER.md).
+3. **Headless-Raspberry-Deployment** — **VOLLZOGEN 2026-08-13.**
+   Konfiguration, Start-/Service-Dateien und Doku tragen den unbeaufsichtigten
+   Dauerbetrieb auf einem ARM-Raspberry ohne grafische Oberfläche (die
+   OCR-Bildschirmerkennung arbeitet auf dem vom SolvisRemote gelieferten
+   Web-GUI, nicht auf einem lokalen Display). Produktivweg ist der native
+   systemd-Dienst ([docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md),
+   [docs/runbooks/README.md](docs/runbooks/README.md)); der Container-Betrieb
+   ([docs/DOCKER.md](docs/DOCKER.md)) bleibt Alternative für Entwicklung und
+   Test.
+
+Was danach noch offen ist, steht nicht mehr hier, sondern im Fahrplan
+[MODERNISIERUNG.md](MODERNISIERUNG.md) und im
+[Testplan](TESTPLAN.md) (Langzeitbeweis Phase 8, Steuerpfade Phase 6).
 
 ### Nachvollziehbarkeit
 

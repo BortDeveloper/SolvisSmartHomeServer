@@ -8,6 +8,54 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Doku-Sweep 2026-08-16: Ist-Stand „Produktiv-Publisher" nachgezogen
+
+Reine Dokumentations-Änderung, kein Code. Anlass war ein Doku-Sweep über die
+Hausautomatisierungs-Repos mit dem Kernbefund, dass der Fork seit dem Cutover
+am **2026-08-13 produktiver Publisher** ist — nativ als systemd-Dienst auf dem
+headless RPi4 `ransible` (`192.168.1.135`, Debian 13 aarch64, OpenJDK 21) —,
+die Doku aber weitgehend noch den Docker-Weg und den Zustand davor beschrieb.
+
+- **`docs/runbooks/README.md` umgedreht (HIGH).** Deploy/Start, Update,
+  Lernphase, Backup, Restore und Stoppen führten Docker-Kommandos als
+  Hauptweg (`docker compose …`, `docker inspect Health.Status`, `chown
+  10001:10001`, Repo-Pfade `base.xml`/`data/`) — produktiv existiert nichts
+  davon. Jetzt native systemd-Linie zuerst (`systemctl`, `journalctl -u
+  SolvisSmartHomeServer.service`, Pfade unter `/opt/solvis/`, Health über die
+  Frische von `/opt/solvis/health/ready`), Docker klar als Alternative für
+  Entwicklung/Test. Nebenbei zwei Sachfehler korrigiert: `updateSolvis` statt
+  `update` (letzteres zieht die ungenutzte FHEM-Modulinstallation mit) und der
+  ExecStop-Satz (die Fork-Unit stoppt per SIGTERM).
+- **`TESTPLAN.md` Verifikationsstand (HIGH/MEDIUM).** Der Plan führte T4.x–T9.x
+  pauschal als UNVERIFIED „bis zur realen Inbetriebnahme" und ließ die
+  Ergebnismatrix leer. Neu: Baseline-Block „Produktiv verifiziert am
+  2026-08-13 auf ransible" und gefüllte Matrixzeilen für T4.1, T4.2, T5.1,
+  T5.2, T9.1 und T9.2 mit Ergebnis, Datum und Belegquelle; UNVERIFIED bleibt
+  nur noch das tatsächlich Offene (T2.2-Skript, Steuerpfade T6.x, T7.1,
+  Langzeitbeweis T8.x).
+- **`docs/DOCKER.md`:** Warnkasten vor der Lernphase (Cutover-Checkliste, kein
+  zweiter OCR-Client gegen `192.168.1.35`) und Kopfhinweis, dass Docker nicht
+  der Produktivweg ist.
+- **SSOT-Vorrang für die Bridge-Gegenseite:** Alle Verweise auf
+  `ccu2mqtt:docs/solvis.md` §7 („Umsetzungsplan"/„bereits provisioniert")
+  zeigen jetzt auf das as-built-Runbook
+  `ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md` (Ist = Soll seit
+  2026-08-13); betroffen waren `docs/ARCHITECTURE.md`,
+  `docs/INBETRIEBNAHME.md`, `docs/security/README.md` und `README.md`.
+- **`FORK.md`:** „Geplante Änderungen" → „Fork-Ziele und Stand"; alle drei
+  Punkte als VOLLZOGEN 2026-08-13 (Variante A) ausgewiesen.
+- **`docs/g2.6-clone-drill.md` §1:** zwei überholte Aussagen berichtigt — der
+  Connector ist unter Variante A kein mTLS-Client (Klartext auf
+  `127.0.0.1:1883`), und seit dem Produktivbetrieb existiert
+  nicht-versionierter Operator-State, der von diesem Drill **nicht** abgedeckt
+  ist (offener Restore-Drill, §5).
+- **`.49`-Begründung vereinheitlicht** (siehe Korrekturvermerk beim
+  Adress-Pinning weiter unten): aufgeklärter Sachverhalt, geführt nur noch in
+  `docs/INBETRIEBNAHME.md`, alle anderen Stellen verweisen.
+- **Begriff „FHEM-Bridge" getilgt:** Der Client heißt seit 2026-08-11/12
+  Feld-Gateway `mon-dg` (`.60`, FHEM/EnOcean plus zigbee2mqtt), der Alt-Login
+  `fhem-bridge` wurde am Broker entfernt; daneben existiert `eno-eg` (`.62`).
+
 ## MD5-Digest-Freischaltung (Gerätezwang SolvisRemote) + JDWP auf Loopback (F-120)
 
 Live-Befund beim Lernphasen-Erststart auf `ransible` (2026-08-13, Java 21):
@@ -130,8 +178,13 @@ separater Entscheid.
   Alle Beispiel-/Vorlagen-Konfigurationen (INBETRIEBNAHME-Snippets,
   TESTPLAN-Vorbedingungen/T4.1, Kommentar in der versionierten
   `base.xml`-Vorlage) pinnen die IP; `solvis.fritz.box` wird überall mit
-  Warnung geführt (DNS zeigt noch auf `.49`, dort antwortet ein unbekanntes
-  Gerät — Hostname erst nach DNS-Bereinigung). Die von den
+  Warnung geführt. *(Korrektur 2026-08-16: Die damalige Begründung „auf `.49`
+  antwortet ein unbekanntes Gerät" ist falsch. Seit 2026-08-12 ist aufgeklärt,
+  dass der Name an einem verwaisten Fritzbox-Alt-Eintrag hing und der
+  Responder auf `.49` die SolvisRemote selbst in der Boot-Übergangsphase war;
+  danach war der ARP-Eintrag leer, ein Fremdgerät gibt es nicht. Der IP-Pin
+  bleibt richtig — führende Stelle für die Begründung ist ab jetzt
+  [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md).)* Die von den
   Charakterisierungstests gepinnten Vorlagen-**Werte** blieben unverändert
   (nur XML-Kommentare ergänzt).
 - **Build-Verify nachgeholt (Stale-target-Befund behoben).** Im Repo lag ein

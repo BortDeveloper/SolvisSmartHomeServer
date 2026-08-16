@@ -1,5 +1,16 @@
 # mTLS-Behebung — Vorschlags-Dokument (zur architect-Abstimmung)
 
+> ⏳ **Historisches Dokument (Stand 2026-07-25) — nicht mehr aktueller
+> Ist-Stand.** Die Entscheidung ist gefallen (Variante A unterstützt,
+> Variante B deprecated), und seit dem Cutover am 2026-08-13 läuft Variante A
+> produktiv. Aktueller Stand: [ARCHITECTURE.md](ARCHITECTURE.md) §4 und
+> [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 3. Die Verweise unten auf
+> `ccu2mqtt:docs/solvis.md` §6/§7 und der Begriff „FHEM-Bridge" spiegeln den
+> damaligen Stand; as-built-SSOT der Bridge-Gegenseite ist heute
+> `ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md`, und der Client heißt
+> heute Feld-Gateway `mon-dg`. Der Text bleibt unverändert, weil er eine
+> datierte Analyse dokumentiert.
+
 **Status**: VORSCHLAG (Design, kein Code-Fix). Zur Abstimmung durch
 `architect` / stack-master.
 **Autor**: solvis-connector-dev (Orchestrator-Delegation, User-Direktive

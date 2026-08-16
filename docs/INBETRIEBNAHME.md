@@ -13,9 +13,10 @@ als Dienst installieren → **Cutover vom Alt-Pfad** → Lernphase → Test.
 
 - **Nativ (systemd) — Standardpfad.** Betreiber-Entscheid 2026-08-12
   (Pfadentscheid O1, gestaffelt): Der Fork wird auf dem Zielhost zunächst
-  **nativ als systemd-Dienst** aufgebaut (Stack-Konvention A3, wie
-  CCU-Jack/FHEM-Bridge). Zielhost der Referenz-Installation: `ransible`
-  (`192.168.1.135`). Die nativen Schritte stehen in jeder Phase **zuerst**.
+  **nativ als systemd-Dienst** aufgebaut (Stack-Konvention A3, wie CCU-Jack
+  und die Feld-Gateways `mon-dg`/`eno-eg`). Zielhost der Referenz-Installation:
+  `ransible` (`192.168.1.135`) — dort **produktiv seit 2026-08-13**. Die
+  nativen Schritte stehen in jeder Phase **zuerst**.
 - **Docker — erst nach bewiesener Funktion, separater Entscheid.** Die
   Container-Schritte bleiben als gekennzeichnete Alternative erhalten und
   bauen auf [docs/DOCKER.md](DOCKER.md) auf.
@@ -29,12 +30,22 @@ als Dienst installieren → **Cutover vom Alt-Pfad** → Lernphase → Test.
 |---|---|---|
 | SolvisRemote | **`192.168.1.35`** | Fest per Fritzbox-DHCP-Reservierung. **Immer die IP eintragen.** |
 | Zielhost Fork (Referenz) | `ransible` = `192.168.1.135` | Nativer systemd-Betrieb (Standardpfad). |
-| Alt-Installation (stillgelegt) | `mon-dg` = `192.168.1.60` | Alt-Dienst seit 2026-08-12 gestoppt + disabled (Phase 5). |
+| Alt-Installation (stillgelegt) | `mon-dg` = `192.168.1.60` | Alt-Dienst seit 2026-08-12 gestoppt + disabled (Phase 5). Der Host selbst läuft weiter als Feld-Gateway (FHEM/EnOcean, zigbee2mqtt); ein zweites Feld-Gateway ist `eno-eg` (`192.168.1.62`). |
 
-> ⚠️ **F-119: `solvis.fritz.box` NICHT verwenden.** Der DNS-Name zeigt noch
-> auf `192.168.1.49`, wo ein **unbekanntes Gerät** antwortet — wer den Hostnamen
-> konfiguriert, spricht das falsche Gerät an. Bis zur DNS-Bereinigung in allen
-> Konfigurationen die IP `192.168.1.35` pinnen.
+> ⚠️ **`solvis.fritz.box` NICHT verwenden — immer die IP `192.168.1.35`
+> pinnen.** Dies ist die **führende Stelle** für die Begründung; andere
+> Dokumente dieses Repos verweisen hierher.
+>
+> Der Name stammt aus einem **verwaisten Alt-Eintrag der Fritzbox** und löst
+> weiterhin auf `192.168.1.49` auf. Die frühere Vermutung, dort antworte ein
+> unbekanntes Fremdgerät, ist seit dem **2026-08-12 aufgeklärt und falsch**:
+> Der Responder auf `.49` war die SolvisRemote selbst in ihrer
+> Boot-Übergangsphase (kurzlebige DHCP-Lease vor Übernahme der Reservierung);
+> danach blieb der ARP-Eintrag leer, ein Fremdgerät gibt es dort nicht. Der
+> Pin auf `192.168.1.35` bleibt trotzdem richtig — ein Hostname, der auf eine
+> Boot-Übergangsadresse zeigt, ist für einen Dauerbetrieb untauglich. Erst
+> nach Bereinigung des Fritzbox-Eintrags (Follow-up F-119) ist der Hostname
+> wieder eine Option.
 
 ---
 
@@ -52,8 +63,9 @@ als Dienst installieren → **Cutover vom Alt-Pfad** → Lernphase → Test.
   notieren (wird unten als `javaPath` übergeben).
 - `make` (für die Install-Ziele unter `SmartHome/Linux/`).
 - Lokaler **Mosquitto** auf demselben Host, gebunden auf `127.0.0.1`
-  (Variante A, Phase 3); die mTLS-Bridge-Gegenseite ist im Repo `ccu2mqtt`
-  provisioniert.
+  (Variante A, Phase 3); die mTLS-Bridge-Gegenseite steht im Repo `ccu2mqtt`
+  (as-built: `docs/runbooks/solvis-bridge-ransible.md`) und ist dort
+  eingerichtet.
 
 **Docker (Alternative):** Docker installiert (`docker --version`), Dienst
 aktiv; Verzeichnislayout wie in [docs/DOCKER.md](DOCKER.md).
@@ -158,8 +170,9 @@ In `base.xml`:
     account="<SOLVIS_ACCOUNT>"
     passwordCrypt="<WERT_AUS_2.2>"
     url="192.168.1.35"               <!-- SolvisRemote: IP pinnen! NICHT
-                                          solvis.fritz.box — zeigt noch auf .49,
-                                          unbekanntes Gerät (F-119) -->
+                                          solvis.fritz.box — verwaister
+                                          Fritzbox-Alt-Eintrag auf .49
+                                          (Adress-Kasten oben) -->
     …restliche Attribute unverändert lassen… >
 ```
 
@@ -180,10 +193,15 @@ In `base.xml`:
 **Unterstützte Produktivvariante ist Variante A** (siehe
 [ARCHITECTURE.md](ARCHITECTURE.md) §4): Der Connector publiziert **unverschlüsselt
 auf einen lokalen, auf `127.0.0.1` gebundenen Mosquitto** auf demselben Host;
-dieser koppelt per **mTLS-Bridge** (Login `solvis-bridge`, `topic solvis/# both`)
-an den zentralen Haus-Broker. Dasselbe Muster nutzen CCU-Jack und die FHEM-Bridge.
-Die Bridge-/Zertifikats-/ACL-Seite liegt im Repo `ccu2mqtt` (`docs/solvis.md` §7)
-und ist dort bereits provisioniert — **hier ist kein Client-Zertifikat nötig**.
+dieser koppelt per **mTLS-Bridge** an den zentralen Haus-Broker. Dasselbe Muster
+nutzen CCU-Jack und die Feld-Gateways `mon-dg`/`eno-eg`.
+
+Die Bridge-/Zertifikats-/ACL-Seite gehört **nicht** in dieses Repo: SSOT ist
+das as-built-Runbook `ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md`, das
+den seit 2026-08-13 laufenden Ist-Zustand als Soll führt (lokale `local.conf`
+auf `ransible` mit Login `solvis-local`, Bridge `solvis-bridge-to-primary` mit
+Login `solvis-bridge` zum Primär-Broker `192.168.1.24:8883`). **Hier ist kein
+Client-Zertifikat nötig.**
 
 > ⛔ **Variante B (natives mTLS direkt, `<tns:Ssl enable="true">`) ist deprecated
 > und wird nicht unterstützt.** Der Start bricht dann per Fail-Fast-Guard mit
@@ -217,7 +235,8 @@ Hinweise:
 ### 3.2 Netz-Topologie: `127.0.0.1` muss der lokale Broker sein
 
 - **Nativ/A3 (Standardpfad, Stack-Konvention):** Server nativ auf dem Host
-  (systemd, wie CCU-Jack / FHEM-Bridge), lokaler Mosquitto localhost-only.
+  (systemd, wie CCU-Jack und die Feld-Gateways `mon-dg`/`eno-eg`), lokaler
+  Mosquitto localhost-only.
   `127.0.0.1` ist echtes Host-Loopback — keine weitere Maßnahme nötig.
 - **A1 (Docker):** `network_mode: host` für den Connector-Container. Dann bindet
   auch der proprietäre TCP-Server (Port 10735) auf Host-Interfaces — deshalb
@@ -394,9 +413,9 @@ sind **ausgeschlossen**, aus zwei Gründen:
       Ist-Stand 2026-08-12: erledigt — `solvis/#` ist sowohl aus der
       mon-dg-Bridge als auch aus der Broker-ACL entzogen (live deployed;
       Negativtest: Publish auf dem Alt-Pfad wird mit PUBACK RC 135
-      abgewiesen). Diese Änderung lag **im Repo `ccu2mqtt`**
-      (`docs/broker-acl.md` und Bridge-Konfiguration) — sie wurde von dort
-      aus durchgeführt, nicht aus diesem Repo.
+      abgewiesen). Diese Änderung lag **im Repo `ccu2mqtt`** und wurde von
+      dort aus durchgeführt, nicht aus diesem Repo; as-built dokumentiert in
+      `ccu2mqtt:docs/runbooks/solvis-bridge-ransible.md`.
 - [ ] **Konsumenten informiert/geprüft:** Abnehmer von `solvis/#` (z. B.
       Home Assistant) verkraften den Publisher-Wechsel (Topics bleiben
       vertragsgleich; ggf. Retained-Altwerte beachten).
@@ -519,7 +538,7 @@ sudo systemctl stop SolvisSmartHomeServer.service
 
 | Symptom | Ursache / Prüfung |
 |---|---|
-| Lernphase/Start bricht mit Verbindungsfehler zur Anlage ab | SolvisRemote nicht erreichbar. `curl -s -o /dev/null -w '%{http_code}' http://192.168.1.35/` testen (`401` = gesund); manche SolvisRemote zeigen den Web-Port erst nach Neustart/Re-Login. **Nicht** `solvis.fritz.box` verwenden (F-119: zeigt noch auf `.49`, unbekanntes Gerät). |
+| Lernphase/Start bricht mit Verbindungsfehler zur Anlage ab | SolvisRemote nicht erreichbar. `curl -s -o /dev/null -w '%{http_code}' http://192.168.1.35/` testen (`401` = gesund); manche SolvisRemote zeigen den Web-Port erst nach Neustart/Re-Login. **Nicht** `solvis.fritz.box` verwenden (verwaister Fritzbox-Alt-Eintrag auf `.49` — siehe Adress-Kasten oben). |
 | `curl -I` (HEAD) gegen die SolvisRemote liefert 403 | Kein Fehler der Zugangsdaten: die SolvisRemote beantwortet **HEAD-Requests mit 403**; das erwartete 401 (ohne Login) bzw. 200 (mit Login) kommt nur auf **GET** (Messbefund 2026-08-13). Erreichbarkeit daher per GET prüfen — `check-credentials.sh` (Phase 3.3) macht das bereits richtig. |
 | 401 auf `display.bmp` trotz korrekter Credentials; JDK-Log: „Rejecting digest authentication with insecure algorithm: MD5" | Gerätezwang: Die SolvisRemote-Firmware kann Digest-Auth **nur mit MD5**, Java 14+ verweigert das per Default (Messbefund ransible 2026-08-13, Java 21; der curl-200-Beweis aus `check-credentials.sh` bleibt dabei grün, weil curl MD5 akzeptiert). Fix: System-Property **`http.auth.digest.reEnabledAlgorithms=MD5`** — in den Fork-Units bereits fest in `ExecStart`, in den make-Startkommandos (`learn`, `foreground`, …) enthalten; bei manuellen `java -jar`-Aufrufen als `-D`-Flag mitgeben. Alternativ wirkt `JDK_JAVA_OPTIONS` im EnvFile (Phase 4.3), ist aber nicht mehr nötig. |
 | `make installSolvis` bricht mit „kein Java >= 17" ab | `/usr/bin/java` ist zu alt. Java ≥ 17 installieren oder `make … javaPath=/pfad/zu/java-17+` übergeben. |

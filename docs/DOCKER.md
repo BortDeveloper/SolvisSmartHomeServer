@@ -56,10 +56,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends default-jre-hea
    [INBETRIEBNAHME.md](INBETRIEBNAHME.md)). Die Datei wird neben
    das Jar gemountet (Default-Suchort) — alternativ per `--base-xml=/pfad`
    überschreiben.
-2. **Passwort verschlüsseln** und als `passwordCrypt` eintragen:
+2. **Passwort verschlüsseln** und als `passwordCrypt` eintragen. Das
+   Klartext-Passwort nie als Argument tippen (es landet sonst dauerhaft in
+   der Shell-Historie), sondern unsichtbar abfragen:
+   ```bash
+   read -rs -p "Passwort: " PW; echo
+   docker compose run --rm solvis --string-to-crypt="$PW"
+   unset PW
    ```
-   docker compose run --rm solvis --string-to-crypt=DEINPASSWORT
-   ```
+   Details, Rest-Risiko (argv des Kindprozesses) und die Bereinigung von
+   Bestands-Historien: [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 2.2.
 3. **Lernphase** einmalig fahren (schreibt nach `/data`):
 
    > ⚠️ **Vor jeder Lernphase gilt die Cutover-Checkliste aus

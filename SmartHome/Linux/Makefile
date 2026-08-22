@@ -128,6 +128,14 @@ install: installSolvis installFHEM
 
 
 
+# Fork (S-5, 2026-08-22): Basis- und Programmverzeichnis sind ROOT-eigen —
+# Standard-Ableitung 1 (stack-master:shared/standards/dienst-ablagestruktur.md):
+# ein kompromittierter Dienst darf sein eigenes Binary (und dessen Pfad)
+# nicht aendern koennen. Das Dienstkonto behaelt nur Leserecht. Schreibbar
+# bleiben ausschliesslich die Zustands-Unterverzeichnisse (SolvisServerData,
+# health), die hier vor-angelegt werden, weil der Server sie im root-eigenen
+# /opt/solvis nicht mehr selbst anlegen kann. Die Verlagerung des Zustands
+# nach /var/lib (StateDirectory) bleibt dem AP-5-Vollumbau vorbehalten.
 $(solvisDir): Makefile
 	grep $(accountSolvis) /etc/passwd >/dev/null ; \
 	if [ $$? -ne 0 ] ; then \
@@ -135,7 +143,10 @@ $(solvisDir): Makefile
 		useradd  -r -b $(baseDir) -s /bin/false $(accountSolvis) ; \
 	fi
 	mkdir -p $@ ; \
-	chown -c $(accountSolvis) $@ ; \
+	chown -c root:root $@ ; \
+	chmod 755 $@
+	mkdir -p $@/$(generatedBaseDir) $@/health ; \
+	chown -c $(accountSolvis) $@/$(generatedBaseDir) $@/health
 
 
 
@@ -200,6 +211,7 @@ uninstallSolvis: uninstallService uninstallDebugService
 	rm $(systemD)/$(service).service
 	rm $(systemD)/$(serviceDebug).service
 	rm $(serverDir)/$(baseXml).xml
+	rm -f $(serverDir)/$(baseXml).xml.old
 	rm $(serverDir)/$(baseXml).xsd
 	
 
@@ -243,9 +255,17 @@ testmail:
 
 
 
+# Fork (S-5, 2026-08-22): Passwort unsichtbar erfassen (read -rs; dafuer
+# bash statt sh, target-lokal) — der Klartext landet so weder sichtbar auf
+# dem Terminal noch als Argument in der Shell-Historie. Rest-Risiko wie in
+# check-credentials.sh dokumentiert: der Wert steht kurzzeitig im argv des
+# java-Kindprozesses (kein stdin-Modus im Server; auf dem
+# Einzelnutzer-Zielhost akzeptiert, F-120).
+crypt: SHELL = /bin/bash
 crypt:
-	@read -p "Enter the word to be encrypted:" password; \
-	$(startLocal) --string-to-crypt=$$password
+	@read -rs -p "Zu verschluesselndes Passwort (Eingabe unsichtbar): " password; \
+	echo ; \
+	$(startLocal) --string-to-crypt="$$password"
 
 
 
@@ -280,10 +300,12 @@ foreground: stopServices installSolvis
 
 
 
+# Fork (S-5): Programmverzeichnis root-eigen (Begruendung siehe $(solvisDir)).
 $(serverDir): $(solvisDir)
 	mkdir -p $@
-	chown -c $(accountSolvis) $@
-		
+	chown -c root:root $@
+	chmod 755 $@
+
 
 
 $(fhemCommandRef):$(fhemModulesDir)/$(fhemModul)
@@ -317,26 +339,42 @@ createCommandRef:
 
 
 
+# Fork (S-5): Jar root-eigen, Dienstkonto nur Leserecht (Standard-Ableitung 1:
+# ein kompromittierter Dienst darf sein Binary nicht austauschen koennen).
 $(serverDir)/$(solvisJar): $(solvisJar) $(serverDir)
 	cp $< $@
-	chown -c $(accountSolvis) $@
+	chown -c root:root $@
+	chmod 644 $@
 
 
 
+# Fork (S-5, 2026-08-22): Der Vorgaenger-Stand verbleibt als
+# $(baseXml).xml.old NEBEN der installierten Datei (root:root, 0600) statt
+# im Operator-Build-Verzeichnis. Begruendung: Der Rollback-Wert (Diff gegen
+# den letzten funktionierenden Stand) bleibt erhalten, aber das Geheimnis
+# verlaesst das Zielverzeichnis nicht mehr — die bisherige Ablage im
+# Build-Verzeichnis unterlief die Gap-4-Entruempelung des Operator-Homes
+# (F-145) nach jeder Bereinigung aufs Neue. root:root statt Dienstkonto,
+# weil der Dienst die .old nie lesen muss (reines Operator-Artefakt).
+# Die installierte base.xml selbst: root:solvis 640 — der Dienst liest
+# seine Konfiguration, darf sie aber nicht umschreiben (Broker/URL/
+# Credentials waeren sonst ein Eskalationspfad).
 $(serverDir)/$(baseXml).xml : $(baseXml).xml
 	if [ -f "$@" ] ; then \
-		mv $@ $<.old ; \
-		chown -c `ls -l $< | awk '{ print $$3":"$$4 }'` $<.old ; \
-	fi 
+		mv $@ $@.old ; \
+		chown -c root:root $@.old ; \
+		chmod 600 $@.old ; \
+	fi
 	cp $< $@
-	chown -c $(accountSolvis) $@
-	chmod 600 $@
+	chown -c root:$(accountSolvis) $@
+	chmod 640 $@
 
 
 
 $(serverDir)/$(baseXml).xsd : $(baseXml).xsd
 	cp $< $@
-	chown -c $(accountSolvis) $@
+	chown -c root:root $@
+	chmod 644 $@
 
 
 

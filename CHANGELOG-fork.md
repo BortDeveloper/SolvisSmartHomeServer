@@ -8,6 +8,67 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## S-5-Härtungspaket 2026-08-22: Passwort-Eingabe, root-eigenes Binary, base.xml.old, SysV-Skript
+
+Sofortmaßnahmen der beschlossenen Gap-2-Teilwelle (User-Entscheid E-4
+2026-08-22; Befunde: `stack-master:shared/audit-log/`
+`2026-08-22-portfolio-secrets-fhs-analyse.md` §2.5). Vier Handgriffe,
+ausschließlich Makefile und Doku — kein Java-Code betroffen. Die Wirkung
+auf dem Zielhost `ransible` ist bis zum nächsten Operator-Gang
+(`sudo make installSolvis`) UNVERIFIED.
+
+- **Klartext-Passwort-argv beendet (MEDIUM).** `docs/INBETRIEBNAHME.md`
+  (Phase 2.2/3.2), `docs/DOCKER.md`, `docker-compose.yml`-Kopf und
+  `CONTRIBUTING.md` wiesen `--string-to-crypt='<PASSWORT>'` als
+  Klartext-Argument an — das Passwort landete damit dauerhaft in der
+  Shell-Historie des Hosts (die dokumentierte F-120-Abwägung deckt nur die
+  kurzzeitige argv-Sichtbarkeit des Kindprozesses, nicht die persistente
+  Historie). Alle Stellen nutzen jetzt das `read -rs`-Muster aus
+  `check-credentials.sh`; das make-Ziel `crypt` liest mit `read -rs`
+  (target-lokal `SHELL=/bin/bash`, da `-s`/`-p` Bashisms sind) und quotet
+  den Wert. Rest-Risiko bleibt ehrlich dokumentiert: der Wert steht
+  weiterhin kurzzeitig im argv des `java`-Kindprozesses, weil der Server
+  keinen stdin-Modus hat. Für Bestandsfälle steht die
+  History-Bereinigung (Editor, `history -c && history -r`) in
+  INBETRIEBNAHME.md Phase 2.2.
+- **Jar und Programmverzeichnis root-eigen (MEDIUM).** Bisher gehörten
+  `/opt/solvis`, `/opt/solvis/SolvisSmartHomeServer` und das Jar dem
+  Dienstkonto `solvis` — Verstoß gegen Ableitung 1 des
+  Ablagestruktur-Standards (ein kompromittierter Dienst darf sein eigenes
+  Binary nicht ändern können; das schloss den Rename-Trick über das
+  schreibbare Elternverzeichnis ein). Jetzt: beide Verzeichnisse und das
+  Jar `root:root` (755/644), `base.xsd` ebenso; `base.xml` `root:solvis`
+  mit `640` (der Dienst liest seine Konfiguration, kann sie aber nicht
+  umschreiben — Broker/URL/Credentials wären sonst ein Eskalationspfad).
+  Damit der Server im root-eigenen `/opt/solvis` weiter schreiben kann,
+  legt der Install die Zustandsverzeichnisse `SolvisServerData/` und
+  `health/` vor-angelegt und `solvis`-eigen an. Die eigentliche
+  Zustands-Verlagerung nach `/var/lib` (StateDirectory) bleibt bewusst dem
+  AP-5-Vollumbau vorbehalten (gesperrt bis Ablöse-Entscheid). Runbook- und
+  INBETRIEBNAHME-Erwartungswerte (`stat`-Checks, Restore-chown-Block)
+  nachgezogen.
+- **`base.xml.old` neben die installierte Datei (LOW).** Der
+  Vorgänger-Stand landete beim Update im Operator-Build-Verzeichnis
+  (`SmartHome/Linux/base.xml.old`) und unterlief so die
+  Gap-4-Entrümpelung des Operator-Homes (F-145) nach jeder Bereinigung
+  aufs Neue. Entscheidung: **behalten statt löschen**, aber als
+  `base.xml.old` neben der installierten Datei (`root:root`, `600`) — der
+  Rollback-Wert (Diff gegen den letzten funktionierenden Stand) bleibt
+  erhalten, das Geheimnis verlässt das Zielverzeichnis nicht mehr, und
+  root-only genügt, weil der Dienst die Datei nie lesen muss.
+  `uninstallSolvis` räumt die `.old` mit ab. Der `.gitignore`-Eintrag für
+  den alten Build-Verzeichnis-Pfad bleibt als Schutz für Altbestände
+  stehen.
+- **Totes Upstream-SysV-Initskript entfernt (LOW, bewusste
+  Fork-Abweichung).** `SmartHome/Linux/SolvisSmartHomeServer` (SysV-Stil,
+  hartkodierter Fremdpfad `/media/data/fhem/SolvisXml`, Start ohne
+  Dienstkonto und ohne das MD5-Digest-Flag) stammt aus der
+  Vor-systemd-Zeit des Upstreams und wird von keinem Install-Ziel
+  referenziert. Der Fork startet ausschließlich über die
+  systemd-Unit-Templates; ein liegen gebliebenes Initskript wäre nur ein
+  zweiter, falsch konfigurierter Startweg. Upstream behält die Datei —
+  dies ist eine dokumentierte, bewusste Abweichung.
+
 ## Doku-Sweep 2026-08-16: Ist-Stand „Produktiv-Publisher" nachgezogen
 
 Reine Dokumentations-Änderung, kein Code. Anlass war ein Doku-Sweep über die

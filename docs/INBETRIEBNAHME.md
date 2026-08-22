@@ -130,25 +130,49 @@ cp rsc/de/sgollmer/solvismax/data/base.xml ./base.xml
 > Direkt nach dem Anlegen/Bearbeiten:
 >
 > ```bash
-> chmod 600 base.xml                      # und Owner = Dienstnutzer:
-> chown solvis:solvis base.xml            # nativ (User "solvis", Phase 4)
+> chmod 600 base.xml                      # Arbeitskopie: nur der Bearbeiter liest
 > # chown 10001:10001 base.xml            # Docker (UID 10001)
 > ```
 >
-> `base.xml` **niemals** ins Repo/Backup im Klartext ohne Zugriffsschutz.
+> Die **installierte** Kopie unter `/opt/solvis/SolvisSmartHomeServer/`
+> bekommt ihre Rechte durch `make installSolvis`: Owner `root`, Gruppe
+> `solvis`, Mode `640` — der Dienst liest seine Konfiguration, darf sie
+> aber nicht ändern. `base.xml` **niemals** ins Repo/Backup im Klartext
+> ohne Zugriffsschutz.
 
 ### 2.2 Anlagen-Passwort verschlüsseln
 
 Passwörter stehen in `base.xml` **nie im Klartext**, sondern als
-`passwordCrypt`. Den Wert erzeugt der Server selbst:
+`passwordCrypt`. Den Wert erzeugt der Server selbst. Das Klartext-Passwort
+dabei **nie als Argument in die Kommandozeile tippen** — es landet sonst
+dauerhaft in der Shell-Historie des Hosts. Stattdessen unsichtbar abfragen
+(`read -rs`, dasselbe Muster wie in `check-credentials.sh`):
 
 ```bash
-# Nativ:
-java -jar target/SolvisSmartHomeServer.jar --string-to-crypt='<SOLVIS_WEB_PASSWORT>'
+# Nativ (bash) — Eingabe unsichtbar, nichts davon in der Shell-Historie:
+read -rs -p "Solvis-Web-Passwort: " PW; echo
+java -jar target/SolvisSmartHomeServer.jar --string-to-crypt="$PW"
+unset PW
 # Docker:
-# docker compose run --rm solvis --string-to-crypt='<SOLVIS_WEB_PASSWORT>'
+# read -rs -p "Solvis-Web-Passwort: " PW; echo
+# docker compose run --rm solvis --string-to-crypt="$PW"; unset PW
 # Ausgabe -> als passwordCrypt in <tns:Unit …> eintragen (Schritt 2.3)
 ```
+
+Alternativ fragt `make crypt` (in `SmartHome/Linux/`, nach `make prepare`;
+startet das Jar per `sudo -u solvis`, setzt also den Systemnutzer aus
+Phase 4 voraus) das Passwort ebenfalls unsichtbar ab. Rest-Risiko in
+beiden Wegen wie bei
+`check-credentials.sh` dokumentiert: Der Wert steht kurzzeitig im argv des
+`java`-Kindprozesses (auf dem Einzelnutzer-Zielhost akzeptiert, F-120) —
+in der Shell-Historie landet er mit diesem Muster nicht.
+
+> **Bestandsfälle bereinigen:** Wer das Passwort früher als
+> Klartext-Argument eingegeben hat, hat es in `~/.bash_history` des
+> jeweiligen Hosts (je benutztem Konto, ggf. auch `root`). Die betroffenen
+> Zeilen **im Editor** aus der Datei löschen — die Historie nicht per
+> `cat`/`grep` ins Terminal holen — und anschließend die laufende Session
+> mit `history -c && history -r` zurücksetzen.
 
 ### 2.3 `ExecutionData` und `Unit` anpassen
 
@@ -248,7 +272,8 @@ Hinweise:
   dann kein echtes Loopback mehr ist.
 
 Falls der lokale Broker zusätzlich User/Passwort verlangt, den Wert wie in 2.2
-mit `--string-to-crypt` erzeugen und als `passwordCrypt` im `<tns:Mqtt>` eintragen.
+erzeugen (unsichtbare Abfrage per `read -rs` bzw. `make crypt` — nie als
+Klartext-Argument) und als `passwordCrypt` im `<tns:Mqtt>` eintragen.
 
 ### 3.3 Credentials prüfen (empfohlen)
 
@@ -315,10 +340,19 @@ sudo make installSolvis                  # Default: javaPath=/usr/bin/java
 ```
 
 `installSolvis` legt (falls nötig) den Systemnutzer **`solvis`** an, kopiert
-Jar/`base.xml`/`base.xsd` nach `/opt/solvis/SolvisSmartHomeServer/`
-(`base.xml` mit `chmod 600`, Owner `solvis`) und installiert die
-systemd-Units. Der Dienst wird dabei **noch nicht gestartet** — erst Cutover
-(Phase 5) und Lernphase (Phase 6) abschließen.
+Jar/`base.xml`/`base.xsd` nach `/opt/solvis/SolvisSmartHomeServer/` und
+installiert die systemd-Units. Eigentumslage seit der S-5-Härtung
+(2026-08-22): Jar, `base.xsd` und beide Verzeichnisse (`/opt/solvis`,
+`/opt/solvis/SolvisSmartHomeServer`) sind **root-eigen** — ein
+kompromittierter Dienst kann sein eigenes Binary nicht austauschen —,
+`base.xml` gehört `root:solvis` mit Mode `640` (Dienst liest, ändert
+nicht), und schreibbar für das Dienstkonto bleiben nur die vom Install
+vor-angelegten Zustandsverzeichnisse `/opt/solvis/SolvisServerData/` und
+`/opt/solvis/health/`. Ein bereits installierter Vorgänger-Stand der
+`base.xml` bleibt als `base.xml.old` (root, `600`) **neben der
+installierten Datei** als Rollback-Referenz erhalten. Der Dienst wird beim
+Install **noch nicht gestartet** — erst Cutover (Phase 5) und Lernphase
+(Phase 6) abschließen.
 
 ### 4.3 Betriebsparameter (optional): `/etc/default/solvissmarthomeserver`
 

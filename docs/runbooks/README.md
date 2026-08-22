@@ -64,8 +64,10 @@ Vokabular des Cockpit-Doku-Standards (`systemd-timer` · `cron` · `CI-Job` ·
 Regelbetrieb (Monitoring, optional Steuerung) starten.
 
 1. Prüfen, dass die installierte `base.xml` existiert und dateirechtegeschützt
-   ist — `stat -c '%a %U' /opt/solvis/SolvisSmartHomeServer/base.xml`
-   → erwartet: `600 solvis`.
+   ist — `stat -c '%a %U:%G' /opt/solvis/SolvisSmartHomeServer/base.xml`
+   → erwartet: `640 root:solvis` (Stand seit der S-5-Härtung 2026-08-22;
+   Bestandsinstallationen zeigen bis zum nächsten `make installSolvis`
+   noch `600 solvis:…` — beides ist dateirechtegeschützt).
 2. Steuer-Modus bewusst wählen: in derselben `base.xml`
    `<tns:Feature id="InteractiveGUIAccess" value="false"/>` für reines
    Monitoring, `true` erst nach Freigabe (Steuerung klickt real an der Anlage).
@@ -209,15 +211,18 @@ Operator-State aus einem Backup wiederherstellen.
    `age -d -i <age-identity> backup-<datum>.tar.gz.age | sudo tar xzf - -C /opt/solvis`
    → erwartet: `/opt/solvis/SolvisSmartHomeServer/base.xml` und
    `/opt/solvis/SolvisServerData/` sind wiederhergestellt.
-3. Eigentümer und Dateirechte neu setzen (Pflicht) —
+3. Eigentümer und Dateirechte neu setzen (Pflicht; Soll-Bild der
+   S-5-Härtung: Programmpfad root-eigen, Zustand dem Dienstkonto) —
 
    ```bash
-   sudo chown -R solvis:solvis /opt/solvis
-   sudo chmod 600 /opt/solvis/SolvisSmartHomeServer/base.xml
+   sudo chown root:root /opt/solvis /opt/solvis/SolvisSmartHomeServer
+   sudo chown -R solvis:solvis /opt/solvis/SolvisServerData
+   sudo chown root:solvis /opt/solvis/SolvisSmartHomeServer/base.xml
+   sudo chmod 640 /opt/solvis/SolvisSmartHomeServer/base.xml
    ```
 
-   → erwartet: `stat -c '%a %U' /opt/solvis/SolvisSmartHomeServer/base.xml`
-   = `600 solvis`.
+   → erwartet: `stat -c '%a %U:%G' /opt/solvis/SolvisSmartHomeServer/base.xml`
+   = `640 root:solvis`; Jar und beide Verzeichnisse gehören `root`.
 4. Dienst starten und prüfen — `sudo systemctl start SolvisSmartHomeServer.service`
    → erwartet: `active (running)`, Health-Token frisch, `solvis/#`-Topics
    erscheinen wie vor dem Restore.

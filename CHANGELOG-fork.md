@@ -8,6 +8,35 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Welle-1-Auflage 2026-08-22: Rechte-Durchsetzung bei jedem Install-/Update-Lauf (`enforceOwnership`)
+
+Behebt die MEDIUM-Auflage aus der Welle-1-Abnahme
+(`stack-master:shared/audit-log/2026-08-22-welle1-abnahme-bilanz.md`,
+Abschnitt solvis): Die S-5-Härtung setzte Owner und Modus der
+installierten Dateien nur in den dateiabhängigen Make-Regeln — bei einer
+unveränderten `base.xml` wurde die Regel als „up to date" übersprungen,
+und die zugesagte Bestands-Migration auf `640 root:solvis` fand für die
+einzige geheimnistragende Datei mechanisch nie statt (Repro der Abnahme:
+Update-Lauf ohne `base.xml`-Änderung emittiert kein einziges
+`chown`/`chmod`).
+
+Fix: neues Phony-Ziel `enforceOwnership` im `SmartHome/Linux/Makefile`,
+als letzte Voraussetzung von `installSolvis` verdrahtet (wirkt damit auch
+für `updateSolvis`, `update`, `learn`, `debugServer` usw.). Es setzt bei
+**jedem** Lauf unbedingt durch: `/opt/solvis` und
+`…/SolvisSmartHomeServer` `root:root 755`, Jar und `base.xsd`
+`root:root 644`, `base.xml` `root:solvis 640`, eine vorhandene
+`base.xml.old` `root:root 600`, Zustandsverzeichnisse
+(`SolvisServerData/`, `health/`) `solvis`-eigen. `chown`/`chmod` ändern
+nur Metadaten (weder Inhalt noch mtime) — es wird nichts neu installiert
+und keine Regel-Kaskade angestoßen; `-c` meldet nur tatsächliche
+Änderungen, im eingeschwungenen Zustand ist das Ziel still.
+Runbook (`docs/runbooks/README.md`, Deploy-Check und Update-Aufgabe) und
+`docs/INBETRIEBNAHME.md` (Phase 2, Phase 4.2) sind nachgezogen: der
+bisherige Interims-Hinweis (einmaliger Hand-Nachzug bzw. `touch
+base.xml`) ist durch den mechanischen Weg ersetzt. Wirkung auf dem
+Zielhost `ransible` bis zum nächsten Operator-Lauf UNVERIFIED.
+
 ## S-5-Härtungspaket 2026-08-22: Passwort-Eingabe, root-eigenes Binary, base.xml.old, SysV-Skript
 
 Sofortmaßnahmen der beschlossenen Gap-2-Teilwelle (User-Entscheid E-4

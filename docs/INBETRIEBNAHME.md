@@ -137,7 +137,11 @@ cp rsc/de/sgollmer/solvismax/data/base.xml ./base.xml
 > Die **installierte** Kopie unter `/opt/solvis/SolvisSmartHomeServer/`
 > bekommt ihre Rechte durch `make installSolvis`: Owner `root`, Gruppe
 > `solvis`, Mode `640` — der Dienst liest seine Konfiguration, darf sie
-> aber nicht ändern. `base.xml` **niemals** ins Repo/Backup im Klartext
+> aber nicht ändern. Dieses Soll wird bei **jedem**
+> `installSolvis`-/`updateSolvis`-Lauf unbedingt neu durchgesetzt (Ziel
+> `enforceOwnership`), auch wenn die Datei selbst unverändert bleibt —
+> Bestandsinstallationen mit altem Rechtestand migrieren also mechanisch
+> beim nächsten Lauf. `base.xml` **niemals** ins Repo/Backup im Klartext
 > ohne Zugriffsschutz.
 
 ### 2.2 Anlagen-Passwort verschlüsseln
@@ -350,7 +354,13 @@ nicht), und schreibbar für das Dienstkonto bleiben nur die vom Install
 vor-angelegten Zustandsverzeichnisse `/opt/solvis/SolvisServerData/` und
 `/opt/solvis/health/`. Ein bereits installierter Vorgänger-Stand der
 `base.xml` bleibt als `base.xml.old` (root, `600`) **neben der
-installierten Datei** als Rollback-Referenz erhalten. Der Dienst wird beim
+installierten Datei** als Rollback-Referenz erhalten. Diese Eigentums-
+und Rechtelage setzt das Ziel `enforceOwnership` (läuft als fester
+Bestandteil von `installSolvis`/`updateSolvis`) bei **jedem** Lauf
+unbedingt neu durch — unabhängig davon, ob eine Datei kopiert wurde.
+Bestandsinstallationen aus der Zeit vor der Härtung migrieren dadurch
+mechanisch mit dem nächsten Lauf; ein manueller Rechte-Nachzug ist nicht
+nötig. Der Dienst wird beim
 Install **noch nicht gestartet** — erst Cutover (Phase 5) und Lernphase
 (Phase 6) abschließen.
 

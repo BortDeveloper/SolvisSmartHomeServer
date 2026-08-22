@@ -216,8 +216,37 @@ uninstallSolvis: uninstallService uninstallDebugService
 	
 
 
-installSolvis: checkJava $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xml  $(serverDir)/$(baseXml).xsd copyService
+installSolvis: checkJava $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xml  $(serverDir)/$(baseXml).xsd copyService enforceOwnership
 	@echo "Empfohlen: 'make checkCredentials' vor dem ersten Start/Lernphase (Credential-Pruefung, F-120)."
+
+
+
+# Fork (Welle-1-Auflage MEDIUM, 2026-08-22): Bestands-Migration der
+# Dateirechte. Die dateiabhaengigen Install-Regeln unten setzen Owner und
+# Modus nur, wenn die Quelldatei neuer ist als das Ziel — eine unveraendert
+# installierte base.xml aus der Zeit vor S-5 bliebe sonst dauerhaft auf dem
+# alten Rechtestand ("up to date", Abnahme-Repro 2026-08-22), ausgerechnet
+# fuer die einzige geheimnistragende Datei. Dieses Phony-Ziel setzt deshalb
+# bei JEDEM installSolvis-/updateSolvis-Lauf das S-5-Soll unbedingt durch.
+# chown/chmod aendern nur Metadaten (weder Inhalt noch mtime) — es wird
+# nichts neu installiert und keine Regel-Kaskade angestossen; -c meldet
+# nur tatsaechliche Aenderungen (idempotent still im Normalfall).
+# Als letzte Voraussetzung von installSolvis gelistet, damit die
+# Durchsetzung nach den Install-Regeln laeuft (make arbeitet hier seriell).
+.PHONY: enforceOwnership
+enforceOwnership:
+	chown -c root:root $(solvisDir) $(serverDir)
+	chmod -c 755 $(solvisDir) $(serverDir)
+	if [ -d $(solvisDir)/$(generatedBaseDir) ] ; then chown -c $(accountSolvis) $(solvisDir)/$(generatedBaseDir) ; fi
+	if [ -d $(solvisDir)/health ] ; then chown -c $(accountSolvis) $(solvisDir)/health ; fi
+	chown -c root:root $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xsd
+	chmod -c 644 $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xsd
+	chown -c root:$(accountSolvis) $(serverDir)/$(baseXml).xml
+	chmod -c 640 $(serverDir)/$(baseXml).xml
+	if [ -f $(serverDir)/$(baseXml).xml.old ] ; then \
+		chown -c root:root $(serverDir)/$(baseXml).xml.old ; \
+		chmod -c 600 $(serverDir)/$(baseXml).xml.old ; \
+	fi
 
 
 

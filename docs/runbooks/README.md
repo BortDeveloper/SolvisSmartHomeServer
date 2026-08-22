@@ -65,9 +65,12 @@ Regelbetrieb (Monitoring, optional Steuerung) starten.
 
 1. Prüfen, dass die installierte `base.xml` existiert und dateirechtegeschützt
    ist — `stat -c '%a %U:%G' /opt/solvis/SolvisSmartHomeServer/base.xml`
-   → erwartet: `640 root:solvis` (Stand seit der S-5-Härtung 2026-08-22;
-   Bestandsinstallationen zeigen bis zum nächsten `make installSolvis`
-   noch `600 solvis:…` — beides ist dateirechtegeschützt).
+   → erwartet: `640 root:solvis` (Soll der S-5-Härtung 2026-08-22;
+   `make installSolvis`/`updateSolvis` setzen es seit dem Welle-1-Nachtrag
+   bei **jedem** Lauf unbedingt durch, Ziel `enforceOwnership`).
+   Bestandsinstallationen zeigen nur bis zum nächsten Update-Lauf noch
+   `600 solvis:…` — auch das ist dateirechtegeschützt; die Migration
+   passiert dann mechanisch, ohne Hand-Nachzug.
 2. Steuer-Modus bewusst wählen: in derselben `base.xml`
    `<tns:Feature id="InteractiveGUIAccess" value="false"/>` für reines
    Monitoring, `true` erst nach Freigabe (Steuerung klickt real an der Anlage).
@@ -113,6 +116,14 @@ Neuen Fork-Stand (Jar) in Betrieb nehmen.
    Dienst wieder gestartet (`stopServices` → `installSolvis` →
    `systemctl start`). Das Ziel `update` täte dasselbe, zieht aber zusätzlich
    die Upstream-FHEM-Modulinstallation mit — hier ungenutzt.
+   `installSolvis` setzt dabei das Rechte-Soll der S-5-Härtung bei jedem
+   Lauf unbedingt neu durch (Ziel `enforceOwnership`: `base.xml`
+   `640 root:solvis`, Jar, `base.xsd` und beide Verzeichnisse root-eigen,
+   eine vorhandene `base.xml.old` `600 root:root`) — auch wenn keine der
+   Dateien sich geändert hat. Die Bestands-Migration alter Rechtestände
+   geschieht damit mechanisch mit dem nächsten Update; ein manueller
+   Rechte-Nachzug oder ein `touch base.xml` im Build-Verzeichnis ist
+   nicht mehr nötig.
 4. Health nach Update — `systemctl status SolvisSmartHomeServer.service` und
    `stat -c '%y' /opt/solvis/health/ready`
    → erwartet: `active (running)`, Token frisch.

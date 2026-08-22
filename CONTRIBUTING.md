@@ -75,7 +75,11 @@ und XSD), `local-maven-repo/` (vendored `XMLLibrary` bis zur JAXB-Ablösung),
 Das Jar akzeptiert Kommandos, die auch die Runbooks nutzen (real, aus `Main`):
 
 ```bash
-java -jar target/SolvisSmartHomeServer.jar --string-to-crypt='<PASSWORT>'  # passwordCrypt erzeugen
+# passwordCrypt erzeugen — echte Passwoerter nie als Klartext-Argument
+# tippen (Shell-Historie!), sondern unsichtbar abfragen
+# (docs/INBETRIEBNAHME.md Phase 2.2):
+read -rs -p "Passwort: " PW; echo
+java -jar target/SolvisSmartHomeServer.jar --string-to-crypt="$PW"; unset PW
 java -jar target/SolvisSmartHomeServer.jar --server-learn                  # OCR-Lernphase (braucht Anlage)
 java -jar target/SolvisSmartHomeServer.jar --server-terminate             # laufende Instanz sauber beenden
 ```

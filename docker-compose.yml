@@ -4,9 +4,12 @@
 #   1. base.xml aus base.xml.new erstellen und anpassen; darin
 #        writablePathLinux="/data"
 #      setzen, damit angelernte Bilder/Logs im persistenten Volume landen.
-#   2. Passwort(e) verschluesseln:
-#        docker compose run --rm solvis --string-to-crypt=DEINPASSWORT
-#      und den Ausgabewert als passwordCrypt in base.xml eintragen.
+#   2. Passwort(e) verschluesseln — nie als Klartext-Argument tippen
+#      (Shell-Historie!), sondern unsichtbar abfragen:
+#        read -rs -p "Passwort: " PW; echo
+#        docker compose run --rm solvis --string-to-crypt="$PW"; unset PW
+#      und den Ausgabewert als passwordCrypt in base.xml eintragen
+#      (docs/INBETRIEBNAHME.md Phase 2.2).
 #   3. Einmalig die OCR-Lernphase fahren (schreibt nach /data):
 #        docker compose run --rm solvis --server-learn
 #   4. Danach den Dauerbetrieb starten: docker compose up -d

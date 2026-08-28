@@ -53,7 +53,7 @@ Vokabular des Cockpit-Doku-Standards (`systemd-timer` · `cron` · `CI-Job` ·
 | [Deploy / Start](#aufgabe-deploy--start) | bewusst manuell |
 | [Update ausrollen](#aufgabe-update-ausrollen) | Script (on-demand) |
 | [OCR-Lernphase erneuern](#aufgabe-ocr-lernphase-erneuern) | Script (on-demand) |
-| [Backup (Operator-State)](#aufgabe-backup-operator-state) | bewusst manuell |
+| [Backup (Operator-State)](#aufgabe-backup-operator-state) | systemd-timer (Host-Kette `ransible-backup.timer`, Repo `ccu2mqtt`); Handexport on-demand |
 | [Restore](#aufgabe-restore) | bewusst manuell |
 | [Stoppen / Restart](#aufgabe-stoppen--restart) | Script (on-demand) |
 
@@ -185,6 +185,24 @@ Nicht-versionierten Operator-State sichern: die installierte `base.xml`
 `/opt/solvis/SolvisServerData/` (angelernte Bilder, generierte
 `control.xml`/Messwerte, Logs).
 
+**Regelweg (seit 2026-08-28): die Host-Sicherungskette.** `/opt/solvis` ist
+als Scope `solvis` Teil der Zwei-Ziel-restic-Kette des Hosts `ransible`
+(HiDrive und all-inkl, Retention 14/8/12, täglicher Timer 02:30). Skript,
+systemd-Units und das Runbook dazu liegen **nicht** in diesem Repo, sondern in
+`ccu2mqtt` (`scripts/ransible-backup.sh`, `config/systemd/ransible-backup.*`,
+`docs/runbooks/haus-hosts-backup.md` §1.1 Zeile `solvis`). Der Connector
+selbst bringt keinen Scheduler mit; die Automatisierung ist Sache des Hosts.
+Ein Operator-Handlauf nur für diesen Scope lautet dort
+`sudo ransible-backup --run --only solvis`. Bis zum ersten belegten
+`solvis`-Snapshot je Ziel (Etappe-2-Schritt B5''', Beleg in
+`ccu2mqtt/docs/status.md` §4) gilt der Vollzug als **UNVERIFIED**; genau
+dieser Snapshot schließt den Registereintrag F-145.
+
+**Handexport vor Eingriffen (ergänzend, nicht ersetzend).** Vor einer
+geplanten Änderung an `base.xml` oder vor einer neuen OCR-Lernphase kann ein
+verschlüsselter Punkt-Export sinnvoll sein, der unabhängig vom Timer-Rhythmus
+den Stand von jetzt festhält:
+
 1. Dienst kurz anhalten (konsistenter Snapshot) —
    `sudo systemctl stop SolvisSmartHomeServer.service`
    → erwartet: `inactive (dead)`.
@@ -204,22 +222,36 @@ Nicht-versionierten Operator-State sichern: die installierte `base.xml`
 *Alternative für Entwicklung/Test:* dieselbe Kette mit `docker compose stop
 solvis` / `docker compose up -d` und den Repo-Pfaden `base.xml` und `data/`.
 
-**Automatisierung**: `bewusst manuell` — Auslöser: Operator; Grund: `base.xml`
-enthält nur dateirechtegeschützte Secrets (`passwordCrypt` = Obfuskation) — kein
-unverschlüsselter Auto-Export (Least Privilege / Separation of Duties). Der
-Schreibpfad ist zudem aus der Lernphase reproduzierbar, sodass ein
-automatischer Scheduler im Connector-Repo bewusst entfällt.
+**Automatisierung**: `systemd-timer` (auf dem Host, fremdes Repo) — Auslöser: Zeitplan
+(`ransible-backup.timer`, 02:30, Repo `ccu2mqtt`), zusätzlich Operator für den
+Handexport. Grund für die Verortung außerhalb dieses Repos: Die Sicherung ist
+eine Host-Eigenschaft (mehrere Scopes, gemeinsame Ziele und Retention) und
+gehört in die Betriebsakte des Hosts, nicht in den Connector; der Connector
+bleibt damit frei von Sicherungslogik und Ziel-Zugangsdaten. Die Secrets in
+`base.xml` sind im Repository-Ziel durch die restic-Verschlüsselung geschützt,
+im Handexport durch `age`.
 
 ---
 
 ## Aufgabe: Restore
 
-Operator-State aus einem Backup wiederherstellen.
+Operator-State aus einem Backup wiederherstellen. Die Quelle ist im Regelfall
+ein `solvis`-Snapshot der Host-Kette; der Handexport ist die Rückfallebene.
 
 1. Dienst stoppen — `sudo systemctl stop SolvisSmartHomeServer.service`
    → erwartet: `inactive (dead)`.
-2. Archiv entschlüsseln und auspacken —
-   `age -d -i <age-identity> backup-<datum>.tar.gz.age | sudo tar xzf - -C /opt/solvis`
+2. Stand zurückholen — einer der beiden Wege:
+   - **Aus der Host-Kette (Regelweg):** mit restic den jüngsten Snapshot des
+     Scopes `solvis` aus einem der beiden Ziele nach `/` zurückspielen,
+     sinngemäß `sudo restic -r <ziel> --password-file <pw-datei> restore
+     latest --tag solvis --target /` (Repository-Adressen, Passwortdatei
+     und der geübte Ablauf stehen in `ccu2mqtt/docs/runbooks/haus-hosts-backup.md`
+     §1.3, Zeilen R-4/R-5, und im dortigen
+     `runbooks/solvis-bridge-restore.md`; Ziel-Zugangsdaten sind nie
+     Bestandteil dieses Repos).
+   - **Aus dem Handexport:**
+     `age -d -i <age-identity> backup-<datum>.tar.gz.age | sudo tar xzf - -C /opt/solvis`
+
    → erwartet: `/opt/solvis/SolvisSmartHomeServer/base.xml` und
    `/opt/solvis/SolvisServerData/` sind wiederhergestellt.
 3. Eigentümer und Dateirechte neu setzen (Pflicht; Soll-Bild der

@@ -8,6 +8,22 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## Doku-Abgleich 2026-08-29: Rechte-Soll, Sicherungsweg und Produktivbild in den Übersichtsdokumenten
+
+Ein read-only-Dokumentationsaudit fand vier Stellen (README, `docs/security/README.md`,
+`docs/ARCHITECTURE.md`, `docs/g2.6-clone-drill.md`), die noch `chmod 600` mit
+Owner = Dienstnutzer als Pflichtschritt nannten — im Widerspruch zur
+S-5-Härtung und zu `enforceOwnership` (Soll `640 root:solvis`, Dienst liest,
+schreibt nicht). Wer der alten Angabe folgte, hob die Härtung wieder auf.
+Alle Stellen sind angeglichen; `600` bleibt nur für die Arbeitskopie beim
+Bearbeiten. Zugleich benennt `docs/runbooks/README.md` als Sicherungs-Regelweg
+die Zwei-Ziel-restic-Kette des Hosts (Scope `solvis`, Repo `ccu2mqtt`,
+systemd-timer 02:30) statt eines Tar-Handexports, und die Restore-Aufgabe
+kennt den restic-Rückweg. README „Betrieb (Day 2)" führt den Container nicht
+mehr als Produktivweg; das Drill-Protokoll verweist für den Operator-State
+auf Register F-145 und die §9.2-Pflichtfelder für den nächsten Lauf. Kein
+Code berührt.
+
 ## Welle-1-Auflage 2026-08-22: Rechte-Durchsetzung bei jedem Install-/Update-Lauf (`enforceOwnership`)
 
 Behebt die MEDIUM-Auflage aus der Welle-1-Abnahme

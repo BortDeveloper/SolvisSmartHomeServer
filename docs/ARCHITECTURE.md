@@ -131,7 +131,7 @@ Wurzelpaket `de.sgollmer.solvismax` (unter `src/`):
 | `model/` | Anlagen-/Domänenmodell: Screens, Kanäle, Messwerte, Strategien; Konfiguration aus `base.xml`/`control.xml` |
 | `connection/` (`mqtt`, `transfer`) | MQTT-Client (Paho v3) inkl. `MqttThread`/Topic-Aufbau; proprietärer TCP-Server |
 | `xml/` + JAXB-DTOs | Konfigurations-Parsing: Übergang `XMLLibrary`-Creators → JAXB („Weg B": DTOs werden das Config-Modell, Sichten wie `MqttConnectionConfig`, `UnitConfig`, `ExecutionConfig`), dual-parse-abgesichert |
-| `crypt/` | `CryptAes` für `passwordCrypt`-Werte — **Obfuskation, kein echter Schutz** (hartkodierter Schlüssel, ECB; Schlüssel aus dem öffentlichen Quellcode ableitbar). Der einzige reale Schutz der Secrets in `base.xml` sind **Dateirechte** (`chmod 600`, Owner = Dienstnutzer — [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 2). Ehrliche Behandlung ist Roadmap-Punkt 4.6 |
+| `crypt/` | `CryptAes` für `passwordCrypt`-Werte — **Obfuskation, kein echter Schutz** (hartkodierter Schlüssel, ECB; Schlüssel aus dem öffentlichen Quellcode ableitbar). Der einzige reale Schutz der Secrets in `base.xml` sind **Dateirechte** (Soll der installierten Datei `640 root:solvis`, bei jedem Install-/Update-Lauf per `enforceOwnership` durchgesetzt; `600` nur für die Arbeitskopie — [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 2 und Update-Abschnitt). Ehrliche Behandlung ist Roadmap-Punkt 4.6 |
 | `mail/` | optionale Fehler-Mail (jakarta.mail, Screenshot-Anhang, TLS-Zertifikatsprüfung aktiv) |
 | `smarthome/` | Integrations-Helfer (u. a. ioBroker-Generierung) |
 | `windows/` | optionale, JDK-only Windows-Hilfe (`--create-task-xml`); auf anderen Plattformen ungenutzt |
@@ -245,9 +245,16 @@ real auf der Anlagen-Oberfläche.
   auskommentiert, nicht nur vergessen).
 - **`passwordCrypt` = Obfuskation, kein Schutz (S-2):** *Entscheidung: Dateirechte
   als realer Schutz.* Der AES-Schlüssel ist im öffentlichen Quellcode ableitbar
-  (ECB). Der einzige wirksame Schutz der Secrets in `base.xml` sind Dateirechte —
-  `chmod 600 base.xml`, Owner = Dienstnutzer (Pflichtschritt
-  [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 2). Krypto-Umbau: Roadmap 4.6.
+  (ECB). Der einzige wirksame Schutz der Secrets in `base.xml` sind Dateirechte:
+  Soll der installierten Datei seit der S-5-Härtung `640 root:solvis` (der
+  Dienst liest, darf aber nicht schreiben — sonst könnte ein kompromittierter
+  Dienst Broker-URL und Zugangsdaten umschreiben), bei jedem
+  `installSolvis`-/`updateSolvis`-Lauf durch das Makefile-Ziel
+  `enforceOwnership` durchgesetzt; `chmod 600` nur für die Arbeitskopie beim
+  Bearbeiten. Nach einem Restore setzt der `chown`/`chmod`-Block in
+  [runbooks/README.md](runbooks/README.md) (Aufgabe Restore, Schritt 3) das
+  Soll wieder. Beleg: [INBETRIEBNAHME.md](INBETRIEBNAHME.md) Phase 2 und
+  Update-Abschnitt. Krypto-Umbau: Roadmap 4.6.
 - **Anlagen-Zugriff nur über HTTP (S-8):** *Entscheidung: akzeptiertes Restrisiko.*
   Die SolvisRemote bietet kein HTTPS; Anlagen-Credentials und OCR-/Klick-Verkehr
   gehen im Klartext durchs LAN. Kompensation: Anlagen-/IoT-Segment, kein Routing

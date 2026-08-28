@@ -152,8 +152,9 @@ Container: [docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md).
 
 ## Betrieb (Day 2)
 
-Produktivbetrieb erfolgt headless als systemd-Dienst oder Docker-Container
-hinter einem lokalen Broker + mTLS-Bridge (Betriebsmodell:
+Produktivbetrieb erfolgt headless als nativer systemd-Dienst hinter einem
+lokalen Broker + mTLS-Bridge; der Container ist ausschließlich die Alternative
+für Entwicklung und Test, im Produktivbetrieb gibt es keinen (Betriebsmodell:
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §4). Betriebsprobleme einordnen:
 [Troubleshooting](docs/INBETRIEBNAHME.md#troubleshooting).
 
@@ -195,11 +196,15 @@ nicht-versionierter Operator-State vor — gemountete Dateien (`/certs`) und
 
 **Krypto ehrlich benannt:** `passwordCrypt` ist **Obfuskation, kein Schutz**
 (hartkodierter Schlüssel, ECB; aus dem öffentlichen Quellcode ableitbar). Der
-einzige reale Schutz der Secrets in `base.xml` sind **Dateirechte**
-(`chmod 600 base.xml`, Owner = Dienstnutzer — nativ `solvis`, im
-Container-Fall UID 10001) — Pflichtschritt in
-[docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) Phase 2. Krypto-Umbau ist
-Roadmap-Punkt 4.6.
+einzige reale Schutz der Secrets in `base.xml` sind **Dateirechte**. Soll der
+installierten Datei seit der S-5-Härtung: `640 root:solvis` — der Dienst liest
+seine Konfiguration, darf sie aber nicht umschreiben (sonst könnte ein
+kompromittierter Dienst Broker-URL und Zugangsdaten selbst ändern). Durchgesetzt
+wird das bei jedem `installSolvis`-/`updateSolvis`-Lauf durch das Makefile-Ziel
+`enforceOwnership`; `chmod 600` gilt nur für die Arbeitskopie beim Bearbeiten
+(im Container-Fall gehört die gemountete Datei der UID 10001). Details:
+[docs/INBETRIEBNAHME.md](docs/INBETRIEBNAHME.md) Phase 2 und Update-Abschnitt.
+Krypto-Umbau ist Roadmap-Punkt 4.6.
 
 **Berührte Standards / Restrisiken:** Transportsicherheit nach außen über die
 mTLS-Bridge (Client-Zertifikate + Broker-ACL `readwrite solvis/#`; SSOT ist das
@@ -231,7 +236,8 @@ Vollständiger Index: [docs/README.md](docs/README.md).
 
 ### Einstieg & Hintergrund
 
-- [FORK.md](FORK.md) — warum dieser Fork existiert, geplante Änderungen.
+- [FORK.md](FORK.md) — warum dieser Fork existiert; Abschnitt „Fork-Ziele und
+  Stand" (alle drei Ziele vollzogen).
 - [MODERNISIERUNG.md](MODERNISIERUNG.md) — Umbau-Roadmap (Status/Reihenfolge).
 - [CHANGELOG-fork.md](CHANGELOG-fork.md) — durchgeführte Anpassungen im Detail.
 

@@ -18,9 +18,16 @@ und Entscheidungssicht bleibt SSOT in
   `rsc/de/sgollmer/solvismax/data/base.xml`).
 - **Realer Schutz = Dateirechte.** `passwordCrypt` ist Obfuskation (ECB,
   hartkodierter, aus dem Quellcode ableitbarer Schlüssel), **kein** Schutz.
-  Wirksam sind allein `chmod 600 base.xml` + Owner = Dienstnutzer (nativ der
-  Systemnutzer `solvis`, im Container-Fall UID 10001) — Pflichtschritt
-  [../INBETRIEBNAHME.md](../INBETRIEBNAHME.md) Phase 2.
+  Wirksam sind allein die Dateirechte der installierten `base.xml`: Soll seit
+  der S-5-Härtung `640 root:solvis` (Dienst liest, kann nicht schreiben —
+  sonst könnte ein kompromittierter Dienst Broker-URL und Zugangsdaten
+  umschreiben), bei jedem `installSolvis`-/`updateSolvis`-Lauf durch das
+  Makefile-Ziel `enforceOwnership` durchgesetzt. `chmod 600` gilt nur für die
+  Arbeitskopie beim Bearbeiten; im Container-Fall gehört die gemountete Datei
+  der UID 10001. Nach einem Restore ist der `chown root:solvis`/`chmod 640`-
+  Block aus [../runbooks/README.md](../runbooks/README.md) (Aufgabe Restore,
+  Schritt 3) Pflicht. Beleg: [../INBETRIEBNAHME.md](../INBETRIEBNAHME.md)
+  Phase 2 und Update-Abschnitt, `CHANGELOG-fork.md` Eintrag S-5.
 - **Kein PII** im Repo (kein Personenbezug in Code/Doku/Testdaten).
 
 ## `gitleaks`-Befund (Nachweis)

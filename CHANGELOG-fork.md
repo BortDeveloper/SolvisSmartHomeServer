@@ -8,6 +8,56 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## systemd-Härtung 2026-11-18: `SolvisSmartHomeServer.service` von 9,0 UNSAFE auf 1,4 OK
+
+**Motivation:** `systemd-analyze security` bewertete die Produktiv-Unit auf
+ransible mit **9,0 UNSAFE**. Die Unit setzte nur `NoNewPrivileges`. Ein Fehler
+im Java-Prozess oder in einer Bibliothek hätte das ganze Dateisystem
+beschreiben können. Auf der Altinstallation vom 2026-08-13, also vor S-5,
+gehört der Programmordner noch dem Dienstnutzer. Dort hätte er auch das
+eigene Jar ersetzen können. Den Auftrag gab der Betreiber am 2026-11-18.
+
+**Anpassung:**
+- `SmartHome/Linux/SolvisSmartHomeServer.service`: Härtungsblock nach dem
+  Vorbild des edge-adapter.
+  - Dateisystem: `ProtectSystem=strict`. Schreibbar sind nur
+    `SolvisServerData` und `health`. Dazu kommen `PrivateTmp` und
+    `PrivateDevices`.
+  - Kernel und Prozesse: `Protect*`.
+  - Rechte: Capabilities leer, Syscall-Filter `@system-service`.
+  - Netz: Adressfamilien eingeschränkt, `IPAddressAllow` nur für Loopback
+    und lokale Netze, `SocketBindAllow` nur für 10735 und 10736.
+  - Startschleifen begrenzt (`StartLimitBurst=5` in 300 s).
+- **Bewusst nicht gesetzt:**
+  - `MemoryDenyWriteExecute`: Der JIT der JVM braucht W+X-Speicher.
+  - `ProcSubset=pid`: Die JVM liest `/proc/meminfo` und `/proc/cpuinfo`.
+- `SmartHome/Linux/Makefile`: zwei neue Ersetzungen.
+  - `$(solvisDir)`: Ort der Zustandsordner.
+  - `$(solvisAllowedNet)`: Vorgabe sind alle privaten Bereiche. Auf ransible
+    gilt das /24 des Hausnetzes.
+
+**Messbefund beim Ausrollen (ransible, 2026-11-18):**
+- Erster Versuch mit `SocketBindAllow=tcp:10735` allein: Start bricht mit
+  Exit 11 ab („TCP-Server-Socket 127.0.0.1:10736 konnte nicht geoeffnet
+  werden … Operation not permitted“). Der Server bindet 10736 beim Start
+  mit, obwohl `ss -ltn` dort kein LISTEN zeigt. Zweite Freigabe ergänzt.
+- Danach:
+  - `active`, `NRestarts=0`.
+  - `SOLVIS_CONNECTED`, MQTT `solvis/server/online` = true.
+  - `health/ready` wird erneuert.
+  - Beim Stopp wird `measurements.xml` geschrieben („Backup of measurements
+    written“).
+  - Bewertung **1,4 OK**.
+- Sicherung der alten Unit: `/root/SICHERUNG-20261118-0614-SolvisSmartHomeServer.service`.
+
+**Drift notiert, nicht behoben:**
+- Auf ransible gehören `/opt/solvis` und `/opt/solvis/SolvisSmartHomeServer`
+  noch `solvis`, `base.xml` ist `600 solvis:root` statt des S-5-Solls
+  `640 root:solvis`. Der nächste `make install` mit `enforceOwnership` setzt
+  das gerade.
+- Die Härtung macht den Programmordner für den Dienst schon jetzt
+  schreibgeschützt.
+
 ## Doku-Abgleich 2026-08-29: Rechte-Soll, Sicherungsweg und Produktivbild in den Übersichtsdokumenten
 
 Ein read-only-Dokumentationsaudit fand vier Stellen (README, `docs/security/README.md`,

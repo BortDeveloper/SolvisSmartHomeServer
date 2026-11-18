@@ -19,6 +19,11 @@ serviceSources = $(service).service $(serviceDebug).service
 serviceFiles = $(systemD)/$(service).service $(systemD)/$(serviceDebug).service
 
 javaPath = /usr/bin/java
+# Netze, die der gehaertete Dienst erreichen darf (IPAddressAllow in
+# $(service).service). Vorgabe: alle privaten Bereiche; enger mit
+# "make solvisAllowedNet=192.168.x.0/24 ...". Mehrere Netze durch
+# Leerzeichen getrennt.
+solvisAllowedNet = 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 # Fork: Mindest-Java-Major (Bytecode major 61 = Java 17); Guard: Target checkJava.
 javaVersionMin = 17
 # Fork: Quelle der Build-/Vorlagen-Artefakte (Maven-Build im Repo-Root).
@@ -413,5 +418,7 @@ $(serviceFiles) : $(serviceSources) Makefile
 		-e 's/\$$(solvisJarPath)/$(subst /,\/,$(solvisJarPath))/' \
 		-e 's/\$$(javaPath)/$(subst /,\/,$(javaPath))/' \
 		-e 's/\$$(javaAgentlib)/$(javaAgentlib)/' \
+		-e 's/\$$(solvisDir)/$(subst /,\/,$(solvisDir))/g' \
+		-e 's/\$$(solvisAllowedNet)/$(subst /,\/,$(solvisAllowedNet))/' \
 	$(@F) > $@
 	systemctl daemon-reload

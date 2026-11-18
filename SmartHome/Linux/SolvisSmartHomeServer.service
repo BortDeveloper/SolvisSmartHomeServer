@@ -3,10 +3,15 @@ Description=SolvisSmartHomeServer (Fork)
 # Der Server braucht beim Start Netzweg zu SolvisRemote und lokalem Broker:
 Wants=network-online.target
 After=network-online.target
+# Startschleifen begrenzen: nach 5 Fehlstarts in 5 min bleibt der Dienst
+# "failed" stehen, statt die SolvisRemote im 15-s-Takt anzufragen.
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
 User=$(accountSolvis)
+Group=$(accountSolvis)
 # Optionale Betriebsparameter des Forks (SOLVIS_HEALTH_TOKEN_PATH,
 # SOLVIS_TCPSERVER_BINDADDRESS, SOLVIS_TCPSERVER_ENABLE) - Datei ist optional:
 EnvironmentFile=-/etc/default/solvissmarthomeserver
@@ -25,7 +30,67 @@ ExecStart=$(javaPath) -Dhttp.auth.digest.reEnabledAlgorithms=MD5 -jar $(solvisJa
 TimeoutStopSec=30
 Restart=on-failure
 RestartSec=15
+
+# ---------------------------------------------------------------------------
+# Haertung (2026-11-18). Vorbild: edge-adapter.service. Ziel: Ein Fehler im
+# Java-Prozess oder in einer Bibliothek kann weder das System veraendern
+# noch die eigene Installation (Jar, base.xml) ueberschreiben.
+# Gemessener Bedarf des Dienstes (ransible, 2026-11-18):
+#   schreibt nur  $(solvisDir)/SolvisServerData (gelernte Bilder, XML, Logs)
+#                 $(solvisDir)/health           (Bereitschafts-Token)
+#   liest         $(solvisDir)/SolvisSmartHomeServer (Jar, base.xml), JDK
+#   Netz          SolvisRemote im LAN (HTTP), Broker 127.0.0.1:1883,
+#                 bindet 127.0.0.1:10735 (TCP-Server) und 10736
+# Ergebnis systemd-analyze security: 9.0 UNSAFE -> 1.4 OK.
+# ---------------------------------------------------------------------------
 NoNewPrivileges=yes
+# Dateisystem: alles schreibgeschuetzt ausser den zwei Zustandsordnern. Damit
+# ist das Jar fuer den Dienst auch dann unveraenderlich, wenn eine aeltere
+# Installation den Programmordner noch dem Dienstnutzer gegeben hat (vor S-5).
+ProtectSystem=strict
+ReadWritePaths=$(solvisDir)/SolvisServerData $(solvisDir)/health
+ProtectHome=yes
+# Java legt hsperfdata unter /tmp an - ein privates /tmp genuegt.
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+# Fremde Prozesse unsichtbar. Bewusst KEIN ProcSubset=pid: Die JVM liest
+# /proc/meminfo und /proc/cpuinfo, um Heap und Threads zu bemessen.
+ProtectProc=invisible
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RemoveIPC=yes
+KeyringMode=private
+# Bewusst KEIN MemoryDenyWriteExecute: Der JIT-Compiler der JVM braucht
+# schreib- und ausfuehrbaren Speicher; mit der Option stuerzt Java ab.
+CapabilityBoundingSet=
+AmbientCapabilities=
+# AF_NETLINK: java.net.NetworkInterface fragt Schnittstellen ueber Netlink ab.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+# Netz: nur Loopback und lokale Netze; die SolvisRemote braucht kein
+# Internet. Engere Grenze per "make solvisAllowedNet=<netz/praefix>"
+# (ransible: das /24 des Hausnetzes).
+IPAddressDeny=any
+IPAddressAllow=localhost $(solvisAllowedNet)
+# Binden nur auf den beiden Server-Ports; jeder andere bind() wird
+# verweigert. 10736 bindet der Server beim Start mit, obwohl dort kein
+# LISTEN sichtbar ist - ohne die Freigabe bricht er mit Exit 11 ab
+# ("TCP-Server-Socket 127.0.0.1:10736 ... Operation not permitted",
+# Messbefund ransible 2026-11-18 06:14).
+SocketBindDeny=any
+SocketBindAllow=tcp:10735
+SocketBindAllow=tcp:10736
+LimitCORE=0
 
 [Install]
 WantedBy=multi-user.target

@@ -21,3 +21,6 @@ build
 /SmartHome/Linux/base.xml
 /SmartHome/Linux/base.xml.old
 /SmartHome/Linux/base.xsd
+
+# Identifizierbare Werte und Sicherungen (ADR-0044): nur lokal + cp-backup, nie in Git
+/.local/

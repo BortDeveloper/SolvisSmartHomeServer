@@ -26,6 +26,9 @@ als Dienst installieren → **Cutover vom Alt-Pfad** → Lernphase → Test.
 
 ## Feste Adressen dieser Installation (Stand 2026-08-12)
 
+Die echten Werte stehen nicht im Repo, sondern in `.local/werte.yml` (gitignored, gesichert über
+cp-backup; ADR-0044 im Projekt stack-master). Platzhalter wie `<solvis-ip>` dort nachschlagen.
+
 | Gerät/Host | Adresse | Anmerkung |
 |---|---|---|
 | SolvisRemote | **`<solvis-ip>`** | Fest per Fritzbox-DHCP-Reservierung. **Immer die IP eintragen.** |

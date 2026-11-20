@@ -1,0 +1,24 @@
+# Projektbeschreibung nach stack-master ADR-0044 (D.2): Rollen und Regeln, keine Werte.
+# Klarwerte stehen in .local/werte.yml, die Pruefliste in .local/verboten.txt (beide gitignored).
+name = "SolvisSmartHomeServer"
+
+[backup]
+# Daten und Konfiguration liegen auf dem Zielhost (base.xml mit Zugangsdaten); hier nur .local/
+host = "workstation"
+quellen = [".local"]
+ausschluesse = []
+
+[datenwaechter]
+# Werte aus dem Upstream-Projekt (GollmerSt), unveraendert uebernommen, kein Wert dieser Installation:
+#   192.168.0.10/.71, 192.168.1.40, 10.0.0.5   Beispieladressen in Vorlagen, Schema-Doku und Tests
+#   Mailadresse@...                             Platzhalter in der base.xml-Vorlage
+#   Stefan.Gollmer@gmail.com                    Upstream-Autor (oeffentliche Kontaktangabe im FHEM-Modul)
+#   /home/solvis                                Dienstnutzer im Container (Dockerfile)
+erlaube_werte = [
+  '192\.168\.0\.(10|71)', '192\.168\.1\.40', '10\.0\.0\.5',
+  'Mailadresse@[\w.-]+',
+  'Stefan\.Gollmer@gmail\.com',
+  '/home/solvis',
+]
+# Upstream-Doku und IDE-Datei des Upstream-Autors, unveraendert uebernommen
+ignoriere_pfade = ['docu/*', '.classpath']

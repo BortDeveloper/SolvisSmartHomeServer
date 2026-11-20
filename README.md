@@ -178,8 +178,8 @@ bewusst **nicht** neu gebaut, sondern durch 31 Golden-Tests gepinnt. Der Fork
 trägt nur Betriebs-, Wartungs- und Modernisierungsanpassungen bei (Maven-Build,
 Java-17-Baseline, SLF4J/Logback, JAXB-Migration, Docker).
 
-Vollständige Sicht — System-Kontext (mit Topologie-Diagramm), Baustein-Sicht,
-Betriebsmodell und bewusste Grenzen — in
+Vollständige Sicht — Kontext, Bausteine, Verteilung, Sicherheit, Laufzeit, Daten,
+Lieferung, Wiederherstellung und Entscheidungen, je mit Textdiagramm — in
 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. Warum der Fork existiert:
 [FORK.md](FORK.md); Umbau-Roadmap: [MODERNISIERUNG.md](MODERNISIERUNG.md).
 

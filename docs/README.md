@@ -11,7 +11,7 @@ weiteren Fork-Dokumente.
 | Lens | Ziel-Artefakt |
 |---|---|
 | **ANWENDER** | [../README.md#quick-start](../README.md#quick-start) |
-| **TECHNIKER** | [ARCHITECTURE.md](ARCHITECTURE.md) (mit Topologie-Diagramm) |
+| **TECHNIKER** | [ARCHITECTURE.md](ARCHITECTURE.md) (Textdiagramme je Perspektive) |
 | **PROGRAMMIERER** | [../CONTRIBUTING.md](../CONTRIBUTING.md) |
 | **OPERATEUR** | [runbooks/](runbooks/) · [INBETRIEBNAHME.md](INBETRIEBNAHME.md) |
 | **ARCHITEKTUR** | [../README.md#architektur](../README.md#architektur) → [ARCHITECTURE.md](ARCHITECTURE.md) |
@@ -27,7 +27,7 @@ weiteren Fork-Dokumente.
 
 ### Architektur
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — konsolidierte Fork-Sicht (Lineage, System-Kontext, Betriebsmodell, Grenzen).
+- [ARCHITECTURE.md](ARCHITECTURE.md) — konsolidierte Fork-Sicht mit Textdiagramm je Perspektive (Kontext, Bausteine, Verteilung, Sicherheit, Laufzeit, Daten, Lieferung, Wiederherstellung mit Lücken, Entscheidungen).
 - [jaxb-exploration.md](jaxb-exploration.md) — XML-Binding-Ablösung (Explorations-Erkenntnisse).
 - [mtls-behebung-vorschlag.md](mtls-behebung-vorschlag.md) — Analyse des nativen mTLS-Pfads (Variante B).
 - [g2.6-clone-drill.md](g2.6-clone-drill.md) — Reproduzierbarkeits-/Clone-Drill.

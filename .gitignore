@@ -24,3 +24,6 @@ build
 
 # Identifizierbare Werte und Sicherungen (ADR-0044): nur lokal + cp-backup, nie in Git
 /.local/
+
+# ADR-0044: Klasse I/G nur lokal + Backup (Ordner oder Link)
+/.local

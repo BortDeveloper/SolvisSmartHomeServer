@@ -137,7 +137,7 @@ cp rsc/de/sgollmer/solvismax/data/base.xml ./base.xml
 > # chown 10001:10001 base.xml            # Docker (UID 10001)
 > ```
 >
-> Die **installierte** Kopie unter `/opt/solvis/SolvisSmartHomeServer/`
+> Die **installierte** Kopie unter `/usr/local/lib/solvis/`
 > bekommt ihre Rechte durch `make installSolvis`: Owner `root`, Gruppe
 > `solvis`, Mode `640` — der Dienst liest seine Konfiguration, darf sie
 > aber nicht ändern. Dieses Soll wird bei **jedem**
@@ -188,7 +188,7 @@ In `base.xml`:
 ```xml
 <tns:ExecutionData timeZone="Europe/Berlin"
     port="10735"
-    writablePathLinux="/opt/solvis"      <!-- nativ: Schreibpfad des Dienstnutzers -->
+    writablePathLinux="/var/lib/solvis"      <!-- nativ: Schreibpfad des Dienstnutzers -->
                                          <!-- Docker: "/data" (Volume) -->
     echoInhibitTime_ms="2000" />
 ```
@@ -347,15 +347,15 @@ sudo make installSolvis                  # Default: javaPath=/usr/bin/java
 ```
 
 `installSolvis` legt (falls nötig) den Systemnutzer **`solvis`** an, kopiert
-Jar/`base.xml`/`base.xsd` nach `/opt/solvis/SolvisSmartHomeServer/` und
-installiert die systemd-Units. Eigentumslage seit der S-5-Härtung
-(2026-08-22): Jar, `base.xsd` und beide Verzeichnisse (`/opt/solvis`,
-`/opt/solvis/SolvisSmartHomeServer`) sind **root-eigen** — ein
+Jar und `base.xsd` nach `/usr/local/lib/solvis/`, `base.xml` nach `/etc/solvis/`
+(Link neben dem Jar) und installiert die systemd-Unit (Debug-Unit nur mit
+`installDebugService`). Eigentumslage seit der S-5-Härtung
+(2026-08-22): Jar, `base.xsd` und das Programmverzeichnis
+(`/usr/local/lib/solvis`) sind **root-eigen** — ein
 kompromittierter Dienst kann sein eigenes Binary nicht austauschen —,
 `base.xml` gehört `root:solvis` mit Mode `640` (Dienst liest, ändert
-nicht), und schreibbar für das Dienstkonto bleiben nur die vom Install
-vor-angelegten Zustandsverzeichnisse `/opt/solvis/SolvisServerData/` und
-`/opt/solvis/health/`. Ein bereits installierter Vorgänger-Stand der
+nicht), und schreibbar für das Dienstkonto bleiben nur `/var/lib/solvis/`
+(`StateDirectory`) und `/run/solvis/` (`RuntimeDirectory`). Ein bereits installierter Vorgänger-Stand der
 `base.xml` bleibt als `base.xml.old` (root, `600`) **neben der
 installierten Datei** als Rollback-Referenz erhalten. Diese Eigentums-
 und Rechtelage setzt das Ziel `enforceOwnership` (läuft als fester
@@ -375,7 +375,7 @@ Die Unit liest optional `/etc/default/solvissmarthomeserver`
 ```sh
 # Health-Token: Container-Default ist /data/health/ready — auf dem nativen
 # Host auf den Schreibpfad des Dienstnutzers legen:
-SOLVIS_HEALTH_TOKEN_PATH=/opt/solvis/health/ready
+SOLVIS_HEALTH_TOKEN_PATH=/run/solvis/ready
 # TCP-Server (Default bindet bereits nur 127.0.0.1); ganz abschalten:
 # SOLVIS_TCPSERVER_ENABLE=false
 ```
@@ -506,7 +506,7 @@ cd SmartHome/Linux && sudo make learn
 # EXPLIZIT mitgeben (Gerätezwang der SolvisRemote, sonst 401 auf display.bmp;
 # siehe Troubleshooting):
 sudo -u solvis java -Dhttp.auth.digest.reEnabledAlgorithms=MD5 \
-  -jar /opt/solvis/SolvisSmartHomeServer/SolvisSmartHomeServer.jar --server-learn
+  -jar /usr/local/lib/solvis/SolvisSmartHomeServer.jar --server-learn
 
 # Docker (Alternative):
 # docker compose run --rm solvis --server-learn
@@ -514,7 +514,7 @@ sudo -u solvis java -Dhttp.auth.digest.reEnabledAlgorithms=MD5 \
 
 Erwartet: Durchlauf ohne Abbruch; danach liegen unter
 `<writablePathLinux>/SolvisServerData/LearnedImages` (nativ z. B.
-`/opt/solvis/…`) bzw. `./data` (Docker) angelernte Bilddaten. (Setzt die
+`/var/lib/solvis/…`) bzw. `./data` (Docker) angelernte Bilddaten. (Setzt die
 erreichbare SolvisRemote `<solvis-ip>` voraus — siehe Troubleshooting.)
 
 ---
@@ -551,7 +551,7 @@ mosquitto_sub -h <PRIMAER_BROKER_HOST> -p 8883 \
   (Temperaturen, Zustände),
 - `solvis/<unit>/…/meta` liefert Kanal-Metadaten,
 - nativ: das Health-Token (Phase 4.3) wird periodisch aktualisiert
-  (`stat /opt/solvis/health/ready`), bzw. Docker: HEALTHCHECK `healthy`
+  (`stat /run/solvis/ready`), bzw. Docker: HEALTHCHECK `healthy`
   (`docker inspect --format '{{.State.Health.Status}}' solvissmarthomeserver`),
 - Cutover-Verifikation ([TESTPLAN.md](../TESTPLAN.md) Phase 9): nur **ein**
   Publisher auf `solvis/#`.

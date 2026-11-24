@@ -36,19 +36,21 @@ RestartSec=15
 # Java-Prozess oder in einer Bibliothek kann weder das System veraendern
 # noch die eigene Installation (Jar, base.xml) ueberschreiben.
 # Gemessener Bedarf des Dienstes (ransible, 2026-11-18):
-#   schreibt nur  $(solvisDir)/SolvisServerData (gelernte Bilder, XML, Logs)
-#                 $(solvisDir)/health           (Bereitschafts-Token)
-#   liest         $(solvisDir)/SolvisSmartHomeServer (Jar, base.xml), JDK
+#   schreibt nur  $(stateDir)/SolvisServerData (gelernte Bilder, XML, Logs)
+#                 /run/$(accountSolvis)/ready (Bereitschafts-Token)
+#   liest         $(serverDir) (Jar), $(confDir) (base.xml), JDK
 #   Netz          SolvisRemote im LAN (HTTP), Broker 127.0.0.1:1883,
 #                 bindet 127.0.0.1:10735 (TCP-Server) und 10736
 # Ergebnis systemd-analyze security: 9.0 UNSAFE -> 1.4 OK.
 # ---------------------------------------------------------------------------
 NoNewPrivileges=yes
-# Dateisystem: alles schreibgeschuetzt ausser den zwei Zustandsordnern. Damit
-# ist das Jar fuer den Dienst auch dann unveraenderlich, wenn eine aeltere
-# Installation den Programmordner noch dem Dienstnutzer gegeben hat (vor S-5).
+# Dateisystem: alles schreibgeschuetzt ausser Zustand und Laufzeitordner;
+# beide nimmt systemd ueber StateDirectory/RuntimeDirectory selbst aus.
 ProtectSystem=strict
-ReadWritePaths=$(solvisDir)/SolvisServerData $(solvisDir)/health
+StateDirectory=$(accountSolvis)
+StateDirectoryMode=0750
+RuntimeDirectory=$(accountSolvis)
+RuntimeDirectoryMode=0755
 ProtectHome=yes
 # Java legt hsperfdata unter /tmp an - ein privates /tmp genuegt.
 PrivateTmp=yes

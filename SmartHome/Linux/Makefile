@@ -6,17 +6,26 @@ baseDir = /opt
 # SolvisSmartHomeServer settings
 
 accountSolvis = solvis
-solvisDir = $(baseDir)/$(accountSolvis)
-serverDir = $(solvisDir)/SolvisSmartHomeServer
+# Fork: FHS-Ablage (2026-11-24, dienst-ablagestruktur.md): Programm root-eigen
+# unter /usr/local/lib, Konfiguration unter /etc, Zustand unter /var/lib,
+# Health-Token unter /run (RuntimeDirectory der Unit). Frueher alles unter
+# /opt/solvis. Der Server sucht base.xml neben dem Jar; dort liegt ein Link auf
+# die Datei in /etc. Bewusst Link statt --base-xml: Restart.java startet den
+# Server ohne Programmargumente neu und faende die Datei sonst nicht.
+serverDir = /usr/local/lib/$(accountSolvis)
+confDir = /etc/$(accountSolvis)
+stateDir = /var/lib/$(accountSolvis)
 solvisJar = SolvisSmartHomeServer.jar
 baseXml = base
-writablePath = `sed -n 's/.*\?writablePathLinux="\([^"]*\)".*/\1/gp' base.xml`
+writablePath = $(stateDir)
 
 systemD = /etc/systemd/system
 service = SolvisSmartHomeServer
 serviceDebug = DebugSolvisSmartHomeServer
 serviceSources = $(service).service $(serviceDebug).service
-serviceFiles = $(systemD)/$(service).service $(systemD)/$(serviceDebug).service
+# Fork: Debug-Unit (JDWP) nur noch mit installDebugService/updateDebug
+serviceFiles = $(systemD)/$(service).service
+serviceDebugFile = $(systemD)/$(serviceDebug).service
 
 javaPath = /usr/bin/java
 # Netze, die der gehaertete Dienst erreichen darf (IPAddressAllow in
@@ -122,7 +131,7 @@ eraseGenerated:
 		cd - ; \
 		rm -r "$(writablePath)/$(generatedBaseDir)" ; \
 	fi ; \
-	cnt=`find $(solvisDir) -type f | wc -l` ; \
+	cnt=`find $(stateDir) -type f | wc -l` ; \
 	if [ $$cnt -eq 0 ]; then \
 		userdel -r $(accountSolvis) ; \
 	fi
@@ -133,25 +142,23 @@ install: installSolvis installFHEM
 
 
 
-# Fork (S-5, 2026-08-22): Basis- und Programmverzeichnis sind ROOT-eigen —
-# Standard-Ableitung 1 (stack-master:shared/standards/dienst-ablagestruktur.md):
-# ein kompromittierter Dienst darf sein eigenes Binary (und dessen Pfad)
-# nicht aendern koennen. Das Dienstkonto behaelt nur Leserecht. Schreibbar
-# bleiben ausschliesslich die Zustands-Unterverzeichnisse (SolvisServerData,
-# health), die hier vor-angelegt werden, weil der Server sie im root-eigenen
-# /opt/solvis nicht mehr selbst anlegen kann. Die Verlagerung des Zustands
-# nach /var/lib (StateDirectory) bleibt dem AP-5-Vollumbau vorbehalten.
-$(solvisDir): Makefile
-	grep $(accountSolvis) /etc/passwd >/dev/null ; \
-	if [ $$? -ne 0 ] ; then \
-		set -x ; \
-		useradd  -r -b $(baseDir) -s /bin/false $(accountSolvis) ; \
-	fi
-	mkdir -p $@ ; \
-	chown -c root:root $@ ; \
-	chmod 755 $@
-	mkdir -p $@/$(generatedBaseDir) $@/health ; \
-	chown -c $(accountSolvis) $@/$(generatedBaseDir) $@/health
+# Fork: Konto und Zustandsverzeichnis. Nur der Zustand gehoert dem Dienstkonto
+# (Standard-Ableitung 1 und 4); Programm und Konfiguration gehoeren root.
+$(stateDir): Makefile
+	grep '^$(accountSolvis):' /etc/passwd >/dev/null || \
+		useradd -r -M -d $(stateDir) -s /usr/sbin/nologin $(accountSolvis)
+	mkdir -p $@/$(generatedBaseDir)
+	chown -c $(accountSolvis):$(accountSolvis) $@ $@/$(generatedBaseDir)
+	chmod 750 $@
+	touch $@
+
+
+
+$(confDir): Makefile $(stateDir)
+	mkdir -p $@
+	chown -c root:$(accountSolvis) $@
+	chmod 750 $@
+	touch $@
 
 
 
@@ -174,7 +181,7 @@ installService: installSolvis
 
 
 
-installDebugService: installSolvis
+installDebugService: installSolvis $(serviceDebugFile)
 	systemctl enable $(serviceDebug)
 	systemctl start $(serviceDebug)
 
@@ -214,14 +221,15 @@ rmFHEMModul:
 uninstallSolvis: uninstallService uninstallDebugService
 	rm $(serverDir)/$(solvisJar)
 	rm $(systemD)/$(service).service
-	rm $(systemD)/$(serviceDebug).service
+	rm -f $(serviceDebugFile)
 	rm $(serverDir)/$(baseXml).xml
-	rm -f $(serverDir)/$(baseXml).xml.old
+	rm $(confDir)/$(baseXml).xml
+	rm -f $(confDir)/$(baseXml).xml.old
 	rm $(serverDir)/$(baseXml).xsd
 	
 
 
-installSolvis: checkJava $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xml  $(serverDir)/$(baseXml).xsd copyService enforceOwnership
+installSolvis: checkJava $(stateDir) $(serverDir)/$(solvisJar) $(confDir)/$(baseXml).xml $(serverDir)/$(baseXml).xml $(serverDir)/$(baseXml).xsd copyService enforceOwnership
 	@echo "Empfohlen: 'make checkCredentials' vor dem ersten Start/Lernphase (Credential-Pruefung, F-120)."
 
 
@@ -240,17 +248,19 @@ installSolvis: checkJava $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xml  
 # Durchsetzung nach den Install-Regeln laeuft (make arbeitet hier seriell).
 .PHONY: enforceOwnership
 enforceOwnership:
-	chown -c root:root $(solvisDir) $(serverDir)
-	chmod -c 755 $(solvisDir) $(serverDir)
-	if [ -d $(solvisDir)/$(generatedBaseDir) ] ; then chown -c $(accountSolvis) $(solvisDir)/$(generatedBaseDir) ; fi
-	if [ -d $(solvisDir)/health ] ; then chown -c $(accountSolvis) $(solvisDir)/health ; fi
+	chown -c root:root $(serverDir)
+	chmod -c 755 $(serverDir)
+	chown -c root:$(accountSolvis) $(confDir)
+	chmod -c 750 $(confDir)
+	chown -c $(accountSolvis):$(accountSolvis) $(stateDir)
+	chmod -c 750 $(stateDir)
 	chown -c root:root $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xsd
 	chmod -c 644 $(serverDir)/$(solvisJar) $(serverDir)/$(baseXml).xsd
-	chown -c root:$(accountSolvis) $(serverDir)/$(baseXml).xml
-	chmod -c 640 $(serverDir)/$(baseXml).xml
-	if [ -f $(serverDir)/$(baseXml).xml.old ] ; then \
-		chown -c root:root $(serverDir)/$(baseXml).xml.old ; \
-		chmod -c 600 $(serverDir)/$(baseXml).xml.old ; \
+	chown -c root:$(accountSolvis) $(confDir)/$(baseXml).xml
+	chmod -c 640 $(confDir)/$(baseXml).xml
+	if [ -f $(confDir)/$(baseXml).xml.old ] ; then \
+		chown -c root:root $(confDir)/$(baseXml).xml.old ; \
+		chmod -c 600 $(confDir)/$(baseXml).xml.old ; \
 	fi
 
 
@@ -274,7 +284,7 @@ updateSolvis: stopServices installSolvis
 
 
 
-updateDebug: stopServices installSolvis
+updateDebug: stopServices installSolvis $(serviceDebugFile)
 	systemctl start $(serviceDebug)
 
 
@@ -334,8 +344,8 @@ foreground: stopServices installSolvis
 
 
 
-# Fork (S-5): Programmverzeichnis root-eigen (Begruendung siehe $(solvisDir)).
-$(serverDir): $(solvisDir)
+# Fork (S-5): Programmverzeichnis root-eigen (Standard-Ableitung 1).
+$(serverDir): $(stateDir)
 	mkdir -p $@
 	chown -c root:root $@
 	chmod 755 $@
@@ -375,7 +385,7 @@ createCommandRef:
 
 # Fork (S-5): Jar root-eigen, Dienstkonto nur Leserecht (Standard-Ableitung 1:
 # ein kompromittierter Dienst darf sein Binary nicht austauschen koennen).
-$(serverDir)/$(solvisJar): $(solvisJar) $(serverDir)
+$(serverDir)/$(solvisJar): $(solvisJar) | $(serverDir)
 	cp $< $@
 	chown -c root:root $@
 	chmod 644 $@
@@ -393,7 +403,7 @@ $(serverDir)/$(solvisJar): $(solvisJar) $(serverDir)
 # Die installierte base.xml selbst: root:solvis 640 — der Dienst liest
 # seine Konfiguration, darf sie aber nicht umschreiben (Broker/URL/
 # Credentials waeren sonst ein Eskalationspfad).
-$(serverDir)/$(baseXml).xml : $(baseXml).xml
+$(confDir)/$(baseXml).xml : $(baseXml).xml | $(confDir)
 	if [ -f "$@" ] ; then \
 		mv $@ $@.old ; \
 		chown -c root:root $@.old ; \
@@ -405,20 +415,28 @@ $(serverDir)/$(baseXml).xml : $(baseXml).xml
 
 
 
-$(serverDir)/$(baseXml).xsd : $(baseXml).xsd
+# Fork: Link neben dem Jar, siehe confDir oben.
+$(serverDir)/$(baseXml).xml : $(confDir)/$(baseXml).xml | $(serverDir)
+	ln -sfn $(confDir)/$(baseXml).xml $@
+
+
+
+$(serverDir)/$(baseXml).xsd : $(baseXml).xsd | $(serverDir)
 	cp $< $@
 	chown -c root:root $@
 	chmod 644 $@
 
 
 
-$(serviceFiles) : $(serviceSources) Makefile
+$(serviceFiles) $(serviceDebugFile) : $(serviceSources) Makefile
 	sed \
 		-e 's/\$$(accountSolvis)/$(accountSolvis)/' \
 		-e 's/\$$(solvisJarPath)/$(subst /,\/,$(solvisJarPath))/' \
 		-e 's/\$$(javaPath)/$(subst /,\/,$(javaPath))/' \
 		-e 's/\$$(javaAgentlib)/$(javaAgentlib)/' \
-		-e 's/\$$(solvisDir)/$(subst /,\/,$(solvisDir))/g' \
+		-e 's/\$$(stateDir)/$(subst /,\/,$(stateDir))/g' \
+		-e 's/\$$(serverDir)/$(subst /,\/,$(serverDir))/g' \
+		-e 's/\$$(confDir)/$(subst /,\/,$(confDir))/g' \
 		-e 's/\$$(solvisAllowedNet)/$(subst /,\/,$(solvisAllowedNet))/' \
 	$(@F) > $@
 	systemctl daemon-reload

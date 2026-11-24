@@ -100,7 +100,7 @@ Fahrplan/Status: [MODERNISIERUNG.md](../MODERNISIERUNG.md)):
 | Home Assistant / Node-RED | lesen Status, senden Kommandos | außerhalb dieses Kontexts |
 | GitHub-Fork `origin` | Quelle des Codes, CI, Dependabot | dieses Repo |
 | Upstream `GollmerSt` | Ursprung, Wiki mit Kanal-Listen und MQTT-Schnittstellen-Doku | unmaintained (offene Frage 4, §6) |
-| Host-Sicherungskette | sichert `/opt/solvis` (Scope `solvis`) | Repo `ccu2mqtt` |
+| Host-Sicherungskette | sichert `/etc/solvis`, `/var/lib/solvis`, `/etc/default/solvissmarthomeserver` (Scope `solvis`) | Repo `ccu2mqtt` |
 
 - **Anlagen-Seite:** Die SolvisRemote liefert eine Pixelkopie der SolvisControl-2-Oberfläche
   (`/display.bmp`), einen Messwert-Hex-String (`/sc2_val.xml`) und nimmt Klicks an (`/Touch.CGI`,
@@ -191,8 +191,8 @@ Die proprietäre `XMLLibrary` ist bis zur vollständigen JAXB-Ablösung in
   ┌──────────────────────┐          ┌─ Host ransible (Raspberry Pi 4, Debian 13 arm64) ─────────────────────┐
   │ SolvisRemote         │   HTTP   │                                                                       │
   │ kein HTTPS,          │◀─────────│ SolvisSmartHomeServer.service (systemd, Nutzer solvis, OpenJDK 21)    │
-  │ Digest-Auth nur MD5  │          │   /opt/solvis/SolvisSmartHomeServer/  Jar, base.xml, base.xsd         │
-  └──────────┬───────────┘          │   /opt/solvis/SolvisServerData/       Lernbilder, XML, Logs           │
+  │ Digest-Auth nur MD5  │          │   /usr/local/lib/solvis/  Jar, base.xsd; /etc/solvis/base.xml         │
+  └──────────┬───────────┘          │   /var/lib/solvis/SolvisServerData/   Lernbilder, XML, Logs           │
              │                      │   bindet 127.0.0.1:10735 und :10736 (TCP-Server, im Stack ungenutzt)  │
   ┌──────────┴───────────┐          │          │ MQTT Klartext 127.0.0.1:1883, Login solvis-local           │
   │ SolvisControl 2      │          │          ▼                                                            │
@@ -265,7 +265,7 @@ Klartext-Listener, Client-Zertifikate + Broker-ACL).
 
 Deployment: headless, `java.desktop`-Modul erforderlich (kein X11). Produktiv läuft der Fork seit
 **2026-08-13** als **systemd-Dienst** auf dem headless RPi4 `ransible` (arm64/Debian 13, OpenJDK 21);
-Installationspfad `/opt/solvis/SolvisSmartHomeServer/`, Schreibpfad `/opt/solvis` für Lernphase und
+Installationspfad `/usr/local/lib/solvis/`, Konfiguration `/etc/solvis/`, Schreibpfad `/var/lib/solvis` für Lernphase und
 Laufzeitdaten. Die Unit setzt `-Dhttp.auth.digest.reEnabledAlgorithms=MD5` (Gerätezwang der SolvisRemote,
 wirkt nur auf diesen Prozess), stoppt per SIGTERM (Last Will greift), startet bei Fehlern neu
 (`Restart=on-failure`, höchstens 5 Starts in 300 s) und ist seit 2026-11-18 gehärtet (§5.2). Optionale
@@ -340,7 +340,7 @@ real auf der Anlagen-Oberfläche.
 | Bridge-Identität `solvis-bridge` | lokaler Broker → Haus-Broker (mTLS) | Client-Zertifikat + Schlüssel auf dem Host, verwaltet von `ccu2mqtt` |
 | SMTP-Konto (optional) | Fehler-Mail | `passwordCrypt` im `<tns:ExceptionMail>` der `base.xml` |
 
-Drift (notiert 2026-11-18, CHANGELOG-fork.md): Auf `ransible` hatten `/opt/solvis` und der Programmordner
+Behoben 2026-11-24 durch den Umzug in die FHS-Ablage. Frühere Drift (notiert 2026-11-18, CHANGELOG-fork.md): Auf `ransible` hatten `/opt/solvis` und der Programmordner
 noch den Eigentümer `solvis`, `base.xml` stand auf `600 solvis:root`. Der nächste `make installSolvis`
 bzw. `updateSolvis` setzt das Soll über `enforceOwnership`; die Härtung der Unit macht den Programmordner
 schon vorher für den Dienst schreibgeschützt.
@@ -480,16 +480,16 @@ Auslöser ist eine erkannte GUI-Änderung, kein Zeitplan ([runbooks/README.md](r
 ```text
   Code und Doku                    Operator-State (Host ransible)              nicht im Scope solvis
   ┌───────────────────────────┐    ┌──────────────────────────────────────┐    ┌───────────────────────────────┐
-  │ Repo: src, rsc, SmartHome │    │ /opt/solvis/SolvisSmartHomeServer/   │    │ /etc/default/solvissmart-     │
+  │ Repo: src, rsc, SmartHome │    │ /etc/solvis/, /usr/local/lib/solvis/ │    │ /etc/default/solvissmart-     │
   │ docs, pom, mvnw, CI,      │    │   base.xml  Konfiguration +          │    │   homeserver (Betriebsparam.) │
   │ local-maven-repo          │    │             passwordCrypt (640)      │    │ systemd-Units (aus dem Repo   │
   │ base.xml nur als Vorlage  │    │   base.xml.old  Vorstand (600 root)  │    │   neu erzeugbar)              │
   └─────────────┬─────────────┘    │   Jar, base.xsd  aus dem Build       │    │ Make-Parameter des Hosts      │
-                │ git push         │ /opt/solvis/SolvisServerData/        │    │ Router: DHCP-Reservierung     │
+                │ git push         │ /var/lib/solvis/SolvisServerData/    │    │ Router: DHCP-Reservierung     │
                 ▼                  │   LearnedImages, control.xml,        │    │ lokaler Mosquitto, Bridge,    │
   GitHub origin (Fork)             │   measurements.xml, graficData,      │    │   mTLS-Material (ccu2mqtt)    │
   + Upstream als Zweitquelle       │   Logs, SolvisErrorImages            │    │ Klartext-Zugangsdaten         │
-                                   │ /opt/solvis/health/ready (flüchtig)  │    └───────────────────────────────┘
+                                   │ /run/solvis/ready (flüchtig)         │    └───────────────────────────────┘
                                    └──────────────────┬───────────────────┘
                                                       │ restic, Scope solvis, täglich 02:30
                                                       ▼
@@ -500,11 +500,11 @@ Auslöser ist eine erkannte GUI-Änderung, kein Zeitplan ([runbooks/README.md](r
 | Datum | Ort | Gesichert durch | Geheim? |
 |---|---|---|---|
 | Quellcode, Doku, Install-Ziele, Unit-Vorlagen | Repo | Git, GitHub `origin`; Repo-Clone-Drill [g2.6-clone-drill.md](g2.6-clone-drill.md) | nein |
-| Uber-Jar | `target/`, installiert unter `/opt/solvis/SolvisSmartHomeServer/` | reproduzierbar aus dem Code; CI-Artefakt `SolvisSmartHomeServer-jar` (JDK-21-Lauf) | nein |
-| `base.xml` (installiert) | `/opt/solvis/SolvisSmartHomeServer/` | restic-Host-Kette, Scope `solvis`; Handexport `tar`+`age` vor Eingriffen | **ja** (Anlagen-, MQTT-, ggf. SMTP-Zugang, nur obfuskiert) |
+| Uber-Jar | `target/`, installiert unter `/usr/local/lib/solvis/` | reproduzierbar aus dem Code; CI-Artefakt `SolvisSmartHomeServer-jar` (JDK-21-Lauf) | nein |
+| `base.xml` (installiert) | `/usr/local/lib/solvis/` | restic-Host-Kette, Scope `solvis`; Handexport `tar`+`age` vor Eingriffen | **ja** (Anlagen-, MQTT-, ggf. SMTP-Zugang, nur obfuskiert) |
 | Arbeitskopie `base.xml` | `SmartHome/Linux/` im Checkout auf dem Host (`.gitignore`) | nicht gesichert (Arbeitsstand) | **ja** |
-| Lernbilder, generierte `control.xml`, Messwert-Backup, Logs | `/opt/solvis/SolvisServerData/` | restic-Host-Kette, Scope `solvis` | nein |
-| Health-Token | `/opt/solvis/health/ready` | nicht nötig (flüchtig) | nein |
+| Lernbilder, generierte `control.xml`, Messwert-Backup, Logs | `/var/lib/solvis/SolvisServerData/` | restic-Host-Kette, Scope `solvis` | nein |
+| Health-Token | `/run/solvis/ready` | nicht nötig (flüchtig) | nein |
 | Betriebsparameter | `/etc/default/solvissmarthomeserver` | nicht im Scope `solvis`; Inhalt in [INBETRIEBNAHME.md](INBETRIEBNAHME.md) 4.3 dokumentiert | nein |
 | Lokaler Broker, Bridge, Zertifikate, ACL | Host bzw. Haus-Broker | Repo und Backup-Kette von `ccu2mqtt` | **ja** |
 | restic-Passwort, Zugänge der Backup-Ziele | außerhalb dieses Repos (`ccu2mqtt`) | – | **ja** |
@@ -647,7 +647,7 @@ Marker: `Zugang` = Konto oder Zugangsweg, `Geheimnis` = Passwort, Schlüssel ode
 | R2 Neuaufbau ohne Backup | SolvisRemote im LAN | Anlagen-Account + Passwort, MQTT-Passwort | Unit-Attribute, `url` (gepinnte IP), `<tns:Mqtt>` (`127.0.0.1:1883`, `topicPrefix="solvis"`) | ?, V |
 | W1–W2 Code und Build | GitHub (lesend), Maven Central | – | Branch `feature/modernisierung` | G, I |
 | W3 `base.xml` bereitstellen | Host | in `base.xml` (obfuskiert) | Arbeitskopie neuer als die Vorlage | B |
-| W4 Betriebsparameter | Host (root) | – | `SOLVIS_HEALTH_TOKEN_PATH=/opt/solvis/health/ready` | G (Doku) |
+| W4 Betriebsparameter | Host (root) | – | `SOLVIS_HEALTH_TOKEN_PATH=/run/solvis/ready` | G (Doku) |
 | W5 Installieren | Host (root) | – | `javaPath`, `solvisAllowedNet` | G, ? |
 | W6 Rechte | Host (root) | – | `640 root:solvis`, Zustandsordner dem Dienstnutzer | G (Runbook) |
 | W7 Credential-Prüfung | SolvisRemote, lokaler Broker | Klartext-Passwörter Anlage + MQTT | – | ? |
@@ -668,7 +668,7 @@ Diese Punkte gehen aus dem Repo nicht hervor. Sie werden hier benannt, nicht ger
 | L-2 | Ablage des restic-Repository-Passworts und der Zugänge zu HiDrive/all-inkl; nur Verweis auf `ccu2mqtt` | ohne sie ist **B** unerreichbar |
 | L-3 | Ablage der Klartext-Zugangsdaten (Anlagen-Account der SolvisRemote, MQTT `solvis-local`, ggf. SMTP) außerhalb von `base.xml` | nötig für R2 und `checkCredentials`; `passwordCrypt` ist nur Obfuskation, kein Speicherort |
 | L-4 | Router-Zugang und Sicherung der DHCP-Reservierung der SolvisRemote; Bereinigung des Hostnamens offen (F-119) | ohne Reservierung wechselt die Adresse, `url` in `base.xml` passt nicht mehr |
-| L-5 | `/etc/default/solvissmarthomeserver` liegt nicht unter `/opt/solvis`; ob eine andere Sicherung es erfasst, ist nicht belegt | gering: Inhalt ist in INBETRIEBNAHME 4.3 dokumentiert |
+| ~~L-5~~ | geschlossen 2026-11-24: `/etc/default/solvissmarthomeserver` ist im Scope `solvis` | gering: Inhalt ist in INBETRIEBNAHME 4.3 dokumentiert |
 | L-6 | Konkreter Wert von `solvisAllowedNet` (laut CHANGELOG „das /24 des Hausnetzes“) und `javaPath` auf `ransible` | Vorgabe des Makefiles (alle privaten Netze) funktioniert, ist aber weiter als das Soll |
 | L-7 | Gesamtablauf „Host verloren“ nie geübt; Restore-Beleg für Scope `solvis` (F-145) laut Runbook offen | Dauer und Vollständigkeit unbekannt |
 | L-8 | Ob `ExceptionMail` produktiv aktiv ist | bestimmt, ob ein SMTP-Zugang zu den Geheimnissen gehört |

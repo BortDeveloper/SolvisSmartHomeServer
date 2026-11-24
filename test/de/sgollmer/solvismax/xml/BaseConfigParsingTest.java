@@ -63,7 +63,7 @@ class BaseConfigParsingTest {
 	void writablePathFolgtOsWeiche() throws Exception {
 		final BaseData baseData = parse();
 		final boolean windows = System.getProperty("os.name").startsWith("Windows");
-		assertEquals(windows ? "C:\\JavaPgms\\SolvisSmartHomeServer\\log" : "/opt/solvis",
+		assertEquals(windows ? "C:\\JavaPgms\\SolvisSmartHomeServer\\log" : "/var/lib/solvis",
 				baseData.getWritablePath());
 	}
 

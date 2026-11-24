@@ -8,6 +8,29 @@ Format: neueste Änderung oben. Jede Änderung nennt Motivation, Ursache und
 konkrete Anpassung, damit sie nachvollziehbar und ggf. als Upstream-PR
 aufbereitbar ist.
 
+## FHS-Ablage 2026-11-24: `/opt/solvis` aufgeteilt
+
+**Motivation:** Portfolio-Standard `dienst-ablagestruktur.md` (Lücke Nr. 2),
+Auftrag des Betreibers 2026-11-24.
+
+**Anpassung:**
+- Programm `/usr/local/lib/solvis` (root), Konfiguration `/etc/solvis/base.xml`
+  (root:solvis 640), Zustand `/var/lib/solvis` (`StateDirectory`), Health-Token
+  `/run/solvis/ready` (`RuntimeDirectory`). Kein Java-Code geändert.
+- Link `base.xml` neben dem Jar statt `--base-xml`: `Restart.java` startet
+  ohne Programmargumente neu und fände die Datei sonst nicht.
+- Debug-Unit (JDWP) wird nicht mehr mit `installSolvis` installiert.
+- Vorlage `base.xml`: `writablePathLinux="/var/lib/solvis"`, Test angepasst.
+
+**Bestand umziehen:** Dienst stoppen, `usermod -d /var/lib/solvis solvis`,
+`writablePathLinux` in der eigenen `base.xml` ändern, `make installSolvis`,
+`SolvisServerData` kopieren, `SOLVIS_HEALTH_TOKEN_PATH=/run/solvis/ready`.
+
+**Beleg:** 91 Maven-Tests grün; ransible 2026-11-24 22:31, 17 s Unterbrechung,
+`SOLVIS_CONNECTED`, keine Neu-Anlernung. Abweichung vom Standard: `base.xml`
+ist root:solvis 640 statt 0600 unter der Dienstkennung (S-5: der Dienst soll
+seine Konfiguration nicht umschreiben können).
+
 ## systemd-Härtung 2026-11-18: `SolvisSmartHomeServer.service` von 9,0 UNSAFE auf 1,4 OK
 
 **Motivation:** `systemd-analyze security` bewertete die Produktiv-Unit auf

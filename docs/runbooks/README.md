@@ -26,9 +26,9 @@ Feste Werte der Referenz-Installation:
 | Gegenstand | Wert |
 |---|---|
 | Dienst | `SolvisSmartHomeServer.service` (Systemnutzer `solvis`) |
-| Installationspfad | `/opt/solvis/SolvisSmartHomeServer/` (Jar, `base.xml`, `base.xsd`) |
-| Schreibpfad (`writablePathLinux`) | `/opt/solvis` → Laufzeitdaten unter `/opt/solvis/SolvisServerData/` |
-| Health-Token | `/opt/solvis/health/ready` (Pfad aus `/etc/default/solvissmarthomeserver`) |
+| Installationspfad | `/usr/local/lib/solvis/` (Jar, `base.xsd`, Link auf `base.xml`); Konfiguration `/etc/solvis/base.xml` |
+| Schreibpfad (`writablePathLinux`) | `/var/lib/solvis` → Laufzeitdaten unter `/var/lib/solvis/SolvisServerData/` |
+| Health-Token | `/run/solvis/ready` (Pfad aus `/etc/default/solvissmarthomeserver`) |
 | MQTT | Klartext auf `127.0.0.1:1883` (lokaler Mosquitto, Login `solvis-local`) |
 | Anlage | SolvisRemote `<solvis-ip>` (IP gepinnt, siehe [../INBETRIEBNAHME.md](../INBETRIEBNAHME.md)) |
 
@@ -64,7 +64,7 @@ Vokabular des Cockpit-Doku-Standards (`systemd-timer` · `cron` · `CI-Job` ·
 Regelbetrieb (Monitoring, optional Steuerung) starten.
 
 1. Prüfen, dass die installierte `base.xml` existiert und dateirechtegeschützt
-   ist — `stat -c '%a %U:%G' /opt/solvis/SolvisSmartHomeServer/base.xml`
+   ist — `stat -c '%a %U:%G' /etc/solvis/base.xml`
    → erwartet: `640 root:solvis` (Soll der S-5-Härtung 2026-08-22;
    `make installSolvis`/`updateSolvis` setzen es seit dem Welle-1-Nachtrag
    bei **jedem** Lauf unbedingt durch, Ziel `enforceOwnership`).
@@ -79,7 +79,7 @@ Regelbetrieb (Monitoring, optional Steuerung) starten.
    `active (running)`.
 4. Logs beobachten — `journalctl -u SolvisSmartHomeServer.service -f`
    → erwartet: Verbindungsaufbau ohne wiederholtes WARN „broker not reachable".
-5. Health prüfen — `stat -c '%y' /opt/solvis/health/ready`
+5. Health prüfen — `stat -c '%y' /run/solvis/ready`
    → erwartet: Zeitstempel jünger als 5 Minuten (der Token wird bei
    verbundenem MQTT alle 30 s aufgefrischt und bei Verbindungsverlust
    entfernt).
@@ -125,7 +125,7 @@ Neuen Fork-Stand (Jar) in Betrieb nehmen.
    Rechte-Nachzug oder ein `touch base.xml` im Build-Verzeichnis ist
    nicht mehr nötig.
 4. Health nach Update — `systemctl status SolvisSmartHomeServer.service` und
-   `stat -c '%y' /opt/solvis/health/ready`
+   `stat -c '%y' /run/solvis/ready`
    → erwartet: `active (running)`, Token frisch.
 
 *Alternative für Entwicklung/Test:* `docker compose build && docker compose up -d`,
@@ -141,7 +141,7 @@ operatorgetrieben (kein Auto-Deploy).
 ## Aufgabe: OCR-Lernphase erneuern
 
 Nach Änderungen an der SolvisRemote-Oberfläche die angelernten Screens neu
-erzeugen (schreibt `LearnedImages` nach `/opt/solvis/SolvisServerData/`).
+erzeugen (schreibt `LearnedImages` nach `/var/lib/solvis/SolvisServerData/`).
 
 > ⚠️ **Vor jeder Lernphase gilt die Cutover-Checkliste aus
 > [../INBETRIEBNAHME.md](../INBETRIEBNAHME.md) Phase 5:** Die Lernphase klickt
@@ -154,7 +154,7 @@ erzeugen (schreibt `LearnedImages` nach `/opt/solvis/SolvisServerData/`).
    → erwartet: `inactive (dead)`, `solvis/server/online` geht auf `false`.
 2. Lernlauf starten — `cd SmartHome/Linux && sudo make learn`
    → erwartet: Durchlauf ohne Abbruch; danach neue Bilddaten unter
-   `/opt/solvis/SolvisServerData/LearnedImages`. (`make learn` startet den
+   `/var/lib/solvis/SolvisServerData/LearnedImages`. (`make learn` startet den
    Dienst anschließend selbst wieder und bringt das MD5-Digest-Flag mit.)
 3. Regelbetrieb prüfen — `systemctl status SolvisSmartHomeServer.service` und
    `mosquitto_sub … -t 'solvis/#' -v`
@@ -166,7 +166,7 @@ scheitert die Anmeldung an der SolvisRemote mit 401 (Gerätezwang MD5, siehe
 
 ```bash
 sudo -u solvis java -Dhttp.auth.digest.reEnabledAlgorithms=MD5 \
-  -jar /opt/solvis/SolvisSmartHomeServer/SolvisSmartHomeServer.jar --server-learn
+  -jar /usr/local/lib/solvis/SolvisSmartHomeServer.jar --server-learn
 ```
 
 *Alternative für Entwicklung/Test:* `docker compose stop solvis`,
@@ -182,11 +182,11 @@ GUI-Änderung, kein Zeitplan.
 
 Nicht-versionierten Operator-State sichern: die installierte `base.xml`
 (Konfiguration + `passwordCrypt`-Werte) und den Schreibpfad
-`/opt/solvis/SolvisServerData/` (angelernte Bilder, generierte
+`/var/lib/solvis/SolvisServerData/` (angelernte Bilder, generierte
 `control.xml`/Messwerte, Logs).
 
-**Regelweg (seit 2026-08-28): die Host-Sicherungskette.** `/opt/solvis` ist
-als Scope `solvis` Teil der Zwei-Ziel-restic-Kette des Hosts `ransible`
+**Regelweg (seit 2026-08-28): die Host-Sicherungskette.** `/etc/solvis`, `/var/lib/solvis` und
+`/etc/default/solvissmarthomeserver` sind als Scope `solvis` Teil der Zwei-Ziel-restic-Kette des Hosts `ransible`
 (HiDrive und all-inkl, Retention 14/8/12, täglicher Timer 02:30). Skript,
 systemd-Units und das Runbook dazu liegen **nicht** in diesem Repo, sondern in
 `ccu2mqtt` (`scripts/ransible-backup.sh`, `config/systemd/ransible-backup.*`,
@@ -209,7 +209,7 @@ den Stand von jetzt festhält:
 2. Verschlüsseltes Archiv erzeugen (Secrets nie im Klartext ablegen) —
 
    ```bash
-   sudo tar czf - -C /opt/solvis SolvisSmartHomeServer/base.xml SolvisServerData \
+   sudo tar czf - -C / etc/solvis var/lib/solvis etc/default/solvissmarthomeserver \
      | age -r <age-empfaenger-key> > backup-$(date +%F).tar.gz.age
    ```
 
@@ -250,22 +250,25 @@ ein `solvis`-Snapshot der Host-Kette; der Handexport ist die Rückfallebene.
      `runbooks/solvis-bridge-restore.md`; Ziel-Zugangsdaten sind nie
      Bestandteil dieses Repos).
    - **Aus dem Handexport:**
-     `age -d -i <age-identity> backup-<datum>.tar.gz.age | sudo tar xzf - -C /opt/solvis`
+     `age -d -i <age-identity> backup-<datum>.tar.gz.age | sudo tar xzf - -C /`
+     (Archive von vor dem 2026-11-24 enthalten noch die Pfade unter `/opt/solvis`:
+     in ein leeres Verzeichnis entpacken und von Hand einsortieren)
 
-   → erwartet: `/opt/solvis/SolvisSmartHomeServer/base.xml` und
-   `/opt/solvis/SolvisServerData/` sind wiederhergestellt.
+   → erwartet: `/etc/solvis/base.xml` und
+   `/var/lib/solvis/SolvisServerData/` sind wiederhergestellt.
 3. Eigentümer und Dateirechte neu setzen (Pflicht; Soll-Bild der
    S-5-Härtung: Programmpfad root-eigen, Zustand dem Dienstkonto) —
 
    ```bash
-   sudo chown root:root /opt/solvis /opt/solvis/SolvisSmartHomeServer
-   sudo chown -R solvis:solvis /opt/solvis/SolvisServerData
-   sudo chown root:solvis /opt/solvis/SolvisSmartHomeServer/base.xml
-   sudo chmod 640 /opt/solvis/SolvisSmartHomeServer/base.xml
+   sudo chown root:root /usr/local/lib/solvis
+   sudo chown -R solvis:solvis /var/lib/solvis
+   sudo chown root:solvis /etc/solvis && sudo chmod 750 /etc/solvis
+   sudo chown root:solvis /etc/solvis/base.xml
+   sudo chmod 640 /etc/solvis/base.xml
    ```
 
-   → erwartet: `stat -c '%a %U:%G' /opt/solvis/SolvisSmartHomeServer/base.xml`
-   = `640 root:solvis`; Jar und beide Verzeichnisse gehören `root`.
+   → erwartet: `stat -c '%a %U:%G' /etc/solvis/base.xml`
+   = `640 root:solvis`; Jar und Programmverzeichnis gehören `root`.
 4. Dienst starten und prüfen — `sudo systemctl start SolvisSmartHomeServer.service`
    → erwartet: `active (running)`, Health-Token frisch, `solvis/#`-Topics
    erscheinen wie vor dem Restore.

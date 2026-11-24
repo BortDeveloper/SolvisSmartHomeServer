@@ -19,17 +19,15 @@ ausschluesse = []
 #   code          woher das Programm kommt; nie im Backup
 [backup.hosts.ransible]
 quellen = [
-  "/opt/solvis",
+  "/etc/solvis",
+  "/var/lib/solvis",
+  "/etc/default/solvissmarthomeserver",
   "/etc/mosquitto",
 ]
-# Programm und Health-Datei liegen bis zum Umbau auf die FHS-Ablage mit unter /opt/solvis
-ausschluesse = [
-  "/opt/solvis/SolvisSmartHomeServer/SolvisSmartHomeServer.jar",
-  "/opt/solvis/health",
-]
+ausschluesse = []
 dienste = ["SolvisSmartHomeServer.service", "mosquitto.service"]
 pakete = ["openjdk-21-jre-headless", "mosquitto"]
-code = "git: make installSolvis in SmartHome/Linux"
+code = "git: make installSolvis in SmartHome/Linux (nach /usr/local/lib/solvis)"
 
 [datenwaechter]
 # Werte aus dem Upstream-Projekt (GollmerSt), unveraendert uebernommen, kein Wert dieser Installation:

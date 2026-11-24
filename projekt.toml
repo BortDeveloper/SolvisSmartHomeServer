@@ -8,6 +8,29 @@ host = "workstation"
 quellen = [".local"]
 ausschluesse = []
 
+# Anteil auf dem Host ransible (Beschluss Betreiber 2026-11-24). BESCHREIBT nur: ctl-agent (kit)
+# liest bisher allein [backup] und ignoriert diesen Abschnitt; gesichert wird bis zum Umstieg durch
+# ccu2mqtt scripts/ransible-backup.sh. Eigener Abschnitt statt [backup].quellen, weil ctl-agent bei
+# fehlenden Pfaden abbricht und die Workstation diese Pfade nicht hat.
+#   quellen       sichern (Konfiguration, Geheimnisse, Daten)
+#   ausschluesse  liegt unter einer Quelle, wird aber nicht gesichert
+#   dienste       systemd-Units dieses Projekts (Unit-Dateien kommen aus dem genannten Code)
+#   pakete        Debian-Pakete, die vor dem Zurueckholen installiert sein muessen
+#   code          woher das Programm kommt; nie im Backup
+[backup.hosts.ransible]
+quellen = [
+  "/opt/solvis",
+  "/etc/mosquitto",
+]
+# Programm und Health-Datei liegen bis zum Umbau auf die FHS-Ablage mit unter /opt/solvis
+ausschluesse = [
+  "/opt/solvis/SolvisSmartHomeServer/SolvisSmartHomeServer.jar",
+  "/opt/solvis/health",
+]
+dienste = ["SolvisSmartHomeServer.service", "mosquitto.service"]
+pakete = ["openjdk-21-jre-headless", "mosquitto"]
+code = "git: make installSolvis in SmartHome/Linux"
+
 [datenwaechter]
 # Werte aus dem Upstream-Projekt (GollmerSt), unveraendert uebernommen, kein Wert dieser Installation:
 #   192.168.0.10/.71, 192.168.1.40, 10.0.0.5   Beispieladressen in Vorlagen, Schema-Doku und Tests
